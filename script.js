@@ -381,6 +381,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                // Reset mockup tabs - activate the first tab for current version
+                const activeMockupTabsNav = document.querySelector(`.mockup-tabs.${version}-only`);
+                if (activeMockupTabsNav) {
+                    const firstMockupBtn = activeMockupTabsNav.querySelector('.mockup-tab');
+                    if (firstMockupBtn) {
+                        // Clear all mockup tab buttons active state
+                        document.querySelectorAll('.mockup-tab').forEach(b => b.classList.remove('active'));
+                        firstMockupBtn.classList.add('active');
+
+                        // Clear all mockup panels, activate the first one correctly
+                        const targetMockup = firstMockupBtn.dataset.mockupTab;
+                        document.querySelectorAll('.mockup-panel').forEach(p => p.classList.remove('active'));
+
+                        const targetPanels = document.querySelectorAll(`.mockup-panel[data-panel="${targetMockup}"]`);
+                        targetPanels.forEach(p => {
+                            if (p.classList.contains('pro-only') && version !== 'pro') return;
+                            if (p.classList.contains('free-only') && version !== 'free') return;
+                            p.classList.add('active');
+                        });
+                    }
+                }
+
                 // Re-animate stat counters
                 const visibleCounters = document.querySelectorAll(
                     `.${version === 'free' ? 'free' : 'pro'}-only .stat-number[data-target]`
@@ -445,20 +467,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong>₹1500</strong></p>
             </div>
             
-            <form id="upi-form">
+            <form id="upi-form" action="https://formspree.io/f/mgolnydk" method="POST">
                 <div style="margin-bottom:12px;">
                     <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Full Name</label>
-                    <input type="text" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                    <input type="text" name="name" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:12px;">
                     <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Email Address</label>
-                    <input type="email" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                    <input type="email" name="email" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:20px;">
                     <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Phone Number (WhatsApp)</label>
-                    <input type="tel" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                    <input type="tel" name="phone" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Confirm Payment</button>
+                <button type="submit" id="upi-submit-btn" class="btn btn-primary btn-block">Confirm Payment</button>
                 <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;">We'll email you a 100% discount Gumroad link after verifying the payment.</p>
             </form>
         </div>
@@ -514,12 +536,127 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Form Submission (Mock handle)
-    document.getElementById('upi-form').addEventListener('submit', (e) => {
+    // Form Submission (Handle via Formspree AJAX to stay on page)
+    const upiForm = document.getElementById('upi-form');
+    upiForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        alert('Details submitted successfully! Verification usually takes a few minutes. We will email you the Gumroad link with a 100% discount code shortly.');
-        closeModal();
-        e.target.reset(); // clear form
+
+        const submitBtn = document.getElementById('upi-submit-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(upiForm);
+
+        try {
+            const response = await fetch(upiForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                showToast('Details submitted successfully! Verification usually takes a few minutes. We will email you the Gumroad link with a 100% discount code shortly.', 'success');
+                closeModal();
+                upiForm.reset();
+            } else {
+                showToast('Oops! There was a problem submitting your form. Please try again.', 'error');
+            }
+        } catch (error) {
+            showToast('Oops! There was a problem submitting your form. Please check your internet connection and try again.', 'error');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     });
 
 });
+
+// ===== CENTERED ALERT NOTIFICATION ======
+function showToast(message, type = 'success') {
+    // Alert Overlay
+    const alertOverlay = document.createElement('div');
+    alertOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(5px);
+        z-index: 10001;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+
+    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    const textColor = type === 'success' ? '#10b981' : '#ef4444';
+
+    // Alert Box
+    const alertBox = document.createElement('div');
+    alertBox.style.cssText = `
+        background: var(--bg-card);
+        border: 2px solid ${bgColor};
+        color: white;
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+        font-size: 16px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    `;
+
+    alertBox.innerHTML = `
+        <div style="font-weight:700; font-family:var(--font-heading); font-size:24px; margin-bottom:12px; color:${textColor};">
+            ${type === 'success' ? 'Success!' : 'Error'}
+        </div>
+        <div style="color:var(--text-secondary); line-height:1.6; font-size:16px; margin-bottom:24px;">
+            ${message}
+        </div>
+        <button id="alert-ok-btn" style="
+            background: ${bgColor}; 
+            color: white; 
+            border: none; 
+            padding: 12px 32px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: opacity 0.2s;
+        ">OK</button>
+    `;
+
+    alertOverlay.appendChild(alertBox);
+    document.body.appendChild(alertOverlay);
+
+    // Fade in
+    setTimeout(() => {
+        alertOverlay.style.opacity = '1';
+        alertBox.style.transform = 'translateY(0) scale(1)';
+    }, 10);
+
+    // Dismiss Logic
+    function dismissAlert() {
+        alertOverlay.style.opacity = '0';
+        alertBox.style.transform = 'translateY(20px) scale(0.95)';
+        setTimeout(() => {
+            alertOverlay.remove();
+        }, 300);
+    }
+
+    // Attach click listener to OK button
+    const okBtn = alertBox.querySelector('#alert-ok-btn');
+    okBtn.addEventListener('click', dismissAlert);
+
+    // Hover effect on OK button
+    okBtn.addEventListener('mouseover', () => okBtn.style.opacity = '0.8');
+    okBtn.addEventListener('mouseout', () => okBtn.style.opacity = '1');
+}
