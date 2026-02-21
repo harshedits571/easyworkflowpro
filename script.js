@@ -398,4 +398,128 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ===== GET PRO MODAL LOGIC =====
+    const proButtons = document.querySelectorAll('#btn-pro');
+
+    // Create Modal Element
+    const modalOverlay = document.createElement('div');
+    modalOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px);z-index:9999;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
+
+    const modalBox = document.createElement('div');
+    modalBox.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:500px;width:90%;position:relative;transform:translateY(20px);transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 20px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.1);text-align:center;';
+
+    // Modal Content
+    modalBox.innerHTML = `
+        <button id="close-modal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;line-height:1;">&times;</button>
+        <h2 style="font-family:var(--font-heading);color:white;margin-bottom:8px;font-size:24px;">Upgrade to Pro</h2>
+        <p style="color:var(--text-secondary);margin-bottom:24px;font-size:14px;">Choose your preferred payment method. After UPI payment, you will receive a 100% discount Gumroad link.</p>
+        
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <!-- Gumroad Option -->
+            <a href="https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n" target="_blank" style="text-decoration:none;">
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;transition:all 0.2s ease;cursor:pointer;" onmouseover="this.style.background='rgba(124,58,237,0.1)';this.style.borderColor='var(--purple)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)';">
+                    <div style="width:40px;height:40px;background:#ff90e8;border-radius:8px;display:flex;justify-content:center;align-items:center;font-weight:bold;color:black;">G</div>
+                    <div style="text-align:left;">
+                        <h3 style="color:white;font-size:16px;margin:0;">Pay via Gumroad</h3>
+                        <p style="color:var(--text-muted);font-size:12px;margin:2px 0 0 0;">International & Cards • Instant Download</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- UPI Option -->
+            <div id="upi-option" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;transition:all 0.2s ease;cursor:pointer;" onmouseover="this.style.background='rgba(16,185,129,0.1)';this.style.borderColor='var(--green)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)';">
+                <div style="width:40px;height:40px;background:#10b981;border-radius:8px;display:flex;justify-content:center;align-items:center;color:white;"><i class="fa-solid fa-qrcode"></i></div>
+                <div style="text-align:left;">
+                    <h3 style="color:white;font-size:16px;margin:0;">Pay via UPI (India)</h3>
+                    <p style="color:var(--text-muted);font-size:12px;margin:2px 0 0 0;">Google Pay, PhonePe, Paytm</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- UPI Details Form (Hidden Initially) -->
+        <div id="upi-details" style="display:none;margin-top:24px;text-align:left;animation:panelFadeIn 0.3s ease;">
+            <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:24px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <!-- Replace src with actual QR Code later -->
+                <div style="width:150px;height:150px;background:white;margin:0 auto 12px auto;border-radius:8px;display:flex;justify-content:center;align-items:center;color:black;font-size:12px;">[Your QR Code Here]</div>
+                <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong>₹1500</strong></p>
+            </div>
+            
+            <form id="upi-form">
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Full Name</label>
+                    <input type="text" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Email Address</label>
+                    <input type="email" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Phone Number (WhatsApp)</label>
+                    <input type="tel" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Confirm Payment</button>
+                <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;">We'll email you a 100% discount Gumroad link after verifying the payment.</p>
+            </form>
+        </div>
+    `;
+
+    modalOverlay.appendChild(modalBox);
+    document.body.appendChild(modalOverlay);
+
+    // Open Modal function
+    function openModal(e) {
+        if (e) e.preventDefault();
+
+        // Ensure "Pro" version is selected implicitly or by UI context
+        const isPro = document.body.getAttribute('data-version') === 'pro';
+
+        modalOverlay.style.display = 'flex';
+        // Trigger layout reflow
+        void modalOverlay.offsetWidth;
+        modalOverlay.style.opacity = '1';
+        modalBox.style.transform = 'translateY(0)';
+        document.body.style.overflow = 'hidden'; // prevent bg scroll
+    }
+
+    // Close Modal function
+    function closeModal() {
+        modalOverlay.style.opacity = '0';
+        modalBox.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            modalOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+            // reset UPI form visibility if it was open
+            document.getElementById('upi-details').style.display = 'none';
+        }, 300);
+    }
+
+    // Attach listeners to Pro buttons
+    proButtons.forEach(btn => btn.addEventListener('click', openModal));
+    // Also attach to navbar Get Pro button
+    const navProBtns = document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only');
+    navProBtns.forEach(btn => btn.addEventListener('click', openModal));
+
+    // Close listeners
+    document.getElementById('close-modal').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+    });
+
+    // UPI Option Click -> Show Form
+    document.getElementById('upi-option').addEventListener('click', () => {
+        const upiDetails = document.getElementById('upi-details');
+        if (upiDetails.style.display === 'none') {
+            upiDetails.style.display = 'block';
+        }
+    });
+
+    // Form Submission (Mock handle)
+    document.getElementById('upi-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        alert('Details submitted successfully! Verification usually takes a few minutes. We will email you the Gumroad link with a 100% discount code shortly.');
+        closeModal();
+        e.target.reset(); // clear form
+    });
+
 });

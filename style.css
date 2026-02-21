@@ -525,9 +525,18 @@ img {
     z-index: 1;
     margin-top: 60px;
     width: 100%;
-    max-width: 780px;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* Width for Pro Version Mockup */
+body[data-version="pro"] .hero-mockup {
+    max-width: 680px;
+}
+
+/* Width for Free Version Mockup */
+body[data-version="free"] .hero-mockup {
+    max-width: 580px;
 }
 
 .mockup-glow {
@@ -632,10 +641,19 @@ img {
     flex-direction: column;
     gap: 8px;
     animation: panelFadeIn 0.25s ease;
-    height: 480px;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 2px;
+}
+
+/* Height for Pro Version Panel */
+body[data-version="pro"] .mockup-panel.active {
+    height: 480px;
+}
+
+/* Height for Free Version Panel */
+body[data-version="free"] .mockup-panel.active {
+    height: 580px;
 }
 
 .mockup-panel.active::-webkit-scrollbar {
