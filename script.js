@@ -326,5 +326,76 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, { passive: true });
     }
+    // ===== VERSION TOGGLE (FREE / PRO) =====
+    const toggleOptions = document.querySelectorAll('.toggle-option');
+    const body = document.body;
+
+    toggleOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const version = option.dataset.version;
+            const currentVersion = body.getAttribute('data-version');
+
+            // Don't switch if already on this version
+            if (version === currentVersion) return;
+
+            // Update toggle UI
+            toggleOptions.forEach(o => o.classList.remove('active'));
+            option.classList.add('active');
+
+            // Start transition animation (3D flip out)
+            body.classList.add('version-transitioning');
+
+            // Wait for flip-out to complete
+            setTimeout(() => {
+                // Switch version
+                body.setAttribute('data-version', version);
+
+                // Swap classes for entrance animation (3D flip in)
+                body.classList.remove('version-transitioning');
+                body.classList.add('version-entering');
+
+                // Re-trigger reveal animations for newly visible content
+                const newVisibleElements = document.querySelectorAll(
+                    `.${version === 'free' ? 'free' : 'pro'}-only .reveal, .${version === 'free' ? 'free' : 'pro'}-only.reveal`
+                );
+                newVisibleElements.forEach(el => {
+                    el.classList.remove('active');
+                    void el.offsetWidth; // Force reflow
+                    el.classList.add('active');
+                });
+
+                // Reset deep-dive tabs - activate the first tab for current version
+                const activeTabsNav = document.querySelector(`.tabs-nav.${version}-only`);
+                if (activeTabsNav) {
+                    const firstBtn = activeTabsNav.querySelector('.tab-btn');
+                    if (firstBtn) {
+                        // Clear all tab buttons active state
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        firstBtn.classList.add('active');
+
+                        // Clear all panels, activate the first one
+                        const targetTab = firstBtn.dataset.tab;
+                        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                        const targetPanel = document.getElementById(`tab-${targetTab}`);
+                        if (targetPanel) targetPanel.classList.add('active');
+                    }
+                }
+
+                // Re-animate stat counters
+                const visibleCounters = document.querySelectorAll(
+                    `.${version === 'free' ? 'free' : 'pro'}-only .stat-number[data-target]`
+                );
+                visibleCounters.forEach(counter => {
+                    counter.textContent = '0';
+                    animateCounter(counter);
+                });
+
+                // End transition animation
+                setTimeout(() => {
+                    body.classList.remove('version-entering');
+                }, 600);
+            }, 500);
+        });
+    });
 
 });

@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body data-version="pro">
     <!-- PAGE LOADER -->
     <div class="page-loader">
         <div class="loader-icon"></div>
@@ -29,7 +29,7 @@
         <div class="nav-container">
             <a href="#hero" class="nav-logo">
                 <span class="logo-icon">⚡</span>
-                <span class="logo-text">Easy Workflow <span class="logo-pro">Pro</span></span>
+                <span class="logo-text">Easy Workflow <span class="logo-pro pro-only">Pro</span></span>
             </a>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#features">Features</a></li>
@@ -38,9 +38,17 @@
                 <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#faq">FAQ</a></li>
             </ul>
+            <div class="version-toggle">
+                <div class="toggle-pill" id="versionToggle">
+                    <span class="toggle-indicator" id="toggleIndicator"></span>
+                    <span class="toggle-option" data-version="free">Free</span>
+                    <span class="toggle-option active" data-version="pro">Pro</span>
+                </div>
+            </div>
             <div class="nav-actions">
-                <a href="#pricing" class="btn btn-ghost">Try Free</a>
-                <a href="#pricing" class="btn btn-primary">Get Pro</a>
+                <a href="#pricing" class="btn btn-ghost pro-only">Try Free</a>
+                <a href="#pricing" class="btn btn-primary pro-only">Get Pro</a>
+                <a href="#pricing" class="btn btn-primary free-only">Download Free</a>
             </div>
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -61,20 +69,33 @@
             <div class="glow-orb glow-orb-3"></div>
         </div>
         <div class="container hero-content">
-            <div class="hero-badge reveal">
+            <!-- PRO Hero Badge -->
+            <div class="hero-badge reveal pro-only">
                 <span class="badge-dot"></span>
                 After Effects Extension
+            </div>
+            <!-- FREE Hero Badge -->
+            <div class="hero-badge reveal free-only">
+                <span class="badge-dot"></span>
+                After Effects Script
             </div>
             <h1 class="hero-title reveal">
                 Supercharge Your<br>
                 <span class="gradient-text gradient-text-animated">After Effects</span><br>
                 Workflow
             </h1>
-            <p class="hero-subtitle reveal">
+            <!-- PRO Subtitle -->
+            <p class="hero-subtitle reveal pro-only">
                 7 powerful tools in one extension — Align, Precomp, Shape, Font Replacer,
                 FX Manager, Comp Saver & more. Everything you need, right inside AE.
             </p>
-            <div class="hero-ctas reveal">
+            <!-- FREE Subtitle -->
+            <p class="hero-subtitle reveal free-only">
+                6 essential tools in one lightweight script — Align, Anchor, Number Counter,
+                Precomp, SRT Tools & Layer Creation. Free forever, no limits.
+            </p>
+            <!-- PRO CTAs -->
+            <div class="hero-ctas reveal pro-only">
                 <a href="#pricing" class="btn btn-primary btn-lg">
                     <span>Get Pro — ₹1500</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -83,7 +104,20 @@
                 </a>
                 <a href="#pricing" class="btn btn-outline btn-lg">Download Free</a>
             </div>
-            <div class="hero-stats reveal">
+            <!-- FREE CTAs -->
+            <div class="hero-ctas reveal free-only">
+                <a href="#pricing" class="btn btn-primary btn-lg">
+                    <span>Download Free Script</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                </a>
+                <a href="#pricing" class="btn btn-outline btn-lg">See Pro Version</a>
+            </div>
+            <!-- PRO Stats -->
+            <div class="hero-stats reveal pro-only">
                 <div class="stat">
                     <span class="stat-number" data-target="5000">0</span>+
                     <span class="stat-label">Downloads</span>
@@ -99,6 +133,23 @@
                     <span class="stat-label">Features</span>
                 </div>
             </div>
+            <!-- FREE Stats -->
+            <div class="hero-stats reveal free-only">
+                <div class="stat">
+                    <span class="stat-number" data-target="3000">0</span>+
+                    <span class="stat-label">Downloads</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="6">0</span>
+                    <span class="stat-label">Panels</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="20">0</span>+
+                    <span class="stat-label">Features</span>
+                </div>
+            </div>
         </div>
         <div class="hero-mockup reveal" id="mockup3d">
             <div class="mockup-glow"></div>
@@ -107,10 +158,12 @@
                     <div class="mockup-dots">
                         <span></span><span></span><span></span>
                     </div>
-                    <span class="mockup-title">Easy Workflow Pro ≡</span>
+                    <span class="mockup-title"><span class="pro-only">Easy Workflow Pro ≡</span><span
+                            class="free-only">Easy Workflow</span></span>
                 </div>
                 <div class="mockup-content">
-                    <div class="mockup-tabs">
+                    <!-- PRO Mockup Tabs -->
+                    <div class="mockup-tabs pro-only">
                         <span class="mockup-tab active" data-mockup-tab="workflow">⚡ Easy Workflow</span>
                         <span class="mockup-tab" data-mockup-tab="font">A Font Replacer</span>
                         <span class="mockup-tab" data-mockup-tab="compviewer">🖥 Comp Viewer</span>
@@ -119,8 +172,12 @@
                         <span class="mockup-tab" data-mockup-tab="shape">🔷 Shape</span>
                         <span class="mockup-tab" data-mockup-tab="about">ℹ About</span>
                     </div>
-                    <!-- ========== TAB: EASY WORKFLOW (exact replica) ========== -->
-                    <div class="mockup-panel active" data-panel="workflow">
+                    <!-- FREE Mockup Tabs (single tab) -->
+                    <div class="mockup-tabs free-only">
+                        <span class="mockup-tab active" data-mockup-tab="workflow">⚡ Easy Workflow</span>
+                    </div>
+                    <!-- ========== TAB: EASY WORKFLOW PRO (exact replica) ========== -->
+                    <div class="mockup-panel active pro-only" data-panel="workflow">
                         <div class="ew-grid">
                             <!-- COL 1: ALIGN -->
                             <div class="ew-section">
@@ -233,6 +290,136 @@
                                     <span class="ew-btn c-green">TRUE DUP</span>
                                     <span class="ew-btn c-blue">Seq Layers</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== TAB: EASY WORKFLOW FREE (screenshot replica) ========== -->
+                    <div class="mockup-panel active free-only" data-panel="workflow">
+                        <div class="ew-grid" style="display:block;">
+                            <!-- ROW 1: Align, Anchor, Number (Top 3) -->
+                            <div style="display:flex;gap:12px;margin-bottom:12px">
+                                <!-- ALIGN (Small Box) -->
+                                <fieldset class="ew-section"
+                                    style="flex:0;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
+                                    <legend style="color:#aaa;font-size:10px;padding:0 4px">Align</legend>
+                                    <div style="text-align:center;font-size:10px;color:#888;margin-bottom:6px">Align
+                                        Layers to:</div>
+                                    <div class="ew-btn-grid g3" style="gap:4px">
+                                        <span class="ew-btn" style="min-width:32px">←</span>
+                                        <span class="ew-btn" style="min-width:32px">◇</span>
+                                        <span class="ew-btn" style="min-width:32px">→</span>
+                                        <span class="ew-btn" style="min-width:32px">↑</span>
+                                        <span class="ew-btn" style="min-width:32px">A</span>
+                                        <span class="ew-btn" style="min-width:32px">↓</span>
+                                    </div>
+                                </fieldset>
+                                <!-- ANCHOR POINT MOVER -->
+                                <fieldset class="ew-section"
+                                    style="flex:0;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
+                                    <legend style="color:#aaa;font-size:10px;padding:0 4px">Anchor Point Mover</legend>
+                                    <div class="ew-btn-grid g3" style="gap:4px;margin-top:14px">
+                                        <span class="ew-btn" style="min-width:32px">↖</span>
+                                        <span class="ew-btn" style="min-width:32px">↑</span>
+                                        <span class="ew-btn" style="min-width:32px">↗</span>
+                                        <span class="ew-btn" style="min-width:32px">←</span>
+                                        <span class="ew-btn" style="min-width:32px">•</span>
+                                        <span class="ew-btn" style="min-width:32px">→</span>
+                                        <span class="ew-btn" style="min-width:32px">↙</span>
+                                        <span class="ew-btn" style="min-width:32px">↓</span>
+                                        <span class="ew-btn" style="min-width:32px">↘</span>
+                                    </div>
+                                </fieldset>
+                                <!-- NUMBER COUNTER -->
+                                <fieldset class="ew-section"
+                                    style="flex:1;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
+                                    <legend style="color:#aaa;font-size:10px;padding:0 4px">Number Counter</legend>
+                                    <div class="ew-input-row" style="margin-top:2px">
+                                        <span style="font-size:11px;color:#aaa">Start:</span>
+                                        <span class="ew-input" style="flex:1">0000</span>
+                                        <span style="font-size:11px;color:#aaa">End:</span>
+                                        <span class="ew-input" style="flex:1">9000</span>
+                                    </div>
+                                    <div class="ew-input-row">
+                                        <span style="font-size:11px;color:#aaa">Sym:</span>
+                                        <span class="ew-input sm" style="width:24px">$</span>
+                                        <span style="font-size:11px;color:#aaa">Pos:</span>
+                                        <span class="ew-input sm"
+                                            style="flex:1;display:flex;justify-content:space-between">Prefix
+                                            <span>▼</span></span>
+                                    </div>
+                                    <div class="ew-input-row">
+                                        <span style="font-size:11px;color:#aaa">FPS:</span>
+                                        <span class="ew-input sm" style="width:24px">30</span>
+                                        <span class="ew-btn" style="flex:1">Posterize</span>
+                                    </div>
+                                    <div class="ew-input-row" style="margin-top:6px">
+                                        <span class="ew-btn" style="flex:1">Apply Counter</span>
+                                    </div>
+                                </fieldset>
+                            </div>
+
+                            <!-- ROW 2: PRECOMP -->
+                            <fieldset class="ew-section"
+                                style="border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0 0 12px 0">
+                                <legend style="color:#aaa;font-size:10px;padding:0 4px">Precomp & Center Transform
+                                </legend>
+                                <div class="ew-btn-grid g2" style="margin-bottom:6px">
+                                    <span class="ew-btn">Precomp Together</span>
+                                    <span class="ew-btn">Precomp Separately</span>
+                                </div>
+                                <div class="ew-btn-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:6px">
+                                    <span class="ew-btn">Organize Project Files</span>
+                                    <span class="ew-btn">Unprecomp</span>
+                                    <label class="ew-check" style="justify-content:center"><span
+                                            class="ew-checkbox on">✓</span> Keep Preco...</label>
+                                </div>
+                                <div class="ew-btn-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                                    <span class="ew-btn">Delete Before</span>
+                                    <span class="ew-btn">Delete After</span>
+                                    <span class="ew-btn">Copy Properties</span>
+                                    <span class="ew-btn">Paste Properties</span>
+                                </div>
+                            </fieldset>
+
+                            <!-- ROW 3: SRT TOOLS -->
+                            <fieldset class="ew-section"
+                                style="border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0 0 12px 0">
+                                <legend style="color:#aaa;font-size:10px;padding:0 4px">SRT Tools</legend>
+                                <div class="ew-btn-grid g2">
+                                    <span class="ew-btn">Import SRT</span>
+                                    <span class="ew-btn">Edit SRT</span>
+                                </div>
+                            </fieldset>
+
+                            <!-- ROW 4: LAYER CREATION -->
+                            <fieldset class="ew-section"
+                                style="border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
+                                <legend style="color:#aaa;font-size:10px;padding:0 4px">Layer Creation</legend>
+                                <div class="ew-btn-grid g5">
+                                    <span class="ew-btn">SOL</span>
+                                    <span class="ew-btn">Bounce</span>
+                                    <span class="ew-btn">NUL</span>
+                                    <span class="ew-btn">CAM</span>
+                                    <span class="ew-btn">TEXT</span>
+                                    <span class="ew-btn">GRAMP</span>
+                                    <span class="ew-btn">FIT</span>
+                                    <span class="ew-btn">GLOW</span>
+                                    <span class="ew-btn">ADJ</span>
+                                    <span class="ew-btn">MIRROR</span>
+                                    <span class="ew-btn">FILL</span>
+                                    <span class="ew-btn">TINT</span>
+                                    <span class="ew-btn">BLUR</span>
+                                    <span class="ew-btn">LUM</span>
+                                    <span class="ew-btn">Capitalize</span>
+                                </div>
+                            </fieldset>
+
+                            <!-- FOOTER -->
+                            <div
+                                style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:24px; padding-bottom:8px">
+                                <span style="color:#aaa; font-size:11px;">Made by HARSH EDITS</span>
+                                <span class="ew-btn" style="width:120px;">About</span>
                             </div>
                         </div>
                     </div>
@@ -639,14 +826,24 @@
     <!-- FEATURES -->
     <section class="features" id="features">
         <div class="container">
-            <div class="section-header reveal">
+            <!-- PRO Features Header -->
+            <div class="section-header reveal pro-only">
                 <span class="section-tag">FEATURES</span>
                 <h2 class="section-title">Everything You Need,<br><span class="gradient-text">All Inside After
                         Effects</span></h2>
                 <p class="section-subtitle">7 powerful tabs packed with 50+ features to obliterate your workflow
                     bottlenecks.</p>
             </div>
-            <div class="features-grid">
+            <!-- FREE Features Header -->
+            <div class="section-header reveal free-only">
+                <span class="section-tag">FEATURES</span>
+                <h2 class="section-title">Everything You Need,<br><span class="gradient-text">Completely Free</span>
+                </h2>
+                <p class="section-subtitle">6 essential panels with 20+ features to supercharge your After Effects
+                    workflow — no cost, no limits.</p>
+            </div>
+            <!-- PRO Features Grid -->
+            <div class="features-grid pro-only">
                 <div class="feature-card reveal" data-delay="0">
                     <div class="feature-icon" style="--icon-color: #7c3aed;">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -737,25 +934,116 @@
                     <p>Save compositions with thumbnails. Search, filter by client, organize your project library.</p>
                 </div>
             </div>
+            <!-- FREE Features Grid -->
+            <div class="features-grid free-only">
+                <div class="feature-card reveal" data-delay="0">
+                    <div class="feature-icon" style="--icon-color: #10b981;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
+                    </div>
+                    <h3>Layer Alignment</h3>
+                    <p>6 alignment buttons for pixel-perfect layer positioning. Left, center, right, top, middle,
+                        bottom.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="100">
+                    <div class="feature-icon" style="--icon-color: #06b6d4;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+                        </svg>
+                    </div>
+                    <h3>Anchor Point Mover</h3>
+                    <p>9-point anchor grid. Reposition anchor points to any corner, edge, or center instantly.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="200">
+                    <div class="feature-icon" style="--icon-color: #f59e0b;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 9h16M4 15h16M10 3v18M14 3v18" />
+                        </svg>
+                    </div>
+                    <h3>Number Counter</h3>
+                    <p>Generate number counters with custom start, end, symbol, position, FPS, and posterize controls.
+                    </p>
+                </div>
+                <div class="feature-card reveal" data-delay="300">
+                    <div class="feature-icon" style="--icon-color: #ec4899;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2" />
+                            <path d="M7 2v20M17 2v20M2 12h20M2 7h20M2 17h20" />
+                        </svg>
+                    </div>
+                    <h3>Precomp & Organize</h3>
+                    <p>Precomp together, separately, unprecomp, organize project files, delete before/after, copy
+                        properties.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="400">
+                    <div class="feature-icon" style="--icon-color: #8b5cf6;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                    </div>
+                    <h3>SRT Tools</h3>
+                    <p>Import SRT subtitle files directly into After Effects and edit them with the built-in SRT editor.
+                    </p>
+                </div>
+                <div class="feature-card reveal" data-delay="500">
+                    <div class="feature-icon" style="--icon-color: #22c55e;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                            <polyline points="2 17 12 22 22 17" />
+                            <polyline points="2 12 12 17 22 12" />
+                        </svg>
+                    </div>
+                    <h3>Layer Creation</h3>
+                    <p>One-click creation of Solids, Nulls, Cameras, Text, Adjustment Layers, Glow, Fill, Tint, and
+                        more.</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- INTERACTIVE TABS SECTION -->
     <section class="tabs-section" id="tabs">
         <div class="container">
-            <div class="section-header reveal">
+            <!-- PRO Deep Dive Header -->
+            <div class="section-header reveal pro-only">
                 <span class="section-tag">DEEP DIVE</span>
                 <h2 class="section-title">Every Tool,<br><span class="gradient-text">Explored In Detail</span></h2>
                 <p class="section-subtitle">Click on each tab to explore the full power packed inside Easy Workflow Pro.
                 </p>
             </div>
+            <!-- FREE Deep Dive Header -->
+            <div class="section-header reveal free-only">
+                <span class="section-tag">DEEP DIVE</span>
+                <h2 class="section-title">Your Free Tools,<br><span class="gradient-text">Explored In Detail</span></h2>
+                <p class="section-subtitle">Click on each tab to explore the tools packed inside the free script.
+                </p>
+            </div>
             <div class="tabs-container reveal">
-                <div class="tabs-nav">
+                <!-- PRO Tabs Nav -->
+                <div class="tabs-nav pro-only">
                     <button class="tab-btn active" data-tab="workflow">⚡ Easy Workflow</button>
                     <button class="tab-btn" data-tab="font">A Font Replacer</button>
                     <button class="tab-btn" data-tab="shape">🔷 Shape</button>
                     <button class="tab-btn" data-tab="disablefx">✂ Disable FX</button>
                     <button class="tab-btn" data-tab="savecomp">💾 Save Comp</button>
+                </div>
+                <!-- FREE Tabs Nav -->
+                <div class="tabs-nav free-only">
+                    <button class="tab-btn active" data-tab="workflow">⚡ Easy Workflow</button>
+                    <button class="tab-btn" data-tab="free-srt">📄 SRT Tools</button>
+                    <button class="tab-btn" data-tab="free-layers">📌 Layer Creation</button>
                 </div>
                 <div class="tabs-content">
                     <!-- WORKFLOW TAB -->
@@ -968,6 +1256,78 @@
                             </ul>
                         </div>
                     </div>
+                    <!-- FREE: SRT TOOLS TAB -->
+                    <div class="tab-panel free-only" id="tab-free-srt">
+                        <div class="tab-info">
+                            <h3>📄 SRT Tools</h3>
+                            <p>Import and manage subtitle files directly within After Effects. The built-in SRT editor
+                                lets you modify timings and text without leaving the application.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">📥</span>
+                                    <div>
+                                        <strong>IMPORT SRT</strong>
+                                        <span>Load .srt subtitle files and automatically create text layers with proper
+                                            timing</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">✏️</span>
+                                    <div>
+                                        <strong>EDIT SRT</strong>
+                                        <span>Modify subtitle text and timecodes with the built-in editor</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">⏱️</span>
+                                    <div>
+                                        <strong>AUTO TIMING</strong>
+                                        <span>Subtitle layers are automatically positioned on the timeline based on SRT
+                                            timestamps</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- FREE: LAYER CREATION TAB -->
+                    <div class="tab-panel free-only" id="tab-free-layers">
+                        <div class="tab-info">
+                            <h3>📌 Layer Creation</h3>
+                            <p>Create any layer type with a single click. 15+ layer presets including effects layers for
+                                instant creative workflows.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🎨</span>
+                                    <div>
+                                        <strong>BASIC LAYERS</strong>
+                                        <span>SOL, NUL, CAM, TEXT — create any standard AE layer instantly</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">✨</span>
+                                    <div>
+                                        <strong>EFFECT LAYERS</strong>
+                                        <span>GLOW, FILL, TINT, BLUR, LUM — adjustment layers with effects
+                                            pre-applied</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔧</span>
+                                    <div>
+                                        <strong>UTILITY LAYERS</strong>
+                                        <span>ADJ, MIRROR, GRAMP, FIT, Bounce — specialized workflow layers</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔤</span>
+                                    <div>
+                                        <strong>CAPITALIZE</strong>
+                                        <span>Instantly capitalize all selected text layers</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -980,7 +1340,7 @@
                 <span class="section-tag">HOW IT WORKS</span>
                 <h2 class="section-title">Up and Running<br><span class="gradient-text">In Under 2 Minutes</span></h2>
             </div>
-            <div class="steps-grid">
+            <div class="steps-grid pro-only">
                 <div class="step-card reveal" data-delay="0">
                     <div class="step-number">01</div>
                     <div class="step-line"></div>
@@ -1009,18 +1369,53 @@
                         never be the same.</p>
                 </div>
             </div>
+            <div class="steps-grid free-only">
+                <div class="step-card reveal" data-delay="0">
+                    <div class="step-number">01</div>
+                    <div class="step-line"></div>
+                    <h3>Download the Script</h3>
+                    <p>Download the .jsx script file. No installer needed — it's a single lightweight file.</p>
+                </div>
+                <div class="step-card reveal" data-delay="150">
+                    <div class="step-number">02</div>
+                    <div class="step-line"></div>
+                    <h3>Place in Scripts Folder</h3>
+                    <p>Copy the .jsx file to your After Effects Scripts > ScriptUI Panels folder.</p>
+                </div>
+                <div class="step-card reveal" data-delay="300">
+                    <div class="step-number">03</div>
+                    <div class="step-line"></div>
+                    <h3>Run the Script</h3>
+                    <p>Go to Window → Easy Workflow. The panel docks right into your workspace — ready to use.</p>
+                </div>
+                <div class="step-card reveal" data-delay="450">
+                    <div class="step-number">04</div>
+                    <div class="step-line"></div>
+                    <h3>Start Creating</h3>
+                    <p>All 6 panels are ready. Align, precomp, create layers, import SRT — everything in one panel.</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- PRICING -->
     <section class="pricing" id="pricing">
         <div class="container">
-            <div class="section-header reveal">
+            <!-- PRO Pricing Header -->
+            <div class="section-header reveal pro-only">
                 <span class="section-tag">PRICING</span>
                 <h2 class="section-title">Start Free.<br><span class="gradient-text">Go Unlimited.</span></h2>
                 <p class="section-subtitle">No subscriptions. No hidden fees. One price, lifetime access.</p>
             </div>
-            <div class="pricing-grid">
+            <!-- FREE Pricing Header -->
+            <div class="section-header reveal free-only">
+                <span class="section-tag">DOWNLOAD</span>
+                <h2 class="section-title">Completely Free.<br><span class="gradient-text">No Strings Attached.</span>
+                </h2>
+                <p class="section-subtitle">Download the script and start using it immediately. No account, no signup.
+                </p>
+            </div>
+            <div class="pricing-grid pro-only">
                 <div class="price-card reveal" data-delay="0">
                     <div class="price-header">
                         <h3>Free</h3>
@@ -1163,6 +1558,83 @@
                     <span class="price-note">Instant download • Lifetime access</span>
                 </div>
             </div>
+            <!-- FREE Pricing Grid -->
+            <div class="pricing-grid free-only">
+                <div class="price-card price-card-pro reveal" data-delay="0" style="max-width: 480px; margin: 0 auto;">
+                    <div class="price-badge">100% FREE</div>
+                    <div class="price-header">
+                        <h3>Easy Workflow Script</h3>
+                        <div class="price-amount">
+                            <span class="price-currency">₹</span>
+                            <span class="price-value">0</span>
+                        </div>
+                        <span class="price-period">Free forever — no limits</span>
+                    </div>
+                    <ul class="price-features">
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Layer Alignment (6 directions)
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Anchor Point Mover (9-point)
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Number Counter
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Precomp & Center Transform
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            SRT Import & Editor
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            15+ Layer Creation presets
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Windows & macOS
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            No signup required
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-primary btn-block btn-glow" id="btn-free-download">Download Free
+                        Script</a>
+                    <span class="price-note">Want more power? <a href="#"
+                            onclick="document.querySelector('[data-version=pro]').click()"
+                            style="color:#10b981;text-decoration:underline">Check out Pro</a></span>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -1292,12 +1764,22 @@
         <div class="container">
             <div class="cta-card reveal">
                 <div class="cta-glow"></div>
-                <h2>Ready to Supercharge<br>Your <span class="gradient-text">After Effects</span> Workflow?</h2>
-                <p>Join thousands of motion designers, editors, and creators who work smarter with Easy Workflow Pro.
+                <!-- PRO CTA -->
+                <h2 class="pro-only">Ready to Supercharge<br>Your <span class="gradient-text">After Effects</span>
+                    Workflow?</h2>
+                <p class="pro-only">Join thousands of motion designers, editors, and creators who work smarter with Easy
+                    Workflow Pro.
                 </p>
+                <!-- FREE CTA -->
+                <h2 class="free-only">Start Creating Faster<br>With <span class="gradient-text">Easy Workflow</span>
+                </h2>
+                <p class="free-only">Download the free script and join thousands of creators who've already sped up
+                    their After Effects workflow.</p>
                 <div class="cta-buttons">
-                    <a href="#pricing" class="btn btn-primary btn-lg">Get Pro — ₹1500</a>
-                    <a href="#pricing" class="btn btn-outline btn-lg">Try Free</a>
+                    <a href="#pricing" class="btn btn-primary btn-lg pro-only">Get Pro — ₹1500</a>
+                    <a href="#pricing" class="btn btn-outline btn-lg pro-only">Try Free</a>
+                    <a href="#pricing" class="btn btn-primary btn-lg free-only">Download Free Script</a>
+                    <a href="#pricing" class="btn btn-outline btn-lg free-only">See Pro Version</a>
                 </div>
             </div>
         </div>
@@ -1310,7 +1792,7 @@
                 <div class="footer-brand">
                     <a href="#hero" class="nav-logo">
                         <span class="logo-icon">⚡</span>
-                        <span class="logo-text">Easy Workflow <span class="logo-pro">Pro</span></span>
+                        <span class="logo-text">Easy Workflow <span class="logo-pro pro-only">Pro</span></span>
                     </a>
                     <p>The ultimate After Effects extension for motion designers and editors. 7 tools, one panel,
                         infinite time saved.</p>

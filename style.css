@@ -2639,3 +2639,260 @@ img {
     transform: scaleX(0);
     transition: transform 0.1s linear;
 }
+
+/* ===== FREE / PRO VERSION TOGGLE ===== */
+
+/* --- Toggle Pill Container --- */
+.version-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 20px;
+}
+
+.toggle-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 3px;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    user-select: none;
+    overflow: hidden;
+}
+
+.toggle-pill:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+}
+
+.toggle-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(6, 182, 212, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.toggle-pill:hover::before {
+    opacity: 1;
+}
+
+/* Toggle options */
+.toggle-option {
+    position: relative;
+    z-index: 2;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: 50px;
+    transition: color 0.35s ease;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.toggle-option.active {
+    color: #fff;
+}
+
+/* Sliding indicator */
+.toggle-indicator {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 50px;
+    transition: left 0.45s cubic-bezier(0.68, -0.15, 0.265, 1.35),
+        width 0.45s cubic-bezier(0.68, -0.15, 0.265, 1.35),
+        background 0.45s ease,
+        box-shadow 0.45s ease;
+    z-index: 1;
+}
+
+/* Pro active (default) */
+body[data-version="pro"] .toggle-indicator {
+    background: linear-gradient(135deg, var(--purple), #9333ea);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.5), 0 0 30px rgba(124, 58, 237, 0.15);
+}
+
+/* Free active */
+body[data-version="free"] .toggle-indicator {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.5), 0 0 30px rgba(16, 185, 129, 0.15);
+}
+
+/* Glow trail on hover */
+.toggle-pill:active .toggle-indicator {
+    filter: brightness(1.2);
+}
+
+/* --- Version Visibility Rules --- */
+body[data-version="pro"] .free-only {
+    display: none !important;
+}
+
+body[data-version="free"] .pro-only {
+    display: none !important;
+}
+
+/* --- Version Transition Animation (Unique 3D Style) --- */
+.version-transitioning .hero-content,
+.version-transitioning .hero-mockup,
+.version-transitioning .features-grid,
+.version-transitioning .tabs-container,
+.version-transitioning .pricing-grid,
+.version-transitioning .faq-list,
+.version-transitioning .cta-card,
+.version-transitioning .proof-strip {
+    transform-style: preserve-3d;
+    animation: version3DOut 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+
+.version-entering .hero-content,
+.version-entering .hero-mockup,
+.version-entering .features-grid,
+.version-entering .tabs-container,
+.version-entering .pricing-grid,
+.version-entering .faq-list,
+.version-entering .cta-card,
+.version-entering .proof-strip {
+    transform-style: preserve-3d;
+    animation: version3DIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes version3DOut {
+    0% {
+        opacity: 1;
+        transform: perspective(1500px) rotateY(0deg) scale(1);
+        filter: blur(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: perspective(1500px) rotateY(-90deg) scale(0.85);
+        filter: blur(10px);
+    }
+}
+
+@keyframes version3DIn {
+    0% {
+        opacity: 0;
+        transform: perspective(1500px) rotateY(90deg) scale(0.85);
+        filter: blur(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: perspective(1500px) rotateY(0deg) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* --- Free Version Accent Color Overrides --- */
+body[data-version="free"] .gradient-text {
+    background: linear-gradient(135deg, #10b981, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body[data-version="free"] .gradient-text-animated {
+    background: linear-gradient(90deg, #10b981, #06b6d4, #22d3ee, #10b981);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShimmer 4s ease-in-out infinite;
+}
+
+body[data-version="free"] .btn-primary {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+body[data-version="free"] .btn-primary:hover {
+    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+    transform: translateY(-2px);
+}
+
+body[data-version="free"] .hero-glow-1 {
+    background: #10b981;
+}
+
+body[data-version="free"] .hero-glow-2 {
+    background: #06b6d4;
+}
+
+body[data-version="free"] .badge-dot {
+    background: #10b981;
+}
+
+body[data-version="free"] .section-tag {
+    color: #10b981;
+}
+
+body[data-version="free"] .mockup-tab.active {
+    background: #10b981;
+}
+
+body[data-version="free"] .feature-icon {
+    --icon-color: #10b981 !important;
+}
+
+body[data-version="free"] .tab-btn.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+}
+
+body[data-version="free"] .price-card-pro {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+body[data-version="free"] .price-card-pro .price-badge {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+}
+
+body[data-version="free"] .scroll-progress {
+    background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+body[data-version="free"] .mockup-glow {
+    background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.15), transparent 70%);
+}
+
+body[data-version="free"] .mockup-window {
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.1);
+}
+
+body[data-version="free"] .nav-logo {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* --- Free version mockup single-panel height --- */
+body[data-version="free"] .mockup-tabs {
+    justify-content: center;
+}
+
+/* --- Toggle responsive --- */
+@media (max-width: 768px) {
+    .version-toggle {
+        margin-left: 0;
+        margin-bottom: 12px;
+    }
+
+    .toggle-option {
+        padding: 5px 14px;
+        font-size: 12px;
+    }
+}
