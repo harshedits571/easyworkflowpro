@@ -38,9 +38,9 @@
     --container-width: 1200px;
 
     /* Transitions */
-    --transition-fast: 0.2s ease;
-    --transition-base: 0.3s ease;
-    --transition-slow: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-base: 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-slow: 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
@@ -109,7 +109,7 @@ img {
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
 }
 
@@ -122,7 +122,7 @@ img {
 .btn-outline:hover {
     background: rgba(124, 58, 237, 0.1);
     border-color: var(--purple);
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
 }
 
 .btn-ghost {
@@ -164,9 +164,9 @@ img {
 /* ===== REVEAL ANIMATIONS ===== */
 .reveal {
     opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(50px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal.visible {
@@ -177,23 +177,23 @@ img {
 /* Reveal variants */
 .reveal-left {
     opacity: 0;
-    transform: translateX(-60px);
-    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(-70px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal-right {
     opacity: 0;
-    transform: translateX(60px);
-    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(70px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal-scale {
     opacity: 0;
-    transform: scale(0.85);
-    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(0.9);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal-left.visible,
@@ -758,7 +758,7 @@ body[data-version="free"] .mockup-panel.active {
     background: rgba(124, 58, 237, 0.15);
     border-color: rgba(124, 58, 237, 0.3);
     color: var(--text-primary);
-    transform: scale(1.08);
+    transform: translateY(-1px) scale(1.05);
 }
 
 .mockup-buttons span.btn-sm {
@@ -920,7 +920,7 @@ body[data-version="free"] .mockup-panel.active {
 }
 
 .ew-btn:hover {
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.03);
     border-color: rgba(138, 43, 226, 0.5);
     box-shadow: 0 3px 10px rgba(138, 43, 226, 0.15);
 }
@@ -1721,22 +1721,22 @@ body[data-version="free"] .mockup-panel.active {
 
 .tab-panel {
     display: none;
-    animation: fadeInTab 0.4s ease;
 }
 
 .tab-panel.active {
     display: block;
+    animation: tabEnter 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-@keyframes fadeInTab {
+@keyframes tabEnter {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(10px) scale(0.98);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -1881,6 +1881,8 @@ body[data-version="free"] .mockup-panel.active {
 
 .price-card:hover {
     border-color: var(--border-hover);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .price-card-pro {
@@ -1890,7 +1892,8 @@ body[data-version="free"] .mockup-panel.active {
 
 .price-card-pro:hover {
     border-color: var(--purple-light);
-    box-shadow: 0 0 60px rgba(124, 58, 237, 0.15);
+    box-shadow: 0 10px 60px rgba(124, 58, 237, 0.2);
+    transform: translateY(-5px) scale(1.02);
 }
 
 .price-badge {
