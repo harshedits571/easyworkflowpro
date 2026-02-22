@@ -481,8 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="upi-details" style="display:none;margin-top:24px;text-align:left;animation:panelFadeIn 0.3s ease;">
             <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:24px;">
             <div style="text-align:center;margin-bottom:20px;">
-                <!-- Replace src with actual QR Code later -->
-                <div style="width:150px;height:150px;background:white;margin:0 auto 12px auto;border-radius:8px;display:flex;justify-content:center;align-items:center;color:black;font-size:12px;">[Your QR Code Here]</div>
+                <div style="width:150px;height:150px;background:white;margin:0 auto 12px auto;border-radius:8px;display:flex;justify-content:center;align-items:center;color:black;font-size:12px;overflow:hidden;">
+                    <img src="qr-code.png" alt="PhonePe QR Code" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
+                </div>
                 <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong>₹1500</strong></p>
             </div>
             
