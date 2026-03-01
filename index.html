@@ -4,11 +4,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ===== PRIMARY SEO TAGS ===== -->
     <title>Easy Workflow Pro — After Effects Extension | Supercharge Your AE Workflow</title>
     <meta name="description"
-        content="Easy Workflow Pro: The ultimate After Effects extension. Align, precomp, shape tools, font replacer, FX manager & more. 7 powerful tabs in one extension.">
+        content="Easy Workflow Pro is the ultimate After Effects extension for motion designers. Get 7 powerful tools — alignment, font replacer, shape tools, FX manager, save comp & more — in one panel. One-time payment, lifetime access.">
     <meta name="keywords"
-        content="After Effects, extension, workflow, motion graphics, AE tools, font replacer, shape tools, precomp, alignment">
+        content="After Effects extension, AE workflow, motion graphics tools, font replacer After Effects, align layers After Effects, shape tools AE, FX manager, precomp tool, Easy Workflow Pro">
+    <meta name="author" content="Easy Workflow Pro">
+    <meta name="robots" content="index, follow">
+
+    <!-- ===== CANONICAL URL ===== -->
+    <link rel="canonical" href="https://easyworkflow.store/">
+
+    <!-- ===== OPEN GRAPH (Facebook, WhatsApp, LinkedIn previews) ===== -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Easy Workflow Pro — The Ultimate After Effects Extension">
+    <meta property="og:description"
+        content="7 powerful After Effects tools in one panel. Align, font replace, shape tools, FX manager & more. One-time payment. Lifetime access.">
+    <meta property="og:url" content="https://easyworkflow.store/">
+    <meta property="og:site_name" content="Easy Workflow Pro">
+    <meta property="og:image" content="https://easyworkflow.store/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- ===== TWITTER / X CARD ===== -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Easy Workflow Pro — After Effects Extension">
+    <meta name="twitter:description" content="7 powerful AE tools in one panel. One-time payment. Lifetime access.">
+    <meta name="twitter:image" content="https://easyworkflow.store/og-image.png">
+
+    <!-- ===== THEME COLOR (browser bar color on mobile) ===== -->
+    <meta name="theme-color" content="#0a0a0f">
+
+    <!-- ===== STRUCTURED DATA — Google Rich Results ===== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Easy Workflow Pro",
+      "applicationCategory": "DesignApplication",
+      "operatingSystem": "Windows, macOS",
+      "description": "The ultimate After Effects extension with 7 powerful tools: alignment, font replacer, shape tools, FX manager, save comp, precomp, and layer creation — all in one panel.",
+      "url": "https://easyworkflow.store/",
+      "author": {
+        "@type": "Person",
+        "name": "Harsh"
+      },
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Basic",
+          "price": "100",
+          "priceCurrency": "INR",
+          "availability": "https://schema.org/InStock"
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro",
+          "price": "1500",
+          "priceCurrency": "INR",
+          "availability": "https://schema.org/InStock"
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "50"
+      }
+    }
+    </script>
+
+    <!-- ===== FONTS & STYLES ===== -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -41,14 +109,14 @@
             <div class="version-toggle">
                 <div class="toggle-pill" id="versionToggle">
                     <span class="toggle-indicator" id="toggleIndicator"></span>
-                    <span class="toggle-option" data-version="free">Free</span>
+                    <span class="toggle-option" data-version="free">Basic</span>
                     <span class="toggle-option active" data-version="pro">Pro</span>
                 </div>
             </div>
             <div class="nav-actions">
-                <a href="#pricing" class="btn btn-ghost pro-only">Try Free</a>
+                <a href="#pricing" class="btn btn-ghost pro-only">Get Basic</a>
                 <a href="#pricing" class="btn btn-primary pro-only">Get Pro</a>
-                <a href="#pricing" class="btn btn-primary free-only">Download Free</a>
+                <a href="#pricing" class="btn btn-primary free-only btn-pay" data-tier="basic">Get Basic</a>
             </div>
             <button class="hamburger" id="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -92,7 +160,7 @@
             <!-- FREE Subtitle -->
             <p class="hero-subtitle reveal free-only">
                 6 essential tools in one lightweight script — Align, Anchor, Number Counter,
-                Precomp, SRT Tools & Layer Creation. Free forever, no limits.
+                Precomp, SRT Tools & Layer Creation. Just ₹100, no limits.
             </p>
             <!-- PRO CTAs -->
             <div class="hero-ctas reveal pro-only">
@@ -102,12 +170,12 @@
                         <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
                 </a>
-                <a href="#pricing" class="btn btn-outline btn-lg">Download Free</a>
+                <a href="#pricing" class="btn btn-outline btn-lg">Get Basic</a>
             </div>
             <!-- FREE CTAs -->
             <div class="hero-ctas reveal free-only">
-                <a href="#pricing" class="btn btn-primary btn-lg">
-                    <span>Download Free Script</span>
+                <a href="#" class="btn btn-primary btn-lg btn-pay" data-tier="basic">
+                    <span>Get Basic Script</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="7 10 12 15 17 10" />
@@ -1431,12 +1499,12 @@
             <div class="pricing-grid pro-only">
                 <div class="price-card reveal" data-delay="0">
                     <div class="price-header">
-                        <h3>Free</h3>
+                        <h3>Basic</h3>
                         <div class="price-amount">
                             <span class="price-currency">₹</span>
-                            <span class="price-value">0</span>
+                            <span class="price-value">100</span>
                         </div>
-                        <span class="price-period">Free forever</span>
+                        <span class="price-period">One-time payment</span>
                     </div>
                     <ul class="price-features">
                         <li class="included">
@@ -1497,8 +1565,8 @@
                         </li>
                     </ul>
                     <a href="#" onclick="document.querySelector('[data-version=free]').click(); return false;"
-                        class="btn btn-outline btn-block" id="btn-free">Download Free</a>
-                    <span class="price-note">No credit card required</span>
+                        class="btn btn-outline btn-block" id="btn-free">Get Basic</a>
+                    <span class="price-note">Just ₹100 for lifetime access</span>
                 </div>
                 <div class="price-card price-card-pro reveal" data-delay="200">
                     <div class="price-badge">MOST POPULAR</div>
@@ -1516,7 +1584,7 @@
                                 stroke-width="2.5">
                                 <polyline points="20 6 9 17 4 12" />
                             </svg>
-                            <strong>Everything in Free, plus:</strong>
+                            <strong>Everything in Basic, plus:</strong>
                         </li>
                         <li class="included">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
@@ -1572,17 +1640,17 @@
                     <span class="price-note">Instant download • Lifetime access</span>
                 </div>
             </div>
-            <!-- FREE Pricing Grid -->
+            <!-- BASIC Pricing Grid -->
             <div class="pricing-grid free-only">
                 <div class="price-card price-card-pro reveal" data-delay="0" style="max-width: 480px; margin: 0 auto;">
-                    <div class="price-badge">100% FREE</div>
+                    <div class="price-badge">JUST ₹100</div>
                     <div class="price-header">
-                        <h3>Easy Workflow Script</h3>
+                        <h3>Easy Workflow Basic</h3>
                         <div class="price-amount">
                             <span class="price-currency">₹</span>
-                            <span class="price-value">0</span>
+                            <span class="price-value">100</span>
                         </div>
-                        <span class="price-period">Free forever — no limits</span>
+                        <span class="price-period">One-time payment • Lifetime access</span>
                     </div>
                     <ul class="price-features">
                         <li class="included">
@@ -1642,9 +1710,8 @@
                             No signup required
                         </li>
                     </ul>
-                    <a href="https://harshedits55.gumroad.com/l/Easyworkflow" target="_blank"
-                        class="btn btn-primary btn-block btn-glow" id="btn-free-download">Download Free
-                        Script</a>
+                    <a href="#" class="btn btn-primary btn-block btn-glow btn-pay" data-tier="basic">Get Basic —
+                        ₹100</a>
                     <span class="price-note">Want more power? <a href="#"
                             onclick="document.querySelector('[data-version=pro]').click()"
                             style="color:#10b981;text-decoration:underline">Check out Pro</a></span>
@@ -1663,16 +1730,17 @@
             <div class="faq-list reveal">
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>Is the free version really free?</span>
+                        <span>Is there a free version available?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Yes! The free version includes all core workflow tools — alignment, anchor control, layer
-                            creation, and basic shape tools. No watermarks, no time limits, no signup required. Upgrade
-                            to Pro only if you need advanced features like Font Replacer, Save Comp, and Disable FX.</p>
+                        <p>We've phased out the completely free version to focus on making the tools exceptionally
+                            reliable. However, you can grab the Basic tier for just ₹100 (a one-time payment) which
+                            includes all core workflow tools — alignment, anchor control, layer
+                            creation, and basic shape tools forever!</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -1698,7 +1766,7 @@
                     </button>
                     <div class="faq-answer">
                         <p>One-time payment of ₹1500 for the Pro version. You get lifetime access and all future updates
-                            at no additional cost. The free version requires no payment at all.</p>
+                            at no additional cost. The Basic version is just ₹100, which is also a one-time payment.</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -1711,7 +1779,7 @@
                     </button>
                     <div class="faq-answer">
                         <p>Each Pro license is tied to one device at a time. You can transfer your license to a new
-                            device anytime — the previous device will be automatically logged out. The free version
+                            device anytime — the previous device will be automatically logged out. The Basic version
                             works on unlimited devices.</p>
                     </div>
                 </div>
@@ -1753,7 +1821,7 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Yes! All Pro users get free lifetime updates. When we add new features or improvements,
+                        <p>Yes! All Pro users get lifetime updates. When we add new features or improvements,
                             you'll receive them at no extra cost.</p>
                     </div>
                 </div>
@@ -1766,7 +1834,8 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Pro users get priority email support. Free users can reach out to us via our social channels.
+                        <p>Pro users get priority email support. Basic users can reach out to us via our social
+                            channels.
                             We typically respond within 24 hours.</p>
                     </div>
                 </div>
@@ -1788,12 +1857,12 @@
                 <!-- FREE CTA -->
                 <h2 class="free-only">Start Creating Faster<br>With <span class="gradient-text">Easy Workflow</span>
                 </h2>
-                <p class="free-only">Download the free script and join thousands of creators who've already sped up
+                <p class="free-only">Get the Basic script and join thousands of creators who've already sped up
                     their After Effects workflow.</p>
                 <div class="cta-buttons">
                     <a href="#pricing" class="btn btn-primary btn-lg pro-only">Get Pro — ₹1500</a>
-                    <a href="#pricing" class="btn btn-outline btn-lg pro-only">Try Free</a>
-                    <a href="#pricing" class="btn btn-primary btn-lg free-only">Download Free Script</a>
+                    <a href="#pricing" class="btn btn-outline btn-lg pro-only">Get Basic</a>
+                    <a href="#" class="btn btn-primary btn-lg free-only btn-pay" data-tier="basic">Get Basic Script</a>
                     <a href="#pricing" class="btn btn-outline btn-lg free-only">See Pro Version</a>
                 </div>
             </div>

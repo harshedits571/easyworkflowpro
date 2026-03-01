@@ -1,5 +1,165 @@
 /* ===== Easy Workflow Pro — Main JavaScript ===== */
 
+// ===== GEO-BASED CURRENCY DETECTION =====
+// Pricing config: Indian users see INR, everyone else sees USD
+const PRICING = {
+    IN: {
+        currency: 'INR',
+        symbol: '₹',
+        basic: { amount: 100, label: '₹100', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - ₹100' },
+        pro: { amount: 1500, label: '₹1500', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹1500' },
+        showUPI: true,
+        badge: '🇮🇳 Prices in INR'
+    },
+    US: {
+        currency: 'USD',
+        symbol: '$',
+        basic: { amount: 2, label: '$2', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - $2' },
+        pro: { amount: 18, label: '$18', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $18' },
+        showUPI: false,
+        badge: '🌍 Prices in USD'
+    }
+};
+
+// Detected region config — defaults to IN until API call completes
+window.pricingRegion = PRICING.IN;
+
+function applyPricingToPage(region) {
+    const p = region;
+    const sym = p.symbol;
+    const basicAmt = p.basic.amount;
+    const proAmt = p.pro.amount;
+
+    // --- Pricing section currencies and values ---
+    // Price currency symbols
+    document.querySelectorAll('.price-currency').forEach(el => { el.textContent = sym; });
+
+    // Price values — update based on sibling label context
+    document.querySelectorAll('.price-card').forEach(card => {
+        const titleEl = card.querySelector('h3');
+        const valueEl = card.querySelector('.price-value');
+        const noteEl = card.querySelector('.price-note');
+        const btnBlock = card.querySelector('.btn-block');
+        if (!titleEl || !valueEl) return;
+
+        const isProCard = titleEl.textContent.trim().toLowerCase().includes('pro');
+
+        if (isProCard) {
+            valueEl.textContent = proAmt;
+            // Update inline CTA button text
+            if (btnBlock && btnBlock.id === 'btn-pro') {
+                btnBlock.textContent = `Get Pro — ${p.pro.label}`;
+            }
+        } else {
+            valueEl.textContent = basicAmt;
+            // Update note text
+            if (noteEl && noteEl.textContent.includes('100') || noteEl && noteEl.textContent.includes('2')) {
+                noteEl.innerHTML = `Just ${p.basic.label} for lifetime access`;
+            }
+            // Update Basic card button
+            if (btnBlock && (btnBlock.dataset.tier === 'basic' || btnBlock.id === 'btn-free')) {
+                const isPayBtn = btnBlock.classList.contains('btn-pay');
+                if (isPayBtn) btnBlock.textContent = `Get Basic — ${p.basic.label}`;
+            }
+        }
+    });
+
+    // Price badge on free version card ("JUST ₹100" / "JUST $2")
+    document.querySelectorAll('.price-badge').forEach(badge => {
+        if (badge.textContent.includes('POPULAR')) return; // skip "MOST POPULAR"
+        badge.textContent = `JUST ${p.basic.label}`;
+    });
+
+    // --- CTA section buttons ---
+    document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only').forEach(btn => {
+        btn.textContent = `Get Pro — ${p.pro.label}`;
+    });
+    document.querySelectorAll('.btn-pay').forEach(btn => {
+        btn.textContent = `Get Basic Script — ${p.basic.label}`;
+    });
+
+    // Inline text notes
+    document.querySelectorAll('.price-note').forEach(note => {
+        if (note.querySelector('a')) return; // skip notes with links
+        if (note.textContent.includes('Just') || note.textContent.includes('Instant')) {
+            if (note.closest('.price-card-pro')) {
+                note.innerHTML = `Instant download • Lifetime access`;
+            }
+        }
+    });
+
+    // --- FAQ text updates ---
+    document.querySelectorAll('.faq-answer p').forEach(p_el => {
+        // Replace INR mentions with correct currency
+        if (p.currency === 'USD') {
+            p_el.innerHTML = p_el.innerHTML
+                .replace(/₹100/g, '$2')
+                .replace(/₹1[,.]?500/g, '$18')
+                .replace(/₹1500/g, '$18');
+        }
+    });
+
+    // --- Currency badge in pricing header ---
+    // Inject or update a small badge showing which currency is active
+    let badge = document.getElementById('currency-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'currency-badge';
+        badge.style.cssText = [
+            'display:inline-flex', 'align-items:center', 'gap:6px',
+            'background:rgba(255,255,255,0.06)', 'border:1px solid rgba(255,255,255,0.12)',
+            'border-radius:20px', 'padding:4px 14px', 'font-size:12px',
+            'color:var(--text-secondary)', 'margin-top:12px', 'letter-spacing:0.03em'
+        ].join(';');
+        // Append after each pricing section-header subtitle
+        document.querySelectorAll('.pricing .section-subtitle').forEach(subtitle => {
+            const clone = badge.cloneNode(true);
+            clone.textContent = p.badge;
+            subtitle.insertAdjacentElement('afterend', clone);
+        });
+    } else {
+        document.querySelectorAll('#currency-badge').forEach(b => { b.textContent = p.badge; });
+    }
+}
+
+async function detectAndApplyCurrency() {
+    // ---- URL OVERRIDE FOR TESTING ----
+    // Add ?currency=usd or ?currency=inr to the URL to force a currency
+    const urlParam = new URLSearchParams(window.location.search).get('currency');
+    if (urlParam === 'usd') {
+        window.pricingRegion = PRICING.US;
+        applyPricingToPage(window.pricingRegion);
+        return;
+    }
+    if (urlParam === 'inr') {
+        window.pricingRegion = PRICING.IN;
+        applyPricingToPage(window.pricingRegion);
+        return;
+    }
+    // ----------------------------------
+
+    try {
+        const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+        if (!response.ok) throw new Error('API error');
+        const data = await response.json();
+        const isIndia = data.country_code === 'IN';
+        window.pricingRegion = isIndia ? PRICING.IN : PRICING.US;
+    } catch (err) {
+        // On failure keep default (INR) — protects Indian users
+        window.pricingRegion = PRICING.IN;
+    }
+    applyPricingToPage(window.pricingRegion);
+}
+
+// Run geo-detection immediately (before DOM ready, catches early elements)
+detectAndApplyCurrency();
+
+// Re-apply after DOM is fully ready to catch elements rendered after script runs
+document.addEventListener('DOMContentLoaded', () => {
+    // Small delay to let the page fully paint before re-applying
+    setTimeout(() => applyPricingToPage(window.pricingRegion), 100);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // ===== LENIS SMOOTH SCROLL =====
@@ -452,12 +612,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal Content
     modalBox.innerHTML = `
         <button id="close-modal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;line-height:1;">&times;</button>
-        <h2 style="font-family:var(--font-heading);color:white;margin-bottom:8px;font-size:24px;">Upgrade to Pro</h2>
+        <h2 id="modal-title" style="font-family:var(--font-heading);color:white;margin-bottom:8px;font-size:24px;">Upgrade to Pro</h2>
         <p style="color:var(--text-secondary);margin-bottom:24px;font-size:14px;">Choose your preferred payment method. After UPI payment, you will receive a 100% discount Gumroad link.</p>
         
         <div style="display:flex;flex-direction:column;gap:16px;">
             <!-- Gumroad Option -->
-            <a href="https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n" target="_blank" style="text-decoration:none;">
+            <a id="gumroad-link" href="https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n" target="_blank" style="text-decoration:none;">
                 <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;transition:all 0.2s ease;cursor:pointer;" onmouseover="this.style.background='rgba(124,58,237,0.1)';this.style.borderColor='var(--purple)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)';">
                     <div style="width:40px;height:40px;background:#ff90e8;border-radius:8px;display:flex;justify-content:center;align-items:center;font-weight:bold;color:black;">G</div>
                     <div style="text-align:left;">
@@ -484,10 +644,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="width:150px;height:150px;background:white;margin:0 auto 12px auto;border-radius:8px;display:flex;justify-content:center;align-items:center;color:black;font-size:12px;overflow:hidden;">
                     <img src="qr-code.png" alt="PhonePe QR Code" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
                 </div>
-                <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong>₹1500</strong></p>
+                <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong id="upi-price">₹1500</strong></p>
             </div>
             
             <form id="upi-form" action="https://formspree.io/f/mgolnydk" method="POST">
+                <input type="hidden" name="purchased_tier" id="form-tier" value="pro">
                 <div style="margin-bottom:12px;">
                     <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Full Name</label>
                     <input type="text" name="name" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
@@ -513,8 +674,55 @@ document.addEventListener('DOMContentLoaded', () => {
     function openModal(e) {
         if (e) e.preventDefault();
 
-        // Ensure "Pro" version is selected implicitly or by UI context
-        const isPro = document.body.getAttribute('data-version') === 'pro';
+        // Determine if basic or pro was clicked
+        let tier = 'pro';
+        if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'basic') {
+            tier = 'basic';
+        } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'pro') {
+            tier = 'pro';
+        } else {
+            // fallback if called generically, assume current view context
+            tier = document.body.getAttribute('data-version') === 'pro' ? 'pro' : 'basic';
+        }
+
+        // Dynamically update modal content based on the selected tier + detected currency
+        const region = window.pricingRegion || PRICING.IN;
+        const tierConfig = (tier === 'basic') ? region.basic : region.pro;
+
+        if (tier === 'basic') {
+            document.getElementById('modal-title').textContent = 'Get Workflow Basic';
+        } else {
+            document.getElementById('modal-title').textContent = 'Upgrade to Pro';
+        }
+        document.getElementById('gumroad-link').href = tierConfig.gumroadLink;
+        document.getElementById('upi-price').textContent = tierConfig.label;
+        document.getElementById('form-tier').value = tierConfig.formValue;
+
+        // Update the modal sub-description based on region
+        const modalDesc = modalBox.querySelector('p');
+        if (modalDesc) {
+            if (region.showUPI) {
+                modalDesc.textContent = 'Choose your preferred payment method. After UPI payment, you will receive a 100% discount Gumroad link.';
+            } else {
+                modalDesc.textContent = 'Click below to complete your purchase securely via Gumroad. Instant download after payment.';
+            }
+        }
+
+        // Show/Hide UPI option based on region
+        const upiOptionEl = document.getElementById('upi-option');
+        const upiDetailsEl = document.getElementById('upi-details');
+        if (upiOptionEl) {
+            upiOptionEl.style.display = region.showUPI ? 'flex' : 'none';
+        }
+        if (!region.showUPI && upiDetailsEl) {
+            upiDetailsEl.style.display = 'none';
+        }
+
+        // Update Gumroad button label for non-Indian users
+        const gumroadInnerLabel = modalBox.querySelector('#gumroad-link h3');
+        if (gumroadInnerLabel) {
+            gumroadInnerLabel.textContent = region.showUPI ? 'Pay via Gumroad' : `Pay via Gumroad — ${tierConfig.label}`;
+        }
 
         modalOverlay.style.display = 'flex';
         // Trigger layout reflow
@@ -541,6 +749,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Also attach to navbar Get Pro button
     const navProBtns = document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only');
     navProBtns.forEach(btn => btn.addEventListener('click', openModal));
+
+    // Attach listeners to basic buttons
+    const basicBtns = document.querySelectorAll('.btn-pay');
+    basicBtns.forEach(btn => btn.addEventListener('click', openModal));
 
     // Close listeners
     document.getElementById('close-modal').addEventListener('click', closeModal);
