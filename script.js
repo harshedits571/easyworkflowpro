@@ -22,6 +22,7 @@ const PRICING = {
 };
 
 // Detected region config — defaults to IN until API call completes
+// (site is India-primary; non-Indian users switch to USD once geo-API responds)
 window.pricingRegion = PRICING.IN;
 
 function applyPricingToPage(region) {
@@ -77,6 +78,14 @@ function applyPricingToPage(region) {
     document.querySelectorAll('.btn-pay').forEach(btn => {
         btn.textContent = `Get Basic Script — ${p.basic.label}`;
     });
+
+    // --- Hero section CTA (has an inner <span>, needs separate targeting) ---
+    const heroCTAText = document.getElementById('hero-pro-cta-text');
+    if (heroCTAText) heroCTAText.textContent = `Get Pro — ${p.pro.label}`;
+
+    // --- Hero free subtitle inline price ---
+    const heroBasicInline = document.getElementById('hero-basic-price-inline');
+    if (heroBasicInline) heroBasicInline.textContent = p.basic.label;
 
     // Inline text notes
     document.querySelectorAll('.price-note').forEach(note => {
@@ -138,16 +147,34 @@ async function detectAndApplyCurrency() {
     }
     // ----------------------------------
 
-    try {
-        const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
-        if (!response.ok) throw new Error('API error');
-        const data = await response.json();
-        const isIndia = data.country_code === 'IN';
-        window.pricingRegion = isIndia ? PRICING.IN : PRICING.US;
-    } catch (err) {
-        // On failure keep default (INR) — protects Indian users
+    // Helper: try a single geo API, returns country code string or null
+    async function tryGeoAPI(url, extractor) {
+        try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            if (!res.ok) return null;
+            const data = await res.json();
+            const code = extractor(data);
+            return (typeof code === 'string' && code.length === 2) ? code.toUpperCase() : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Try 4 HTTPS-compatible geo APIs in order — stops as soon as one works
+    // NOTE: ip-api.com was removed — it does NOT support HTTPS on the free tier
+    let countryCode =
+        await tryGeoAPI('https://ipapi.co/json/', d => d.country_code) ||
+        await tryGeoAPI('https://freeipapi.com/api/json', d => d.countryCode) ||
+        await tryGeoAPI('https://api.country.is/', d => d.country) ||
+        await tryGeoAPI('https://ipinfo.io/json', d => d.country);
+
+    if (countryCode) {
+        window.pricingRegion = (countryCode === 'IN') ? PRICING.IN : PRICING.US;
+    } else {
+        // All APIs failed — default to INR (site is India-primary)
         window.pricingRegion = PRICING.IN;
     }
+
     applyPricingToPage(window.pricingRegion);
 }
 
