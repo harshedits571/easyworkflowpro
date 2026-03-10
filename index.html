@@ -367,15 +367,19 @@
                             <div class="ew-section">
                                 <div class="ew-header"><i class="fa-solid fa-align-center"></i> Align</div>
                                 <div class="ew-btn-grid g3">
-                                    <span class="ew-btn c-blue"><i class="fa-solid fa-align-left"></i></span>
-                                    <span class="ew-btn c-blue"><i
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_L"><i
+                                            class="fa-solid fa-align-left"></i></span>
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_CX"><i
                                             class="fa-solid fa-arrows-left-right-to-line"></i></span>
-                                    <span class="ew-btn c-blue"><i class="fa-solid fa-align-right"></i></span>
-                                    <span class="ew-btn c-blue"><i class="fa-solid fa-align-justify"
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_R"><i
+                                            class="fa-solid fa-align-right"></i></span>
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_T"><i
+                                            class="fa-solid fa-align-justify"
                                             style="transform:rotate(-90deg)"></i></span>
-                                    <span class="ew-btn c-blue"><i
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_CY"><i
                                             class="fa-solid fa-arrows-up-down-left-right"></i></span>
-                                    <span class="ew-btn c-blue"><i class="fa-solid fa-align-justify"
+                                    <span class="ew-btn c-blue" data-preview="ALIGN_B"><i
+                                            class="fa-solid fa-align-justify"
                                             style="transform:rotate(90deg)"></i></span>
                                 </div>
                             </div>
@@ -383,51 +387,59 @@
                             <div class="ew-section">
                                 <div class="ew-header"><i class="fa-solid fa-crosshairs"></i> Anchor</div>
                                 <div class="ew-btn-grid g3">
-                                    <span class="ew-btn c-purple">↖</span>
-                                    <span class="ew-btn c-purple">↑</span>
-                                    <span class="ew-btn c-purple">↗</span>
-                                    <span class="ew-btn c-purple">←</span>
-                                    <span class="ew-btn c-purple">•</span>
-                                    <span class="ew-btn c-purple">→</span>
-                                    <span class="ew-btn c-purple">↙</span>
-                                    <span class="ew-btn c-purple">↓</span>
-                                    <span class="ew-btn c-purple">↘</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_TL">↖</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_TC">↑</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_TR">↗</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_ML">←</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_MC">•</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_MR">→</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_BL">↙</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_BC">↓</span>
+                                    <span class="ew-btn c-purple" data-preview="ANCHOR_BR">↘</span>
                                 </div>
                             </div>
                             <!-- COL 3: PRECOMP -->
                             <div class="ew-section">
                                 <div class="ew-header"><i class="fa-solid fa-folder-open"></i> Precomp</div>
                                 <div class="ew-btn-grid g2">
-                                    <span class="ew-btn c-orange">Precomp Tog</span>
-                                    <span class="ew-btn c-orange">Precomp Sep</span>
-                                    <span class="ew-btn c-orange">Unprecomp</span>
-                                    <span class="ew-btn c-green">Organize</span>
+                                    <span class="ew-btn c-orange" data-preview="PRECOMP_TOG">Precomp Tog</span>
+                                    <span class="ew-btn c-orange" data-preview="PRECOMP_SEP">Precomp Sep</span>
+                                    <span class="ew-btn c-orange" data-preview="UNPRECOMP">Unprecomp</span>
+                                    <span class="ew-btn c-green" data-preview="ORGANIZE">Organize</span>
                                 </div>
                             </div>
                             <!-- SPAN 2: PROPERTY CLIPBOARD -->
                             <div class="ew-section ew-col2">
-                                <div class="ew-header"><i class="fa-solid fa-scissors"></i> Property Clipboard</div>
+                                <div class="ew-header" style="justify-content:space-between"><span><i
+                                            class="fa-solid fa-scissors"></i> Property Clipboard</span>
+                                    <span id="clip-clear"
+                                        style="color:rgba(255,255,255,0.3);font-size:7px;cursor:pointer;text-transform:uppercase;font-weight:bold"
+                                        data-preview="CLIP_CLEAR">CLEAR</span>
+                                </div>
                                 <div class="ew-clip-top">
                                     <div class="ew-btn-grid g3" style="flex:1">
-                                        <span class="ew-btn ew-slot active">1</span>
-                                        <span class="ew-btn ew-slot">2</span>
-                                        <span class="ew-btn ew-slot">3</span>
+                                        <span class="ew-btn ew-slot active" id="clip-slot-1"
+                                            data-preview="CLIP_SLOT_1">1</span>
+                                        <span class="ew-btn ew-slot" id="clip-slot-2"
+                                            data-preview="CLIP_SLOT_2">2</span>
+                                        <span class="ew-btn ew-slot" id="clip-slot-3"
+                                            data-preview="CLIP_SLOT_3">3</span>
                                     </div>
                                     <div class="ew-btn-grid g2" style="flex:1">
-                                        <span class="ew-btn c-blue">COPY</span>
-                                        <span class="ew-btn c-purple">PASTE</span>
+                                        <span class="ew-btn c-blue" data-preview="CLIP_COPY">COPY</span>
+                                        <span class="ew-btn c-purple" data-preview="CLIP_PASTE">PASTE</span>
                                     </div>
                                 </div>
                                 <div class="ew-btn-grid g2" style="margin-top:4px">
-                                    <span class="ew-btn c-red">Delete Before</span>
-                                    <span class="ew-btn c-red">Delete After</span>
-                                    <span class="ew-btn c-yellow">Import SRT</span>
-                                    <span class="ew-btn c-cyan">Resize Comp</span>
+                                    <span class="ew-btn c-red" data-preview="DEL_BEFORE">Delete Before</span>
+                                    <span class="ew-btn c-red" data-preview="DEL_AFTER">Delete After</span>
+                                    <span class="ew-btn c-yellow" data-preview="IMPORT_SRT">Import SRT</span>
+                                    <span class="ew-btn c-cyan" data-preview="RESIZE_COMP">Resize Comp</span>
                                 </div>
                                 <div class="ew-explode-row">
-                                    <span class="ew-btn c-orange" style="flex:1"><i class="fa-solid fa-bomb"></i>
-                                        Explode</span>
-                                    <label class="ew-check"><span class="ew-checkbox on">✓</span> Del Orig</label>
+                                    <span class="ew-btn c-orange" style="flex:1" data-preview="TEXT_EXPLODE"><i
+                                            class="fa-solid fa-bomb"></i>
+                                        Explode Text Pro...</span>
                                 </div>
                             </div>
                             <!-- COL 3: NUMBER COUNTER -->
@@ -438,11 +450,16 @@
                                     <span class="ew-input">100</span>
                                 </div>
                                 <div class="ew-input-row">
-                                    <span class="ew-input sm">$</span>
-                                    <span class="ew-input sm">Prefix</span>
-                                    <span class="ew-btn c-green" style="flex:1">Create</span>
+                                    <span class="ew-input sm" style="display:flex;justify-content:space-between">$ <span
+                                            style="opacity:0.4">▾</span></span>
+                                    <span class="ew-input sm" style="display:flex;justify-content:space-between">us
+                                        <span style="opacity:0.4">▾</span></span>
+                                    <span class="ew-input sm" style="display:flex;justify-content:space-between">P <span
+                                            style="opacity:0.4">▾</span></span>
                                 </div>
-                                <div class="ew-header" style="margin-top:6px">Posterize Time</div>
+                                <div class="ew-input-row">
+                                    <span class="ew-btn c-green" style="flex:1" data-preview="NUM_COUNTER">Create</span>
+                                </div>
                                 <div class="ew-input-row">
                                     <span class="ew-input sm">12</span>
                                     <span class="ew-btn c-pink" style="flex:1">Apply poz</span>
@@ -453,26 +470,26 @@
                                 <div class="ew-header"><i class="fa-solid fa-layer-group"></i> Layer Creation & Effects
                                 </div>
                                 <div class="ew-btn-grid g5">
-                                    <span class="ew-btn c-red">SOLID</span>
-                                    <span class="ew-btn c-orange">BOUNCE</span>
-                                    <span class="ew-btn c-yellow">NULL</span>
-                                    <span class="ew-btn c-green">CAMRA</span>
-                                    <span class="ew-btn c-blue">TEXT</span>
-                                    <span class="ew-btn c-purple">GRAMP</span>
-                                    <span class="ew-btn c-blue">FIT</span>
-                                    <span class="ew-btn c-pink">GLOW</span>
-                                    <span class="ew-btn c-cyan">ADJ</span>
-                                    <span class="ew-btn c-cyan">TRIM ↓</span>
-                                    <span class="ew-btn c-red">FILL</span>
-                                    <span class="ew-btn c-yellow">TINT</span>
-                                    <span class="ew-btn c-green">BLUR</span>
-                                    <span class="ew-btn c-purple">LUM</span>
-                                    <span class="ew-btn c-pink">CAPITAL</span>
-                                    <span class="ew-btn c-purple">FX LOCK</span>
-                                    <span class="ew-btn c-orange">STACK</span>
-                                    <span class="ew-btn c-yellow">REM FX</span>
-                                    <span class="ew-btn c-green">TRUE DUP</span>
-                                    <span class="ew-btn c-blue">Seq Layers</span>
+                                    <span class="ew-btn c-red" data-preview="SOLID">SOLID</span>
+                                    <span class="ew-btn c-orange" data-preview="BOUNCE">BOUNCE</span>
+                                    <span class="ew-btn c-yellow" data-preview="NULL">NULL</span>
+                                    <span class="ew-btn c-green" data-preview="CAMERA">CAMERA</span>
+                                    <span class="ew-btn c-blue" data-preview="TEXT">TEXT</span>
+                                    <span class="ew-btn c-purple" data-preview="RAMP">GRAMP</span>
+                                    <span class="ew-btn c-blue" data-preview="FIT">FIT</span>
+                                    <span class="ew-btn c-pink" data-preview="GLOW">GLOW</span>
+                                    <span class="ew-btn c-cyan" data-preview="ADJ">ADJ</span>
+                                    <span class="ew-btn c-cyan" data-preview="TRIM">TRIM ↓</span>
+                                    <span class="ew-btn c-red" data-preview="FILL">FILL</span>
+                                    <span class="ew-btn c-yellow" data-preview="TINT">TINT</span>
+                                    <span class="ew-btn c-green" data-preview="BLUR">BLUR</span>
+                                    <span class="ew-btn c-purple" data-preview="LUM">LUM</span>
+                                    <span class="ew-btn c-pink" data-preview="CAPITAL">CAPITAL</span>
+                                    <span class="ew-btn c-purple" data-preview="FXLOCK">FX LOCK</span>
+                                    <span class="ew-btn c-orange" data-preview="ALIGN">ALIGN ↓</span>
+                                    <span class="ew-btn c-yellow" data-preview="REMOVE_FX">REMOVE FX</span>
+                                    <span class="ew-btn c-green" data-preview="TRUE_DUP">TRUE DUP</span>
+                                    <span class="ew-btn c-blue" data-preview="SEQ_LAYERS">Seq Layers</span>
                                 </div>
                             </div>
                         </div>
@@ -490,12 +507,12 @@
                                     <div style="text-align:center;font-size:10px;color:#888;margin-bottom:6px">Align
                                         Layers to:</div>
                                     <div class="ew-btn-grid g3" style="gap:4px">
-                                        <span class="ew-btn" style="min-width:32px">←</span>
-                                        <span class="ew-btn" style="min-width:32px">◇</span>
-                                        <span class="ew-btn" style="min-width:32px">→</span>
-                                        <span class="ew-btn" style="min-width:32px">↑</span>
-                                        <span class="ew-btn" style="min-width:32px">A</span>
-                                        <span class="ew-btn" style="min-width:32px">↓</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_L">←</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_CX">◇</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_R">→</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_T">↑</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_CY">A</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ALIGN_B">↓</span>
                                     </div>
                                 </fieldset>
                                 <!-- ANCHOR POINT MOVER -->
@@ -503,15 +520,15 @@
                                     style="flex:0;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
                                     <legend style="color:#aaa;font-size:10px;padding:0 4px">Anchor Point Mover</legend>
                                     <div class="ew-btn-grid g3" style="gap:4px;margin-top:14px">
-                                        <span class="ew-btn" style="min-width:32px">↖</span>
-                                        <span class="ew-btn" style="min-width:32px">↑</span>
-                                        <span class="ew-btn" style="min-width:32px">↗</span>
-                                        <span class="ew-btn" style="min-width:32px">←</span>
-                                        <span class="ew-btn" style="min-width:32px">•</span>
-                                        <span class="ew-btn" style="min-width:32px">→</span>
-                                        <span class="ew-btn" style="min-width:32px">↙</span>
-                                        <span class="ew-btn" style="min-width:32px">↓</span>
-                                        <span class="ew-btn" style="min-width:32px">↘</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_TL">↖</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_TC">↑</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_TR">↗</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_ML">←</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_MC">•</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_MR">→</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_BL">↙</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_BC">↓</span>
+                                        <span class="ew-btn" style="min-width:32px" data-preview="ANCHOR_BR">↘</span>
                                     </div>
                                 </fieldset>
                                 <!-- NUMBER COUNTER -->
@@ -538,7 +555,8 @@
                                         <span class="ew-btn" style="flex:1">Posterize</span>
                                     </div>
                                     <div class="ew-input-row" style="margin-top:6px">
-                                        <span class="ew-btn" style="flex:1">Apply Counter</span>
+                                        <span class="ew-btn" style="flex:1" data-preview="NUM_COUNTER">Apply
+                                            Counter</span>
                                     </div>
                                 </fieldset>
                             </div>
@@ -549,15 +567,15 @@
                                 <legend style="color:#aaa;font-size:10px;padding:0 4px">Precomp & Center Transform
                                 </legend>
                                 <div class="ew-btn-grid g2" style="margin-bottom:6px">
-                                    <span class="ew-btn">Precomp Together</span>
-                                    <span class="ew-btn">Precomp Separately</span>
+                                    <span class="ew-btn" data-preview="PRECOMP_TOG">Precomp Together</span>
+                                    <span class="ew-btn" data-preview="PRECOMP_SEP">Precomp Separately</span>
                                 </div>
                                 <div class="ew-btn-grid" style="grid-template-columns: 1fr; margin-bottom:6px">
-                                    <span class="ew-btn">Organize Project Files</span>
+                                    <span class="ew-btn" data-preview="ORGANIZE">Organize Project Files</span>
                                 </div>
                                 <div class="ew-btn-grid" style="grid-template-columns: 1fr 1fr;">
-                                    <span class="ew-btn">Delete Before</span>
-                                    <span class="ew-btn">Delete After</span>
+                                    <span class="ew-btn" data-preview="DEL_BEFORE">Delete Before</span>
+                                    <span class="ew-btn" data-preview="DEL_AFTER">Delete After</span>
                                 </div>
                             </fieldset>
 
@@ -566,7 +584,7 @@
                                 style="border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0 0 12px 0">
                                 <legend style="color:#aaa;font-size:10px;padding:0 4px">SRT Tools</legend>
                                 <div class="ew-btn-grid g2">
-                                    <span class="ew-btn">Import SRT</span>
+                                    <span class="ew-btn" data-preview="IMPORT_SRT">Import SRT</span>
                                     <span class="ew-btn">Edit SRT</span>
                                 </div>
                             </fieldset>
@@ -576,20 +594,20 @@
                                 style="border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;margin:0">
                                 <legend style="color:#aaa;font-size:10px;padding:0 4px">Layer Creation</legend>
                                 <div class="ew-btn-grid g5">
-                                    <span class="ew-btn">SOL</span>
-                                    <span class="ew-btn">Bounce</span>
-                                    <span class="ew-btn">NUL</span>
-                                    <span class="ew-btn">CAM</span>
-                                    <span class="ew-btn">TEXT</span>
-                                    <span class="ew-btn">GRAMP</span>
-                                    <span class="ew-btn">FIT</span>
-                                    <span class="ew-btn">GLOW</span>
-                                    <span class="ew-btn">ADJ</span>
-                                    <span class="ew-btn">MIRROR</span>
-                                    <span class="ew-btn">FILL</span>
-                                    <span class="ew-btn">TINT</span>
-                                    <span class="ew-btn">BLUR</span>
-                                    <span class="ew-btn">LUM</span>
+                                    <span class="ew-btn" data-preview="SOLID">SOL</span>
+                                    <span class="ew-btn" data-preview="BOUNCE">Bounce</span>
+                                    <span class="ew-btn" data-preview="NULL">NUL</span>
+                                    <span class="ew-btn" data-preview="CAMERA">CAM</span>
+                                    <span class="ew-btn" data-preview="TEXT">TEXT</span>
+                                    <span class="ew-btn" data-preview="RAMP">GRAMP</span>
+                                    <span class="ew-btn" data-preview="FIT">FIT</span>
+                                    <span class="ew-btn" data-preview="GLOW">GLOW</span>
+                                    <span class="ew-btn" data-preview="ADJ">ADJ</span>
+                                    <span class="ew-btn" data-preview="MIRROR">MIRROR</span>
+                                    <span class="ew-btn" data-preview="FILL">FILL</span>
+                                    <span class="ew-btn" data-preview="TINT">TINT</span>
+                                    <span class="ew-btn" data-preview="BLUR">BLUR</span>
+                                    <span class="ew-btn" data-preview="LUM">LUM</span>
                                     <span class="ew-btn">Capitalize</span>
                                 </div>
                             </fieldset>
@@ -610,11 +628,13 @@
                             <div class="ew-section" style="flex:1;display:flex;flex-direction:column">
                                 <div class="ew-header" style="justify-content:space-between">
                                     <span><i class="fa-solid fa-font"></i> FONTS IN CURRENT COMP</span>
-                                    <span style="color:#2979ff;font-size:9px;cursor:pointer">↻ Refresh</span>
+                                    <span style="color:#2979ff;font-size:9px;cursor:pointer"
+                                        data-preview="FONT_REFRESH">↻ Refresh</span>
                                 </div>
                                 <div class="ew-list-container">
-                                    <div class="ew-list-item selected"><span>Montserrat-Bold</span><span
-                                            class="ew-badge">3 layers</span></div>
+                                    <div class="ew-list-item selected" data-preview="FONT_LIST_ITEM">
+                                        <span>Montserrat-Bold</span><span class="ew-badge">3 layers</span>
+                                    </div>
                                     <div class="ew-list-item"><span>Inter-Regular</span><span class="ew-badge">7
                                             layers</span></div>
                                     <div class="ew-list-item"><span>Poppins-SemiBold</span><span class="ew-badge">2
@@ -624,25 +644,28 @@
                                     <div class="ew-list-item"><span>Outfit-Light</span><span class="ew-badge">4
                                             layers</span></div>
                                 </div>
-                                <span class="ew-btn c-purple" style="margin-top:6px;padding:6px"><i
-                                        class="fa-solid fa-plus"></i> Add to List</span>
+                                <span class="ew-btn c-purple" style="margin-top:6px;padding:6px"
+                                    data-preview="FONT_ADD"><i class="fa-solid fa-plus"></i> Add to List</span>
                             </div>
                             <!-- Right: Replacement List -->
                             <div class="ew-section" style="flex:1;display:flex;flex-direction:column">
                                 <div class="ew-header"><i class="fa-solid fa-repeat"></i> REPLACEMENT LIST</div>
                                 <div class="ew-dropdown">Arial-Regular ▾</div>
                                 <div style="display:flex;gap:4px;margin-top:auto">
-                                    <span class="ew-btn c-red" style="flex:1"><i class="fa-solid fa-trash"></i>
+                                    <span class="ew-btn c-red" style="flex:1" data-preview="FONT_REMOVE"><i
+                                            class="fa-solid fa-trash"></i>
                                         REMOVE</span>
-                                    <span class="ew-btn c-orange" style="flex:1"><i class="fa-solid fa-star"></i>
+                                    <span class="ew-btn c-orange" style="flex:1" data-preview="FONT_FAV"><i
+                                            class="fa-solid fa-star"></i>
                                         FAVORITE</span>
                                 </div>
                                 <div class="ew-section"
                                     style="margin-top:8px;background:rgba(255,255,255,0.02);padding:8px">
                                     <label class="ew-check"><span class="ew-checkbox on">✓</span> Only replace selected
                                         layers</label>
-                                    <span class="ew-btn c-green" style="padding:8px;margin-top:4px"><i
-                                            class="fa-solid fa-check-circle"></i> REPLACE SELECTED FONT</span>
+                                    <span class="ew-btn c-green" style="padding:8px;margin-top:4px"
+                                        data-preview="FONT_REPLACE"><i class="fa-solid fa-check-circle"></i> REPLACE
+                                        SELECTED FONT</span>
                                 </div>
                             </div>
                         </div>
@@ -962,6 +985,38 @@
 
                 </div>
             </div>
+
+            <!-- TIMELINE PREVIEW UI -->
+            <div class="timeline-preview" id="timeline-preview">
+                <div class="timeline-header">
+                    <span class="timeline-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <line x1="2" y1="7" x2="7" y2="7"></line>
+                            <line x1="2" y1="17" x2="7" y2="17"></line>
+                            <line x1="17" y1="17" x2="22" y2="17"></line>
+                            <line x1="17" y1="7" x2="22" y2="7"></line>
+                        </svg> Comp 1</span>
+                    <div class="timeline-time">0;00;00;00</div>
+                </div>
+                <!-- COMP VIEWER -->
+                <div class="comp-viewer" id="comp-viewer" style="display: none;">
+                    <div class="comp-object" id="comp-object">TEXT</div>
+                </div>
+                <div class="timeline-body">
+                    <div class="timeline-layers-list" id="timeline-layers-list">
+                        <!-- Content completely injected by JS animation sequences -->
+                    </div>
+                    <div class="timeline-playhead-track"
+                        style="position: absolute; left: 100px; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 50;">
+                        <div class="timeline-playhead"></div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -1305,14 +1360,14 @@
                             <p>Never manually hunt for and replace fonts again. Scan your entire composition, see every
                                 font used, and swap them in bulk with a single click.</p>
                             <ul class="tab-features">
-                                <li>
+                                <li data-preview="FONT_REFRESH" style="cursor:help">
                                     <span class="tf-icon">🔍</span>
                                     <div>
                                         <strong>FONT SCANNER</strong>
                                         <span>Instantly lists all fonts used in the current composition</span>
                                     </div>
                                 </li>
-                                <li>
+                                <li data-preview="FONT_REPLACE" style="cursor:help">
                                     <span class="tf-icon">🔄</span>
                                     <div>
                                         <strong>BULK REPLACE</strong>
@@ -1320,14 +1375,14 @@
                                             only</span>
                                     </div>
                                 </li>
-                                <li>
+                                <li data-preview="FONT_FAV" style="cursor:help">
                                     <span class="tf-icon">⭐</span>
                                     <div>
                                         <strong>FAVORITES</strong>
                                         <span>Save your most-used fonts to a favorites list for instant access</span>
                                     </div>
                                 </li>
-                                <li>
+                                <li data-preview="FONT_REPLACE" style="cursor:help">
                                     <span class="tf-icon">🎚️</span>
                                     <div>
                                         <strong>SELECTIVE MODE</strong>
@@ -1604,6 +1659,38 @@
                 <h2 class="section-title">Start Free.<br><span class="gradient-text">Go Unlimited.</span></h2>
                 <p class="section-subtitle">No subscriptions. No hidden fees. One price, lifetime access.</p>
             </div>
+            <!-- COUNTDOWN TIMER BANNER (Pro only, before March 20) -->
+            <div class="countdown-banner reveal pro-only" id="countdown-banner">
+                <div class="countdown-inner">
+                    <div class="countdown-urgency">
+                        <span class="countdown-fire">🔥</span>
+                        <span class="countdown-label">Current price ending soon — increases to <strong
+                                id="new-price-label">₹2000</strong> after</span>
+                    </div>
+                    <div class="countdown-date-label">March 20, 2026</div>
+                    <div class="countdown-timer" id="countdown-timer">
+                        <div class="countdown-unit">
+                            <span class="countdown-number" id="cd-days">00</span>
+                            <span class="countdown-text">Days</span>
+                        </div>
+                        <span class="countdown-sep">:</span>
+                        <div class="countdown-unit">
+                            <span class="countdown-number" id="cd-hours">00</span>
+                            <span class="countdown-text">Hours</span>
+                        </div>
+                        <span class="countdown-sep">:</span>
+                        <div class="countdown-unit">
+                            <span class="countdown-number" id="cd-minutes">00</span>
+                            <span class="countdown-text">Min</span>
+                        </div>
+                        <span class="countdown-sep">:</span>
+                        <div class="countdown-unit">
+                            <span class="countdown-number" id="cd-seconds">00</span>
+                            <span class="countdown-text">Sec</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- FREE Pricing Header -->
             <div class="section-header reveal free-only">
                 <span class="section-tag">DOWNLOAD</span>
@@ -1680,7 +1767,7 @@
                             Priority Support
                         </li>
                     </ul>
-                    <a href="#" onclick="document.querySelector('[data-version=free]').click(); return false;"
+                    <a href="#" onclick="document.querySelector('[data-version=free]').click(); window.scrollTo(0,0); return false;"
                         class="btn btn-outline btn-block" id="btn-free">Get Basic</a>
                     <span class="price-note">Just ₹100 for lifetime access</span>
                 </div>
@@ -1829,7 +1916,7 @@
                     <a href="#" class="btn btn-primary btn-block btn-glow btn-pay" data-tier="basic">Get Basic —
                         ₹100</a>
                     <span class="price-note">Want more power? <a href="#"
-                            onclick="document.querySelector('[data-version=pro]').click()"
+                            onclick="document.querySelector('[data-version=pro]').click(); window.scrollTo(0,0);"
                             style="color:#10b981;text-decoration:underline">Check out Pro</a></span>
                 </div>
             </div>
@@ -2017,9 +2104,9 @@
                 <div class="footer-links">
                     <h4>Social</h4>
                     <ul>
-                        <li><a href="#" target="_blank">YouTube</a></li>
-                        <li><a href="#" target="_blank">Instagram</a></li>
-                        <li><a href="#" target="_blank">Twitter / X</a></li>
+                        <li><a href="https://www.youtube.com/@harshedits2332" target="_blank">YouTube</a></li>
+                        <li><a href="https://www.instagram.com/the.editor_harsh/" target="_blank">Instagram</a></li>
+                        <li><a href="https://discord.gg/y3qnSA4ZbE" target="_blank">Discord</a></li>
                     </ul>
                 </div>
             </div>
@@ -2058,7 +2145,7 @@
                 alignment</strong>, a <strong style="color:rgba(255,255,255,0.25);">font replacer tool for AE</strong>,
             a <strong style="color:rgba(255,255,255,0.25);">KBar alternative</strong>, or a <strong
                 style="color:rgba(255,255,255,0.25);">Motion Bro alternative</strong> — Easy Workflow Pro offers all of
-            this and more in one affordable, one-time-payment package. Available for download at <a
+            l5 ll this and more in one affordable, one-time-payment package. Available for download at <a
                 href="https://easyworkflow.store" style="color:rgba(255,255,255,0.3);">easyworkflow.store</a>.
         </p>
     </section>

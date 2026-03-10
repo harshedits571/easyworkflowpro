@@ -8,6 +8,7 @@ const PRICING = {
         symbol: '₹',
         basic: { amount: 100, label: '₹100', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - ₹100' },
         pro: { amount: 1500, label: '₹1500', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹1500' },
+        proAfterDeadline: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
         showUPI: true,
         badge: '🇮🇳 Prices in INR'
     },
@@ -16,14 +17,82 @@ const PRICING = {
         symbol: '$',
         basic: { amount: 2, label: '$2', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - $2' },
         pro: { amount: 18, label: '$18', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $18' },
+        proAfterDeadline: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
         showUPI: false,
         badge: '🌍 Prices in USD'
     }
 };
 
+// ===== PRICE INCREASE DEADLINE =====
+// After this date, Pro price increases automatically
+const PRICE_DEADLINE = new Date('2026-03-20T23:59:59+05:30'); // March 20, 2026 end of day IST
+
+function isPastDeadline() {
+    return new Date() > PRICE_DEADLINE;
+}
+
+// Apply deadline pricing — overwrite pro config if past deadline
+function applyDeadlinePricing(region) {
+    if (isPastDeadline() && region.proAfterDeadline) {
+        region.pro = { ...region.proAfterDeadline };
+    }
+    return region;
+}
+
 // Detected region config — defaults to IN until API call completes
 // (site is India-primary; non-Indian users switch to USD once geo-API responds)
-window.pricingRegion = PRICING.IN;
+window.pricingRegion = applyDeadlinePricing({ ...PRICING.IN });
+
+// ===== COUNTDOWN TIMER =====
+function initCountdownTimer() {
+    const banner = document.getElementById('countdown-banner');
+    if (!banner) return;
+
+    const daysEl = document.getElementById('cd-days');
+    const hoursEl = document.getElementById('cd-hours');
+    const minutesEl = document.getElementById('cd-minutes');
+    const secondsEl = document.getElementById('cd-seconds');
+    const newPriceLabel = document.getElementById('new-price-label');
+
+    // Update the "increases to" label based on detected currency
+    function updateNewPriceLabel() {
+        const region = window.pricingRegion || PRICING.IN;
+        // Show the post-deadline price from the original config (not the overwritten one)
+        const originalRegion = (region.currency === 'USD') ? PRICING.US : PRICING.IN;
+        if (newPriceLabel && originalRegion.proAfterDeadline) {
+            newPriceLabel.textContent = originalRegion.proAfterDeadline.label;
+        }
+    }
+
+    function updateTimer() {
+        const now = new Date();
+        const diff = PRICE_DEADLINE - now;
+
+        if (diff <= 0) {
+            // Deadline passed — completely hide the countdown banner
+            banner.style.display = 'none';
+            return; // stop ticking
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+
+        setTimeout(updateTimer, 1000);
+    }
+
+    updateNewPriceLabel();
+    updateTimer();
+
+    // Re-update label whenever pricing region changes
+    window._updateCountdownLabel = updateNewPriceLabel;
+}
 
 function applyPricingToPage(region) {
     const p = region;
@@ -136,13 +205,15 @@ async function detectAndApplyCurrency() {
     // Add ?currency=usd or ?currency=inr to the URL to force a currency
     const urlParam = new URLSearchParams(window.location.search).get('currency');
     if (urlParam === 'usd') {
-        window.pricingRegion = PRICING.US;
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING.US });
         applyPricingToPage(window.pricingRegion);
+        if (window._updateCountdownLabel) window._updateCountdownLabel();
         return;
     }
     if (urlParam === 'inr') {
-        window.pricingRegion = PRICING.IN;
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING.IN });
         applyPricingToPage(window.pricingRegion);
+        if (window._updateCountdownLabel) window._updateCountdownLabel();
         return;
     }
     // ----------------------------------
@@ -169,13 +240,14 @@ async function detectAndApplyCurrency() {
         await tryGeoAPI('https://ipinfo.io/json', d => d.country);
 
     if (countryCode) {
-        window.pricingRegion = (countryCode === 'IN') ? PRICING.IN : PRICING.US;
+        window.pricingRegion = applyDeadlinePricing((countryCode === 'IN') ? { ...PRICING.IN } : { ...PRICING.US });
     } else {
         // All APIs failed — default to INR (site is India-primary)
-        window.pricingRegion = PRICING.IN;
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING.IN });
     }
 
     applyPricingToPage(window.pricingRegion);
+    if (window._updateCountdownLabel) window._updateCountdownLabel();
 }
 
 // Run geo-detection immediately (before DOM ready, catches early elements)
@@ -185,6 +257,7 @@ detectAndApplyCurrency();
 document.addEventListener('DOMContentLoaded', () => {
     // Small delay to let the page fully paint before re-applying
     setTimeout(() => applyPricingToPage(window.pricingRegion), 100);
+    initCountdownTimer(); // Start the countdown!
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -919,3 +992,1303 @@ function showToast(message, type = 'success') {
     okBtn.addEventListener('mouseover', () => okBtn.style.opacity = '0.8');
     okBtn.addEventListener('mouseout', () => okBtn.style.opacity = '1');
 }
+
+// ===== TIMELINE PREVIEW LOGIC =====
+document.addEventListener('DOMContentLoaded', () => {
+    const previewButtons = document.querySelectorAll('[data-preview]');
+    const layersList = document.getElementById('timeline-layers-list');
+    const timelineTime = document.querySelector('.timeline-time');
+    const timelinePlayhead = document.querySelector('.timeline-playhead');
+    const compViewer = document.getElementById('comp-viewer');
+    const compObject = document.getElementById('comp-object');
+    const timelinePreview = document.getElementById('timeline-preview');
+
+    if (!layersList) return;
+
+    // AE exact colors
+    const C = {
+        red: { bg: '#ef4444', bar: 'rgba(239, 68, 68, 0.4)' },
+        teal: { bg: '#06b6d4', bar: 'rgba(6, 182, 212, 0.4)' },
+        orange: { bg: '#f59e0b', bar: 'rgba(245, 158, 11, 0.4)' },
+        purple: { bg: '#a855f7', bar: 'rgba(168, 85, 247, 0.4)' },
+        blue: { bg: '#3b82f6', bar: 'rgba(59, 130, 246, 0.4)' },
+        pink: { bg: '#ec4899', bar: 'rgba(236, 72, 153, 0.4)' },
+    };
+
+    let sequenceTimer = null;
+    let scenarioIndex = 0;
+
+    const createLayer = (num, name, color, left, width, isAnimated, isSelected = false, extras = '') => {
+        const selectStyle = isSelected ? 'background:rgba(255,255,255,0.15); border-radius:3px; padding:0 4px;' : '';
+        const selectBar = isSelected ? 'border:1px solid #fff;' : `border:1px solid ${color.bg};`;
+        const animClass = isAnimated ? 'animated-in' : '';
+        return `
+            <div class="timeline-layer ${animClass}">
+                <div class="layer-info" style="${isSelected ? 'background:#333;' : ''}">
+                    <span class="layer-color" style="background:${color.bg}"></span>
+                    <span class="layer-num">${num}</span>
+                    <span class="layer-name" style="${selectStyle}">${name}</span>
+                </div>
+                <div class="layer-bar-container">
+                    <div class="layer-bar" style="background:${color.bar}; ${selectBar} left:${left}; width:${width};">
+                        ${extras}
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    // Universal State Machine for all Button Previews
+    const ACTION_SCENARIOS = {
+        'SOLID': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:100%;height:100%;transition:background 0.3s;background:transparent;"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Full_Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.background = '#ef4444';
+                        return createLayer(1, '[Solid 1]', C.red, '0%', '100%', true) + createLayer(2, '[Full_Video.mp4]', C.teal, '0%', '100%', false);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'NULL': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Layer 1]', C.teal, '10%', '60%', false, true) + createLayer(2, '[Layer 2]', C.purple, '20%', '40%', false, true),
+                    after: () => createLayer(1, '[Null 1]', C.orange, '10%', '60%', true) + createLayer(2, '[Layer 1]', C.teal, '10%', '60%', false) + createLayer(3, '[Layer 2]', C.purple, '20%', '40%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'CAMERA': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Camera Controller]', C.orange, '0%', '100%', true) + createLayer(2, '[Camera 1]', C.teal, '0%', '100%', true) + createLayer(3, '[Video.mp4]', C.teal, '0%', '100%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TEXT': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'TEXT'; o.style.cssText = 'color: white; font-size: 0px; font-weight:800; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform:scale(0);'; o.className = 'comp-object'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.style.transform = 'scale(1)';
+                        return createLayer(1, '[Text 1]', C.purple, '0%', '100%', true) + createLayer(2, '[Video.mp4]', C.teal, '0%', '100%', false);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'BOUNCE': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'TEXT'; o.className = 'comp-object'; o.style.cssText = 'color:white; font-size:28px; font-weight:800;'; },
+            steps: [
+                {
+                    before: () => createLayer(1, 'TEXT', C.purple, '10%', '80%', false, true, '<div class="keyframe-dot" style="left:5%;"></div>'),
+                    after: () => {
+                        compObject.classList.add('bounce-active');
+                        return createLayer(1, 'TEXT', C.purple, '10%', '80%', false, true, '<div class="keyframe-dot" style="left:5%;"></div><div class="keyframe-dot" style="left:15%;"></div>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;02'
+                }
+            ]
+        },
+        'RAMP': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:100%;height:100%;transition:background 0.5s;background:#888;"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Shape Layer]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.background = 'linear-gradient(180deg, #ff00ff 0%, #00ffff 100%)';
+                        return createLayer(1, '[Shape Layer]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'FIT': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:20px;height:10px;background:#06b6d4;transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Small_Image.png]', C.purple, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.width = '100%';
+                        compObject.firstChild.style.height = '100%';
+                        return createLayer(1, '[Small_Image.png]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'GLOW': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'GLOW'; o.style.cssText = 'color: white; font-size: 28px; font-weight:800; transition: text-shadow 0.5s; text-shadow: none;'; o.className = 'comp-object'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Logo.png]', C.purple, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.style.textShadow = '0 0 10px #fff, 0 0 20px #f0f, 0 0 30px #f0f';
+                        return createLayer(1, '[Logo.png]', C.purple, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'ADJ': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:100%;height:100%;background:#444;position:relative;"><div id="adjOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.5s;"></div></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        const overlay = o.querySelector('#adjOverlay');
+                        if (overlay) overlay.style.background = 'rgba(255,100,200,0.3)';
+                        return createLayer(1, '[Adjustment 1]', C.cyan, '0%', '100%', true) + createLayer(2, '[Video.mp4]', C.teal, '0%', '100%', false);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TRIM': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Layer_To_Trim.mp4]', C.teal, '0%', '100%', false, true) + createLayer(2, '[Base_Layer.mp4]', C.purple, '30%', '40%', false),
+                    after: () => createLayer(1, '[Layer_To_Trim.mp4]', C.teal, '30%', '40%', true, true) + createLayer(2, '[Base_Layer.mp4]', C.purple, '30%', '40%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'MIRROR': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'IMG'; o.style.cssText = 'color:white; font-size:28px; font-weight:800; transition:transform 0.5s; transform:scaleX(1);'; o.className = 'comp-object'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.style.transform = 'scaleX(-1)';
+                        return createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'FILL': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:40px;height:40px;border-radius:50%;background:#fff;transition:background 0.5s;"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Shape]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.background = '#ef4444';
+                        return createLayer(1, '[Shape]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TINT': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(45deg,#00f,#f0f);transition:filter 0.5s, background 0.5s;filter:grayscale(0%);"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.background = 'linear-gradient(45deg,#000,#fff)';
+                        return createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'BLUR': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'FOCUS'; o.style.cssText = 'color:white; font-size:24px; font-weight:800; transition: filter 0.5s; filter: blur(0px);'; o.className = 'comp-object'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Text]', C.purple, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.style.filter = 'blur(4px)';
+                        return createLayer(1, '[Text]', C.purple, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'LUM': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:100%;height:100%;background:url(https://images.unsplash.com/photo-1542204165-65bf26472b9b?h=120) center/cover; transition:filter 0.5s; filter:contrast(50%) brightness(80%) saturate(10%);"></div>'; o.className = 'comp-object'; o.style.cssText = ''; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.firstChild.style.filter = 'contrast(130%) brightness(100%) saturate(140%) hue-rotate(10deg)';
+                        return createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'CAPITAL': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.textContent = 'text layer'; o.style.cssText = 'color:white; font-size:20px; text-transform:lowercase; font-weight:800; transition:all 0.3s;'; o.className = 'comp-object'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Text]', C.purple, '0%', '100%', false, true),
+                    after: () => {
+                        compObject.style.textTransform = 'uppercase';
+                        return createLayer(1, '[Text]', C.purple, '0%', '100%', false, true);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'FXLOCK': {
+            useViewer: true,
+            setupViewer: (v, o) => { o.innerHTML = '<div style="width:80px;height:80px;border-radius:10px;background:linear-gradient(135deg,#f0f,#00f);position:absolute;transition:all 0.5s cubic-bezier(0.175,0.885,0.32,1.275);left:10%;top:20%;"></div>'; o.className = 'comp-object'; o.style.cssText = 'width:100%;height:100%;position:relative;'; },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Shape Layer (Gradient)]', C.purple, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#ef4444; color:#fff; padding:1px 3px; border-radius:2px;">🔒</span>'),
+                    after: () => {
+                        compObject.firstChild.style.left = '60%';
+                        compObject.firstChild.style.background = 'linear-gradient(135deg,#f0f,#00f)'; // gradient moves with it perfectly
+                        return createLayer(1, '[Shape Layer (Gradient)]', C.purple, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#ef4444; color:#fff; padding:1px 3px; border-radius:2px;">🔒</span><div class="keyframe-dot" style="left:50%;"></div>');
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;01;00'
+                }
+            ]
+        },
+        'ALIGN': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Layer 1]', C.orange, '0%', '40%', false, true) + createLayer(2, '[Layer 2]', C.teal, '30%', '40%', false),
+                    after: () => createLayer(1, '[Layer 1]', C.orange, '70%', '40%', true, true) + createLayer(2, '[Layer 2]', C.teal, '30%', '40%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'REMOVE_FX': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true, '<span style="position:absolute; right:5px; top:2px; font-size:9px; background:#fff; color:#000; padding:1px 3px; border-radius:2px;">fx</span>'),
+                    after: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', true, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TRUE_DUP': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Composition 1]', C.purple, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Composition 2]', C.purple, '0%', '100%', true, true) + createLayer(2, '[Composition 1]', C.purple, '0%', '100%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'SEQ_LAYERS': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Image 1]', C.purple, '0%', '20%', false, true) + createLayer(2, '[Image 2]', C.teal, '0%', '20%', false, true) + createLayer(3, '[Image 3]', C.orange, '0%', '20%', false, true),
+                    after: () => createLayer(1, '[Image 1]', C.purple, '0%', '20%', true) + createLayer(2, '[Image 2]', C.teal, '20%', '20%', true) + createLayer(3, '[Image 3]', C.orange, '40%', '20%', true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;10'
+                }
+            ]
+        },
+        'DEL_BEFORE': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;05;00',
+                    playheadBefore: '0%', playheadAfter: '40%'
+                },
+                {
+                    before: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Footage.mp4]', C.teal, '40%', '60%', true, true),
+                    timeBefore: '0;00;05;00', timeAfter: '0;00;05;00',
+                    playheadBefore: '40%', playheadAfter: '40%'
+                }
+            ]
+        },
+        'DEL_AFTER': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;07;12',
+                    playheadBefore: '0%', playheadAfter: '60%'
+                },
+                {
+                    before: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Footage.mp4]', C.teal, '0%', '60%', true, true),
+                    timeBefore: '0;00;07;12', timeAfter: '0;00;07;12',
+                    playheadBefore: '60%', playheadAfter: '60%'
+                }
+            ]
+        },
+        'PRECOMP_TOG': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Layer 1]', C.blue, '0%', '40%', false, true) +
+                        createLayer(2, '[Layer 2]', C.pink, '20%', '50%', false, true) +
+                        createLayer(3, '[Layer 3]', C.orange, '40%', '60%', false, true),
+                    after: () => createLayer(1, '[Precomp 1]', C.purple, '0%', '100%', true, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;05;00'
+                }
+            ]
+        },
+        'PRECOMP_SEP': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Layer 1]', C.blue, '0%', '40%', false, true) +
+                        createLayer(2, '[Layer 2]', C.pink, '20%', '50%', false, true) +
+                        createLayer(3, '[Layer 3]', C.orange, '40%', '60%', false, true),
+                    after: () => createLayer(1, '[Layer 1 Comp]', C.purple, '0%', '40%', true, true) +
+                        createLayer(2, '[Layer 2 Comp]', C.purple, '20%', '50%', true, true) +
+                        createLayer(3, '[Layer 3 Comp]', C.purple, '40%', '60%', true, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;05;00'
+                }
+            ]
+        },
+        'UNPRECOMP': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[Precomp 1]', C.purple, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Layer 1]', C.blue, '0%', '40%', true, true) +
+                        createLayer(2, '[Layer 2]', C.pink, '20%', '50%', true, true) +
+                        createLayer(3, '[Layer 3]', C.orange, '40%', '60%', true, true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;05;00'
+                }
+            ]
+        },
+        'ORGANIZE': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#18181b;color:#ddd;font-size:12px;font-family:var(--font-body);padding:10px;box-sizing:border-box;';
+            },
+            steps: [
+                {
+                    before: () => {
+                        compObject.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;justify-content:center;">
+                            <div style="background:#333;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-file-video" style="color:#2dd4bf"></i> video.mp4</div>
+                            <div style="background:#333;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-file-image" style="color:#f472b6"></i> logo.png</div>
+                            <div style="background:#333;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-layer-group" style="color:#a78bfa"></i> Comp 1</div>
+                            <div style="background:#333;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-volume-up" style="color:#fb923c"></i> audio.wav</div>
+                            <div style="background:#333;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-layer-group" style="color:#a78bfa"></i> Comp 2</div>
+                        </div>`;
+                        return createLayer(1, '[Project Panel]', C.teal, '0%', '100%', false, true);
+                    },
+                    after: () => {
+                        compObject.innerHTML = `<div style="display:flex;flex-direction:row;gap:12px;align-items:flex-start;width:100%;justify-content:center;">
+                            <div style="color:#a78bfa;display:flex;flex-direction:column;align-items:center;gap:4px;"><i class="fa-solid fa-folder fa-2x"></i> 01_Comps</div>
+                            <div style="color:#2dd4bf;display:flex;flex-direction:column;align-items:center;gap:4px;"><i class="fa-solid fa-folder fa-2x"></i> 02_Video</div>
+                            <div style="color:#f472b6;display:flex;flex-direction:column;align-items:center;gap:4px;"><i class="fa-solid fa-folder fa-2x"></i> 03_Images</div>
+                            <div style="color:#fb923c;display:flex;flex-direction:column;align-items:center;gap:4px;"><i class="fa-solid fa-folder fa-2x"></i> 04_Audio</div>
+                        </div>`;
+                        return createLayer(1, '[Project Organized]', C.purple, '0%', '100%', true, true);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        ...['ALIGN_L', 'ALIGN_CX', 'ALIGN_R', 'ALIGN_T', 'ALIGN_CY', 'ALIGN_B'].reduce((acc, type) => {
+            acc[type] = {
+                useViewer: true,
+                hideTimeline: true,
+                setupViewer: (v, o) => {
+                    o.className = 'comp-object';
+                    // We'll mimic a video layer in a composition frame
+                    v.style.background = '#222';
+                    o.innerHTML = '<div id="align-target" style="width:120px; height:67px; background:#06b6d4; border-radius:4px; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-clapperboard" style="color:rgba(0,0,0,0.3); font-size:24px;"></i></div>';
+                },
+                steps: [
+                    {
+                        before: () => {
+                            const t = document.getElementById('align-target');
+                            if (t) {
+                                t.style.transition = 'none';
+                                t.style.left = '50%';
+                                t.style.top = '50%';
+                                t.style.transform = 'translate(-50%, -50%)';
+                                void t.offsetWidth;
+                                t.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                            }
+                            return '';
+                        },
+                        after: () => {
+                            const t = document.getElementById('align-target');
+                            if (!t) return '';
+                            if (type === 'ALIGN_L') { t.style.left = '0%'; t.style.transform = 'translate(0, -50%)'; }
+                            if (type === 'ALIGN_CX') { t.style.left = '50%'; t.style.transform = 'translate(-50%, -50%)'; }
+                            if (type === 'ALIGN_R') { t.style.left = '100%'; t.style.transform = 'translate(-100%, -50%)'; }
+                            if (type === 'ALIGN_T') { t.style.top = '0%'; t.style.transform = 'translate(-50%, 0)'; }
+                            if (type === 'ALIGN_CY') { t.style.top = '50%'; t.style.transform = 'translate(-50%, -50%)'; }
+                            if (type === 'ALIGN_B') { t.style.top = '100%'; t.style.transform = 'translate(-50%, -100%)'; }
+                            return '';
+                        },
+                        timeBefore: '', timeAfter: ''
+                    }
+                ]
+            };
+            return acc;
+        }, {}),
+        ...['ANCHOR_TL', 'ANCHOR_TC', 'ANCHOR_TR', 'ANCHOR_ML', 'ANCHOR_MC', 'ANCHOR_MR', 'ANCHOR_BL', 'ANCHOR_BC', 'ANCHOR_BR'].reduce((acc, type) => {
+            acc[type] = {
+                useViewer: true,
+                hideTimeline: true,
+                setupViewer: (v, o) => {
+                    o.className = 'comp-object';
+                    v.style.background = '#222';
+                    // Video layer with anchor point visual
+                    o.innerHTML = `
+                        <div style="width:120px; height:67px; background:rgba(168, 85, 247, 0.3); border:1px solid #a855f7; border-radius:4px; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); display:flex; align-items:center; justify-content:center;">
+                            <i class="fa-solid fa-clapperboard" style="color:rgba(168, 85, 247, 0.5); font-size:24px;"></i>
+                            <div id="anchor-target" style="position:absolute; width:12px; height:12px; border:2px solid #fff; border-radius:50%; transform:translate(-50%, -50%); transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); left:50%; top:50%;">
+                                <div style="position:absolute; width:20px; height:1px; background:#fff; left:50%; top:50%; transform:translate(-50%, -50%);"></div>
+                                <div style="position:absolute; width:1px; height:20px; background:#fff; left:50%; top:50%; transform:translate(-50%, -50%);"></div>
+                            </div>
+                        </div>
+                    `;
+                },
+                steps: [
+                    {
+                        before: () => {
+                            const t = document.getElementById('anchor-target');
+                            if (t) {
+                                t.style.transition = 'none';
+                                t.style.left = '50%';
+                                t.style.top = '50%';
+                                void t.offsetWidth;
+                                t.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                            }
+                            return '';
+                        },
+                        after: () => {
+                            const t = document.getElementById('anchor-target');
+                            if (!t) return '';
+                            const dir = type.split('_')[1]; // TL, TC, TR, etc.
+                            if (dir.includes('L')) t.style.left = '0%';
+                            if (dir.includes('C')) t.style.left = '50%';
+                            if (dir.includes('R')) t.style.left = '100%';
+                            if (dir.includes('T')) t.style.top = '0%';
+                            if (dir.includes('M')) t.style.top = '50%';
+                            if (dir.includes('B')) t.style.top = '100%';
+                            return '';
+                        },
+                        timeBefore: '', timeAfter: ''
+                    }
+                ]
+            };
+            return acc;
+        }, {}),
+        'IMPORT_SRT': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%; height:100%; position:relative; overflow:hidden; background:#111;';
+                o.innerHTML = `
+                    <div id="srt-vid-bg" style="width:100%;height:100%;background:linear-gradient(180deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);position:relative;display:flex;align-items:center;justify-content:center;">
+                        <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);color:#aaa;font-size:7px;padding:2px 5px;border-radius:3px;">▶ Comp 1 | 0:00:00:00</div>
+                        <div style="font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:2px;text-transform:uppercase;">Video Preview</div>
+                        <div id="srt-subtitle-display" style="position:absolute;bottom:16%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);white-space:nowrap;opacity:0;transition:opacity 0.3s ease;text-align:center;min-width:80px;"></div>
+                    </div>
+                    <div id="srt-file-drop" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;opacity:0;transition:opacity 0.2s;">
+                        <div style="font-size:20px;">📄</div>
+                        <div style="color:#f59e0b;font-size:8px;font-weight:700;letter-spacing:1px;">subtitles.srt</div>
+                    </div>
+                `;
+                // Animate drop → subtitles appear
+                let srtPhase = 0;
+                const subtitles = ['Hi there!', 'Welcome to this video', 'Easy Workflow Pro', 'Import SRT ✓'];
+                const subDisplay = o.querySelector('#srt-subtitle-display');
+                const fileIcon = o.querySelector('#srt-file-drop');
+                if (window._srtViewerInterval) clearInterval(window._srtViewerInterval);
+                // Show file drop hint first
+                setTimeout(() => { if (fileIcon) fileIcon.style.opacity = '1'; }, 200);
+                setTimeout(() => { if (fileIcon) fileIcon.style.opacity = '0'; }, 800);
+                window._srtViewerInterval = setInterval(() => {
+                    if (!subDisplay) return;
+                    subDisplay.style.opacity = '1';
+                    subDisplay.textContent = subtitles[srtPhase % subtitles.length];
+                    srtPhase++;
+                    setTimeout(() => { if (subDisplay) subDisplay.style.opacity = '0'; }, 900);
+                }, 1400);
+            },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Sub] Hi there!', C.purple, '0%', '20%', true) +
+                        createLayer(2, '[Sub] Welcome to this video', C.purple, '22%', '30%', true) +
+                        createLayer(3, '[Sub] Easy Workflow Pro', C.purple, '55%', '15%', true) +
+                        createLayer(4, '[Sub] Import SRT ✓', C.purple, '72%', '28%', true) +
+                        createLayer(5, '[Video.mp4]', C.teal, '0%', '100%', false),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;04;12'
+                }
+            ]
+        },
+        'RESIZE_COMP': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%; height:100%; position:relative; background:#111; display:flex; align-items:center; justify-content:center; overflow:hidden;';
+                o.innerHTML = `
+                    <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);color:#555;font-size:7px;letter-spacing:1px;text-transform:uppercase;">COMPOSITION SIZE</div>
+                    <div id="rc-frame" style="
+                        width:42%; height:72%;
+                        background:rgba(124,58,237,0.12);
+                        border:2px solid rgba(124,58,237,0.7);
+                        border-radius:4px;
+                        display:flex; flex-direction:column;
+                        align-items:center; justify-content:center;
+                        transition: width 0.7s cubic-bezier(0.175,0.885,0.32,1.275), height 0.7s cubic-bezier(0.175,0.885,0.32,1.275), border-color 0.4s ease;
+                        position:relative;
+                    ">
+                        <div id="rc-label" style="color:#a78bfa;font-size:9px;font-weight:700;letter-spacing:1px;transition:opacity 0.3s;">1080×1920</div>
+                        <div style="color:rgba(255,255,255,0.25);font-size:7px;margin-top:2px;">9:16</div>
+                    </div>
+                    <div id="rc-arrow" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);color:#00e676;font-size:8px;font-weight:700;opacity:0;transition:opacity 0.4s;">✓ Resized!</div>
+                `;
+                if (window._rcInterval) clearInterval(window._rcInterval);
+                const sizes = [
+                    { w: '42%', h: '72%', label: '1080×1920', ratio: '9:16', color: 'rgba(124,58,237,0.7)' },
+                    { w: '88%', h: '50%', label: '1920×1080', ratio: '16:9', color: 'rgba(6,182,212,0.7)' },
+                    { w: '55%', h: '55%', label: '1080×1080', ratio: '1:1', color: 'rgba(245,158,11,0.7)' },
+                    { w: '48%', h: '60%', label: '1080×1350', ratio: '4:5', color: 'rgba(236,72,153,0.7)' },
+                ];
+                let si = 0;
+                const frame = o.querySelector('#rc-frame');
+                const label = o.querySelector('#rc-label');
+                const arrow = o.querySelector('#rc-arrow');
+                window._rcInterval = setInterval(() => {
+                    si = (si + 1) % sizes.length;
+                    const s = sizes[si];
+                    if (!frame || !label) return;
+                    label.style.opacity = '0';
+                    setTimeout(() => {
+                        if (!frame || !label) return;
+                        frame.style.width = s.w;
+                        frame.style.height = s.h;
+                        frame.style.borderColor = s.color;
+                        frame.style.background = s.color.replace('0.7', '0.1');
+                        label.textContent = s.label;
+                        label.style.color = s.color.replace('0.7', '1');
+                        frame.querySelector('div:last-child').textContent = s.ratio;
+                        label.style.opacity = '1';
+                        if (arrow) { arrow.style.opacity = '1'; setTimeout(() => { if (arrow) arrow.style.opacity = '0'; }, 600); }
+                    }, 250);
+                }, 1800);
+            },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Comp] 1080×1920', C.purple, '0%', '100%', false, true),
+                    after: () => {
+                        return createLayer(1, '[Comp] 1920×1080  ✓', C.teal, '0%', '100%', true, true);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TEXT_EXPLODE': {
+            useViewer: false,
+            steps: [
+                {
+                    before: () => createLayer(1, '[TEXT]', C.purple, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[T]', C.teal, '0%', '100%', true) +
+                        createLayer(2, '[E]', C.teal, '0%', '100%', true) +
+                        createLayer(3, '[X]', C.teal, '0%', '100%', true) +
+                        createLayer(4, '[T]', C.teal, '0%', '100%', true),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'NUM_COUNTER': {
+            useViewer: true,
+            setupViewer: (v, o, step) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; background:#18181b; color:#10b981; font-family:monospace; font-size:36px; gap:8px; font-weight:800;';
+                if (window.numCountInt) clearInterval(window.numCountInt);
+                if (window.numSeqTo) clearTimeout(window.numSeqTo);
+
+                const updateTitle = t => {
+                    const el = document.getElementById('num-title');
+                    if (el) el.innerText = t;
+                };
+
+                o.innerHTML = `<div id="num-title" style="font-size:10px; color:#aaa; font-family:var(--font-body); letter-spacing:1px; white-space:nowrap;">1. Smooth Counting</div><div id="num-disp">0</div>`;
+
+                let c = 0;
+                let phase = 'COUNT';
+                let symI = 0;
+                const syms = ['$', '₹', '€', '£', '¥'];
+                let fmtI = 0;
+                const fmts = ['9,000.00', '9,000', '09000', '9k'];
+                let pfxI = 0;
+                const pfxs = ['₹ 9k', '9k USD', 'Price: 9k', '9k views'];
+                let pc = 8000;
+
+                const tick = () => {
+                    const disp = document.getElementById('num-disp');
+                    if (!disp) return;
+
+                    if (phase === 'COUNT') {
+                        c += 187;
+                        if (c > 9000) c = 9000;
+                        disp.innerText = c;
+                    } else if (phase === 'SYMBOLS') {
+                        disp.innerText = `${syms[symI]} 9000`;
+                        symI = (symI + 1) % syms.length;
+                    } else if (phase === 'FORMAT') {
+                        disp.innerText = `₹ ${fmts[fmtI]}`;
+                        fmtI = (fmtI + 1) % fmts.length;
+                    } else if (phase === 'PREFIX') {
+                        disp.innerText = pfxs[pfxI];
+                        pfxI = (pfxI + 1) % pfxs.length;
+                    } else if (phase === 'POSTERIZE') {
+                        pc += 100;
+                        if (pc > 9000) pc = 9000;
+                        disp.innerText = pc + ' views';
+                    }
+                };
+
+                // Master Sequencer
+                window.numCountInt = setInterval(tick, 20);
+
+                window.numSeqTo = setTimeout(() => {
+                    // Start SYMBOLS phase
+                    phase = 'SYMBOLS';
+                    updateTitle('2. Change Symbols');
+                    clearInterval(window.numCountInt);
+                    window.numCountInt = setInterval(tick, 250);
+
+                    setTimeout(() => {
+                        // Start FORMAT phase
+                        phase = 'FORMAT';
+                        updateTitle('3. Formats (US / Indian / Insta)');
+                        clearInterval(window.numCountInt);
+                        window.numCountInt = setInterval(tick, 350);
+
+                        setTimeout(() => {
+                            // Start PREFIX phase
+                            phase = 'PREFIX';
+                            updateTitle('4. Prefixes & Suffixes');
+                            clearInterval(window.numCountInt);
+                            window.numCountInt = setInterval(tick, 350);
+
+                            setTimeout(() => {
+                                // Start POSTERIZE phase
+                                phase = 'POSTERIZE';
+                                updateTitle('5. Posterize Time Frame Rate');
+                                clearInterval(window.numCountInt);
+                                window.numCountInt = setInterval(tick, 300); // Slower choppy tick frame rate
+                            }, 1800);
+                        }, 1800);
+                    }, 1800);
+                }, 1200);
+            },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Numbers]', C.green, '0%', '20%', false, true),
+                    after: () => createLayer(1, '[Numbers]', C.green, '0%', '100%', true, true) + `<div class="keyframe-dot" style="left:20%; background:#ef4444; transition:left 6.6s linear;"></div><div class="keyframe-dot" style="left:90%; background:#ef4444; transition:none;"></div>`,
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;05;00',
+                    actionDuration: 800,
+                    loopDelay: 6600
+                }
+            ]
+        },
+        'CLIP_SLOT_1': {
+            useViewer: true, hideTimeline: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="color:#aaa; font-size:12px; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px;">
+                    <i class="fa-solid fa-scissors fa-3x" style="color:#2979ff;"></i>
+                    <span>Clipboard Slot 1 Active</span>
+                </div>`;
+            },
+            steps: [{
+                before: () => {
+                    [1, 2, 3].forEach(n => {
+                        const s = document.getElementById(`clip-slot-${n}`);
+                        if (s) s.classList.toggle('active', n === 1);
+                    });
+                    return '';
+                },
+                after: () => '', timeBefore: '', timeAfter: ''
+            }]
+        },
+        'CLIP_SLOT_2': {
+            useViewer: true, hideTimeline: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="color:#aaa; font-size:12px; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px;">
+                    <i class="fa-solid fa-scissors fa-3x" style="color:#2979ff;"></i>
+                    <span>Clipboard Slot 2 Active</span>
+                </div>`;
+            },
+            steps: [{
+                before: () => {
+                    [1, 2, 3].forEach(n => {
+                        const s = document.getElementById(`clip-slot-${n}`);
+                        if (s) s.classList.toggle('active', n === 2);
+                    });
+                    return '';
+                },
+                after: () => '', timeBefore: '', timeAfter: ''
+            }]
+        },
+        'CLIP_SLOT_3': {
+            useViewer: true, hideTimeline: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="color:#aaa; font-size:12px; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px;">
+                    <i class="fa-solid fa-scissors fa-3x" style="color:#2979ff;"></i>
+                    <span>Clipboard Slot 3 Active</span>
+                </div>`;
+            },
+            steps: [{
+                before: () => {
+                    [1, 2, 3].forEach(n => {
+                        const s = document.getElementById(`clip-slot-${n}`);
+                        if (s) s.classList.toggle('active', n === 3);
+                    });
+                    return '';
+                },
+                after: () => '', timeBefore: '', timeAfter: ''
+            }]
+        },
+        'CLIP_COPY': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:10px; padding:20px; width:100%; height:100%; justify-content:center; align-items:center;">
+                        <div id="clip-l1" style="width:140px; height:40px; background:#2979ff; border:2px solid #fff; border-radius:4px; display:flex; align-items:center; padding:0 10px; color:#fff; font-size:10px; font-weight:bold; box-shadow:0 0 10px rgba(41,121,255,0.5);">
+                            <i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> BLUE LAYER [SELECTED]
+                        </div>
+                        <div style="width:140px; height:40px; background:#f472b6; border:1px solid #444; border-radius:4px; display:flex; align-items:center; padding:0 10px; color:#fff; font-size:10px; opacity:0.6;">
+                            <i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> PINK LAYER
+                        </div>
+                    </div>
+                `;
+            },
+            steps: [{
+                before: () => {
+                    const s = document.getElementById('clip-slot-1');
+                    if (s) s.innerText = '1';
+                    return '';
+                },
+                after: () => {
+                    const s = document.getElementById('clip-slot-1');
+                    if (s) s.innerHTML = '1 <span style="color:#00e676">•</span>';
+                    return createLayer(1, 'Properties Copied to Slot 1', C.blue, '0%', '100%', true);
+                },
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'CLIP_PASTE': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:10px; padding:20px; width:100%; height:100%; justify-content:center; align-items:center;">
+                        <div style="width:140px; height:40px; background:#2979ff; border:1px solid #444; border-radius:4px; display:flex; align-items:center; padding:0 10px; color:#fff; font-size:10px; opacity:0.6;">
+                            <i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> BLUE LAYER
+                        </div>
+                        <div id="clip-l2" style="width:140px; height:40px; background:#f472b6; border:2px solid #fff; border-radius:4px; display:flex; align-items:center; padding:0 10px; color:#fff; font-size:10px; font-weight:bold; transition: background 0.3s, box-shadow 0.3s;">
+                            <i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> PINK LAYER [SELECTED]
+                        </div>
+                    </div>
+                `;
+                const s = document.getElementById('clip-slot-1');
+                if (s) s.innerHTML = '1 <span style="color:#00e676">•</span>';
+            },
+            steps: [{
+                before: () => {
+                    const l2 = document.getElementById('clip-l2');
+                    if (l2) {
+                        l2.style.background = '#f472b6';
+                        l2.style.boxShadow = 'none';
+                        l2.innerHTML = '<i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> PINK LAYER [SELECTED]';
+                    }
+                    return '';
+                },
+                after: () => {
+                    const l2 = document.getElementById('clip-l2');
+                    if (l2) {
+                        l2.style.background = '#2979ff';
+                        l2.style.boxShadow = '0 0 15px rgba(41,121,255,0.7)';
+                        l2.innerHTML = '<i class="fa-solid fa-layer-group" style="margin-right:8px;"></i> PINK LAYER (PASTED)';
+                    }
+                    return createLayer(1, 'Properties Pasted from Slot 1', C.purple, '0%', '100%', true);
+                },
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'CLIP_CLEAR': {
+            useViewer: false,
+            steps: [{
+                before: () => {
+                    [1, 2, 3].forEach(n => {
+                        const s = document.getElementById(`clip-slot-${n}`);
+                        if (s) s.innerHTML = `${n} <span style="color:#00e676">•</span>`;
+                    });
+                    return createLayer(1, 'Active Clipboard Slots', C.orange, '0%', '100%', false, true);
+                },
+                after: () => {
+                    [1, 2, 3].forEach(n => {
+                        const s = document.getElementById(`clip-slot-${n}`);
+                        if (s) s.innerText = n;
+                    });
+                    return createLayer(1, 'All Slots Cleared', C.red, '0%', '100%', true);
+                },
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'IMPORT_SRT': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%; height:100%; position:relative; overflow:hidden; background:#111;';
+                o.innerHTML = `
+                    <div style="width:100%;height:100%;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                        <div style="position:absolute;top:0;left:0;right:0;height:18px;background:rgba(0,0,0,0.4);display:flex;align-items:center;padding:0 6px;gap:4px;">
+                            <span style="color:#888;font-size:7px;">⬛ Comp 1</span>
+                            <span style="color:#555;font-size:7px;margin-left:auto;">0:00:00:00</span>
+                        </div>
+                        <div style="font-size:9px;color:rgba(255,255,255,0.12);letter-spacing:2px;text-transform:uppercase;margin-top:8px;">Video</div>
+                        <div id="srt-free-drop" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;opacity:1;transition:all 0.5s ease;">
+                            <div style="font-size:22px;filter:drop-shadow(0 0 8px rgba(245,158,11,0.8));">📄</div>
+                            <div style="color:#f59e0b;font-size:7px;font-weight:700;letter-spacing:1px;background:rgba(245,158,11,0.15);padding:2px 6px;border-radius:3px;border:1px solid rgba(245,158,11,0.4);">subtitles.srt</div>
+                        </div>
+                        <div id="srt-free-sub" style="position:absolute;bottom:18%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;font-size:10px;font-weight:600;padding:4px 14px;border-radius:3px;border:1px solid rgba(255,255,255,0.25);white-space:nowrap;opacity:0;transition:opacity 0.4s ease;min-width:80px;text-align:center;"></div>
+                        <div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);color:#00e676;font-size:7px;opacity:0;transition:opacity 0.3s;" id="srt-free-ok">✓ Subtitles Created</div>
+                    </div>
+                `;
+                const subs = ['Hi there!', 'Welcome back!', 'Easy Workflow Pro', 'SRT Imported!'];
+                const dropEl = o.querySelector('#srt-free-drop');
+                const subEl = o.querySelector('#srt-free-sub');
+                const okEl = o.querySelector('#srt-free-ok');
+                if (window._srtFreeInt) clearInterval(window._srtFreeInt);
+                let si = 0;
+                // Drop animation: icon falls into place, then subtitles start cycling
+                setTimeout(() => {
+                    if (dropEl) { dropEl.style.opacity = '0'; dropEl.style.transform = 'translate(-50%,-50%) scale(1.3)'; }
+                    setTimeout(() => {
+                        if (okEl) okEl.style.opacity = '1';
+                        window._srtFreeInt = setInterval(() => {
+                            if (!subEl) return;
+                            subEl.style.opacity = '1';
+                            subEl.textContent = subs[si % subs.length];
+                            si++;
+                            setTimeout(() => { if (subEl) subEl.style.opacity = '0'; }, 1000);
+                        }, 1500);
+                    }, 400);
+                }, 600);
+            },
+            steps: [{
+                before: () => createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false, true),
+                after: () =>
+                    createLayer(1, '[Sub] Hi there!', C.purple, '0%', '18%', true) +
+                    createLayer(2, '[Sub] Welcome back!', C.purple, '20%', '22%', true) +
+                    createLayer(3, '[Sub] Easy Workflow Pro', C.purple, '45%', '20%', true) +
+                    createLayer(4, 'SUBTITLES_TRACK', C.blue, '0%', '100%', true) +
+                    createLayer(5, '[Video.mp4]', C.teal, '0%', '100%', false),
+                timeBefore: '0;00;00;00', timeAfter: '0;00;04;08'
+            }]
+        },
+        'RESIZE_COMP': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%; height:100%; position:relative; background:#111; display:flex; align-items:center; justify-content:center; overflow:hidden;';
+                o.innerHTML = `
+                    <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);color:#555;font-size:7px;letter-spacing:1px;text-transform:uppercase;">COMP SIZE</div>
+                    <div id="rc-free-frame" style="
+                        width:88%; height:50%;
+                        background:rgba(6,182,212,0.1);
+                        border:2px solid rgba(6,182,212,0.7);
+                        border-radius:4px;
+                        display:flex; flex-direction:column;
+                        align-items:center; justify-content:center; gap:2px;
+                        transition: width 0.65s cubic-bezier(0.175,0.885,0.32,1.275), height 0.65s cubic-bezier(0.175,0.885,0.32,1.275), border-color 0.35s ease, background 0.35s ease;
+                        position:relative;
+                    ">
+                        <div id="rc-free-label" style="color:#22d3ee;font-size:9px;font-weight:700;letter-spacing:1px;transition:opacity 0.3s;">1920×1080</div>
+                        <div id="rc-free-ratio" style="color:rgba(255,255,255,0.25);font-size:7px;">16:9</div>
+                    </div>
+                    <div id="rc-free-badge" style="position:absolute;bottom:8px;right:8px;background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.5);color:#00e676;font-size:7px;font-weight:700;padding:2px 6px;border-radius:3px;opacity:0;transition:opacity 0.4s;">✓ Done</div>
+                `;
+                if (window._rcFreeInt) clearInterval(window._rcFreeInt);
+                const sizes = [
+                    { w: '88%', h: '50%', label: '1920×1080', ratio: '16:9', bc: 'rgba(6,182,212,0.7)', bg: 'rgba(6,182,212,0.1)', lc: '#22d3ee' },
+                    { w: '42%', h: '72%', label: '1080×1920', ratio: '9:16', bc: 'rgba(124,58,237,0.7)', bg: 'rgba(124,58,237,0.1)', lc: '#a78bfa' },
+                    { w: '55%', h: '55%', label: '1080×1080', ratio: '1:1', bc: 'rgba(245,158,11,0.7)', bg: 'rgba(245,158,11,0.1)', lc: '#fbbf24' },
+                    { w: '50%', h: '62%', label: '1080×1350', ratio: '4:5', bc: 'rgba(236,72,153,0.7)', bg: 'rgba(236,72,153,0.1)', lc: '#f472b6' },
+                ];
+                let si = 0;
+                const frame = o.querySelector('#rc-free-frame');
+                const label = o.querySelector('#rc-free-label');
+                const ratio = o.querySelector('#rc-free-ratio');
+                const badge = o.querySelector('#rc-free-badge');
+                window._rcFreeInt = setInterval(() => {
+                    si = (si + 1) % sizes.length;
+                    const s = sizes[si];
+                    if (!frame || !label) return;
+                    label.style.opacity = '0';
+                    setTimeout(() => {
+                        if (!frame || !label) return;
+                        frame.style.width = s.w;
+                        frame.style.height = s.h;
+                        frame.style.borderColor = s.bc;
+                        frame.style.background = s.bg;
+                        label.textContent = s.label;
+                        label.style.color = s.lc;
+                        if (ratio) ratio.textContent = s.ratio;
+                        label.style.opacity = '1';
+                        if (badge) { badge.style.opacity = '1'; setTimeout(() => { if (badge) badge.style.opacity = '0'; }, 700); }
+                    }, 250);
+                }, 1800);
+            },
+            steps: [{
+                before: () => createLayer(1, 'Comp: 1920×1080 (16:9)', C.teal, '0%', '100%', false, true),
+                after: () => createLayer(1, 'Resized → 1080×1920 (9:16)', C.purple, '0%', '100%', true),
+                timeBefore: '0;00;00;00', timeAfter: '0;00;00;01'
+            }]
+        },
+        'TEXT_EXPLODE': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="font-size:24px; color:#fff; font-weight:800; text-transform:uppercase; letter-spacing:2px;">EXPLODE!</div>`;
+            },
+            steps: [{
+                before: () => createLayer(1, 'EXPLODE!', C.purple, '0%', '100%', false, true),
+                after: () => {
+                    compObject.innerHTML = `
+                    <div style="display:flex; gap:4px">
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(-30px, -20px) rotate(-15deg); opacity:0.8;">E</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(-15px, -35px) rotate(10deg); opacity:0.8;">X</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(0, -45px) rotate(-5deg); opacity:0.8;">P</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(15px, -35px) rotate(20deg); opacity:0.8;">L</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(30px, -20px) rotate(-10deg); opacity:0.8;">O</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(45px, -40px) rotate(5deg); opacity:0.8;">D</span>
+                        <span style="display:inline-block; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(60px, -25px) rotate(-15deg); opacity:0.8;">E</span>
+                    </div>`;
+                    return createLayer(1, 'E', C.pink, '0%', '10%', true) + createLayer(2, 'X', C.pink, '10%', '10%', true) + createLayer(3, 'P', C.pink, '20%', '10%', true) + createLayer(4, 'L', C.pink, '30%', '10%', true);
+                },
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'FONT_REFRESH': {
+            useViewer: true, hideTimeline: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="color:#aaa; font-size:12px; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px;">
+                    <i class="fa-solid fa-sync fa-spin fa-3x" style="color:#2979ff;"></i>
+                    <span>Scanning Compositions for Fonts...</span>
+                </div>`;
+            },
+            steps: [{
+                before: () => '',
+                after: () => {
+                    return createLayer(1, 'Font List Refreshed', C.blue, '0%', '100%', true);
+                },
+                timeBefore: '1000', timeAfter: ''
+            }]
+        },
+        'FONT_LIST_ITEM': {
+            useViewer: true, hideTimeline: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `<div style="display:flex; flex-direction:column; gap:15px; padding:20px; width:100%; height:100%; justify-content:center; align-items:center;">
+                    <div style="font-family:sans-serif; font-size:24px; color:#fff; font-weight:bold; border:2px solid #fff; padding:10px 20px; border-radius:4px; text-transform:uppercase;">Montserrat Bold</div>
+                    <div style="font-family:sans-serif; font-size:14px; color:#aaa;">(Used in 3 layers)</div>
+                </div>`;
+            },
+            steps: [{
+                before: () => '', after: () => '', timeBefore: '', timeAfter: ''
+            }]
+        },
+        'FONT_ADD': {
+            useViewer: false,
+            steps: [{
+                before: () => createLayer(1, 'Selected Font: Montserrat-Bold', C.purple, '0%', '100%', false, true),
+                after: () => createLayer(1, 'Added to Replacement List', C.green, '0%', '100%', true),
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'FONT_REPLACE': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                v.style.background = '#1a1a1a';
+                o.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:20px; padding:20px; width:100%; height:100%; justify-content:center; align-items:center;">
+                        <div class="font-target" style="font-family:'Space Grotesk', sans-serif; font-size:28px; color:#fff; font-weight:700; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); text-transform:uppercase;">Design Studio</div>
+                        <div class="font-target" style="font-family:'Space Grotesk', sans-serif; font-size:16px; color:#2979ff; letter-spacing:4px; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); text-transform:uppercase;">Creative</div>
+                    </div>
+                `;
+            },
+            steps: [{
+                before: () => {
+                    const targets = document.querySelectorAll('.font-target');
+                    targets.forEach(t => {
+                        t.style.fontFamily = "'Space Grotesk', sans-serif";
+                    });
+                    return createLayer(1, 'Source Font: Montserrat-Bold', C.orange, '0%', '100%', false, true);
+                },
+                after: () => {
+                    const targets = document.querySelectorAll('.font-target');
+                    targets.forEach(t => {
+                        t.style.fontFamily = "'Inter', sans-serif";
+                        t.style.color = '#fff';
+                        t.style.letterSpacing = '0px';
+                        t.animate([
+                            { transform: 'scale(1.1)', filter: 'blur(2px)' },
+                            { transform: 'scale(1)', filter: 'blur(0)' }
+                        ], { duration: 300, easing: 'ease-out' });
+                    });
+                    return createLayer(1, 'Replaced with Inter-Regular', C.green, '0%', '100%', true);
+                },
+                timeBefore: '800', timeAfter: ''
+            }]
+        },
+        'FONT_REMOVE': {
+            useViewer: false,
+            steps: [{
+                before: () => createLayer(1, 'Selected Font: Montserrat-Bold', C.red, '0%', '100%', false, true),
+                after: () => createLayer(1, 'Removed from List', C.orange, '0%', '100%', true),
+                timeBefore: '', timeAfter: ''
+            }]
+        },
+        'FONT_FAV': {
+            useViewer: false,
+            steps: [{
+                before: () => createLayer(1, 'Marking Font as Favorite', C.yellow, '0%', '100%', false, true),
+                after: () => createLayer(1, 'Added to Favorites ★', C.yellow, '0%', '100%', true),
+                timeBefore: '', timeAfter: ''
+            }]
+        }
+    };
+
+    let currentActionName = null;
+
+    const runGenericSequence = () => {
+        if (!currentActionName || !ACTION_SCENARIOS[currentActionName]) return;
+        const scenarioDef = ACTION_SCENARIOS[currentActionName];
+
+        let step = scenarioDef.steps[scenarioIndex];
+
+        const timelineBody = document.querySelector('.timeline-body');
+
+        // Before State Setup
+        if (scenarioDef.useViewer) {
+            if (compViewer) compViewer.style.display = 'flex';
+            if (scenarioDef.setupViewer) {
+                scenarioDef.setupViewer(compViewer, compObject, step);
+                // Force layout reflow to ensure CSS transitions execute correctly
+                void compObject.offsetWidth;
+            }
+        } else {
+            if (compViewer) compViewer.style.display = 'none';
+        }
+
+        if (scenarioDef.hideTimeline) {
+            if (timelineBody) timelineBody.style.display = 'none';
+            if (step.before) step.before();
+        } else {
+            if (timelineBody) timelineBody.style.display = 'flex';
+
+            if (timelinePlayhead) {
+                if (step.playheadBefore) {
+                    timelinePlayhead.style.display = 'block';
+                    timelinePlayhead.style.transition = 'none';
+                    timelinePlayhead.style.left = step.playheadBefore;
+                    void timelinePlayhead.offsetWidth; // force reflow
+                } else {
+                    timelinePlayhead.style.display = 'none';
+                }
+            }
+            layersList.innerHTML = step.before();
+            if (timelineTime) timelineTime.textContent = step.timeBefore;
+        }
+        if (timelineTime) timelineTime.textContent = step.timeBefore;
+
+        const actionAtStart = currentActionName;
+        // Action Exec
+        sequenceTimer = setTimeout(() => {
+            if (currentActionName !== actionAtStart) return; // Action changed mid-flight
+
+            if (!scenarioDef.hideTimeline) {
+                if (timelinePlayhead && step.playheadAfter) {
+                    if (step.playheadBefore !== step.playheadAfter) {
+                        timelinePlayhead.style.transition = 'left 0.8s linear';
+                    } else {
+                        timelinePlayhead.style.transition = 'none';
+                    }
+                    timelinePlayhead.style.left = step.playheadAfter;
+                }
+
+                layersList.innerHTML = step.after();
+                if (timelineTime) timelineTime.textContent = step.timeAfter;
+            } else if (step.after) {
+                // Allows the viewer-only steps to trigger their 'after' functions (like moving the anchor/align box)
+                step.after();
+            }
+
+            scenarioIndex = (scenarioIndex + 1) % scenarioDef.steps.length;
+
+            // Loop Back
+            const delay = step.loopDelay !== undefined ? step.loopDelay : 2000;
+            sequenceTimer = setTimeout(() => {
+                runGenericSequence();
+            }, delay);
+        }, step.actionDuration !== undefined ? step.actionDuration : 800);
+    };
+
+    const setDefaultState = () => {
+        currentActionName = null;
+        if (sequenceTimer) clearTimeout(sequenceTimer);
+        if (window.numCountInt) clearInterval(window.numCountInt);
+        if (window.numSeqTo) clearTimeout(window.numSeqTo);
+        if (window._srtViewerInterval) clearInterval(window._srtViewerInterval);
+        if (window._srtFreeInt) clearInterval(window._srtFreeInt);
+        if (window._rcInterval) clearInterval(window._rcInterval);
+        if (window._rcFreeInt) clearInterval(window._rcFreeInt);
+        // Hide the panel — only shows on button hover
+        if (timelinePreview) timelinePreview.classList.remove('preview-active');
+        scenarioIndex = 0;
+        const timelineBody = document.querySelector('.timeline-body');
+        if (timelineBody) timelineBody.style.display = 'flex';
+        layersList.innerHTML = createLayer(1, '[Video.mp4]', C.teal, '0%', '100%', false);
+        if (timelineTime) timelineTime.textContent = `0;00;00;00`;
+        if (timelinePlayhead) timelinePlayhead.style.display = 'none';
+        if (compViewer) compViewer.style.display = 'none';
+        if (compObject) {
+            compObject.className = 'comp-object';
+            compObject.style.cssText = '';
+            compObject.textContent = '';
+        }
+    };
+
+    // Initialize the default visual
+    setDefaultState();
+
+    previewButtons.forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            const action = btn.getAttribute('data-preview');
+            if (action && ACTION_SCENARIOS[action]) {
+                if (sequenceTimer) clearTimeout(sequenceTimer);
+                scenarioIndex = 0;
+                currentActionName = action;
+                // Show the panel only when hovering a valid button
+                if (timelinePreview) timelinePreview.classList.add('preview-active');
+                runGenericSequence();
+            }
+        });
+
+        // When mouse leaves the button, revert back to normal state
+        btn.addEventListener('mouseleave', () => {
+            setDefaultState();
+        });
+    });
+
+    // ===== MOCKUP FONT REPLACER INTERACTIVITY =====
+    function initFontInteractivity() {
+        const fontPanel = document.querySelector('.mockup-panel[data-panel="font"]');
+        if (!fontPanel) return;
+
+        const items = fontPanel.querySelectorAll('.ew-list-item');
+        const refreshBtn = fontPanel.querySelector('[data-preview="FONT_REFRESH"]');
+        const favoriteBtn = fontPanel.querySelector('[data-preview="FONT_FAV"]');
+        const addBtn = fontPanel.querySelector('[data-preview="FONT_ADD"]');
+        const replaceBtn = fontPanel.querySelector('[data-preview="FONT_REPLACE"]');
+
+        // Selection logic
+        items.forEach(item => {
+            item.addEventListener('click', (e) => {
+                items.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+
+                // Visual feedback for selection
+                const fontName = item.querySelector('span:first-child').textContent;
+                console.log('Selected font:', fontName);
+            });
+        });
+
+        // Add to List logic
+        addBtn?.addEventListener('click', () => {
+            const selected = fontPanel.querySelector('.ew-list-item.selected');
+            if (selected) {
+                const name = selected.querySelector('span:first-child').textContent;
+                showToast(`Font <b>${name}</b> added to the replacement list!`, 'success');
+            } else {
+                showToast('Please select a font from the list first.', 'error');
+            }
+        });
+
+        // Favorite logic
+        favoriteBtn?.addEventListener('click', () => {
+            const selected = fontPanel.querySelector('.ew-list-item.selected');
+            if (selected) {
+                const name = selected.querySelector('span:first-child').textContent;
+                showToast(`<b>${name}</b> added to your favorite fonts! ★`, 'success');
+                selected.style.color = '#f59e0b';
+            }
+        });
+
+        // Refresh logic
+        refreshBtn?.addEventListener('click', () => {
+            showToast('Scanning your After Effects composition for text layers...', 'success');
+            // Simulate refresh by blinking items
+            items.forEach((item, idx) => {
+                item.style.opacity = '0.3';
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    // Randomize counts for effect
+                    const badge = item.querySelector('.ew-badge');
+                    if (badge) badge.textContent = `${Math.floor(Math.random() * 8) + 1} layer${idx === 1 ? '' : 's'}`;
+                }, 100 * idx);
+            });
+        });
+
+        // Replace Button logic
+        replaceBtn?.addEventListener('click', () => {
+            const selected = fontPanel.querySelector('.ew-list-item.selected');
+            if (selected) {
+                showToast('Searching for layers with source font and replacing...', 'success');
+            }
+        });
+    }
+
+    // Initialize Font Interactivity
+    initFontInteractivity();
+});
