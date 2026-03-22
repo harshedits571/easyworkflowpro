@@ -10,7 +10,7 @@
     <meta name="description"
         content="Easy Workflow Pro is the ultimate After Effects extension for motion designers. Get 7 powerful tools — alignment, font replacer, shape tools, FX manager, save comp & more — in one panel. One-time payment, lifetime access.">
     <meta name="keywords"
-        content="After Effects extension, After Effects plugin, AE workflow automation, motion graphics tools, best After Effects extension 2024, best After Effects extension 2025, font replacer After Effects, align layers After Effects, shape tools After Effects, FX manager After Effects, precomp After Effects, save comp After Effects, After Effects panel, scriptUI panel After Effects, Easy Workflow Pro, easy workflow after effects, after effects productivity tool, AE tools for motion designers, after effects extension free, after effects extension India, after effects extension download, motion bro alternative, kbar alternative, after effects workflow tips, after effects beginner tools, after effects layer alignment, anchor point after effects, number counter after effects, SRT import after effects, disable effects after effects, composition library after effects">
+        content="After Effects extension, After Effects plugin, AE workflow automation, motion graphics tools, best After Effects extension 2025, best After Effects extension 2026, font replacer After Effects, align layers After Effects, shape tools After Effects, FX manager After Effects, precomp After Effects, save comp After Effects, After Effects panel, scriptUI panel After Effects, Easy Workflow Pro, easy workflow after effects, after effects productivity tool, AE tools for motion designers, after effects extension India, after effects extension download, motion bro alternative, kbar alternative, after effects workflow tips, after effects beginner tools, after effects layer alignment, anchor point after effects, number counter after effects, SRT import after effects, disable effects after effects, composition library after effects, auto captions after effects, AI subtitles after effects, whisper after effects, auto caption generator AE, after effects subtitle plugin, after effects transcription tool, auto captions pro">
     <meta name="author" content="Easy Workflow Pro">
     <meta name="robots" content="index, follow">
 
@@ -104,6 +104,47 @@
     }
     </script>
 
+    <!-- ===== STRUCTURED DATA — Auto Captions Pro ===== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Auto Captions Pro",
+      "applicationCategory": "DesignApplication",
+      "applicationSubCategory": "Video Editing Extension",
+      "operatingSystem": "Windows 10, Windows 11",
+      "description": "AI-powered auto caption and subtitle generator for Adobe After Effects using OpenAI's Whisper engine. Offline transcription, smart punctuation, real-time editor, animation presets, SRT import/export, and silence remover.",
+      "url": "https://easyworkflow.store/",
+      "downloadUrl": "https://easyworkflow.store/#pricing",
+      "softwareVersion": "1.0",
+      "author": {
+        "@type": "Person",
+        "name": "Harsh",
+        "url": "https://easyworkflow.store/"
+      },
+      "offers": {
+        "@type": "Offer",
+        "name": "Auto Captions Pro",
+        "price": "800",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock",
+        "description": "Lifetime access to AI-powered auto captions with Whisper transcription, 10+ languages, animation presets, SRT tools, and silence remover"
+      },
+      "featureList": [
+        "Whisper AI Transcription",
+        "10+ Language Support",
+        "Smart Punctuation",
+        "Real-time Caption Editor",
+        "Split and Merge Tools",
+        "5 Built-in Animation Presets",
+        "Unlimited Custom Presets",
+        "Intelligent Keyframe Matching",
+        "SRT Import and Export",
+        "Silence Remover"
+      ]
+    }
+    </script>
+
     <!-- ===== STRUCTURED DATA — FAQ Rich Results ===== -->
     <script type="application/ld+json">
     {
@@ -166,6 +207,32 @@
             "text": "Yes, Easy Workflow Pro works on both Windows and macOS. It supports After Effects 2020 and later on both operating systems."
           }
         }
+      ],
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can Auto Captions Pro transcribe non-English languages?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! Auto Captions Pro supports 10+ major languages including Hindi, Spanish, French, German, and more with high-precision transcription powered by OpenAI's Whisper engine."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Auto Captions Pro require an internet connection?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, Auto Captions Pro uses high-performance AI running locally on your hardware. Your data never leaves your machine, making it completely secure and internet-independent."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does Auto Captions Pro cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Auto Captions Pro is a one-time payment of ₹800. No monthly fees, no credit systems. You get lifetime access and all future updates included."
+          }
+        }
       ]
     }
     </script>
@@ -193,13 +260,31 @@
     </script>
 
     <!-- ===== FONTS & STYLES ===== -->
+    <!-- ===== FAVICONS ===== -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
+    <style>
+        /* Toggle fix — override ensures text isn't clipped */
+        .toggle-pill {
+            overflow: visible !important;
+        }
+
+        .toggle-option {
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+        }
+    </style>
 </head>
 
 <body data-version="pro">
@@ -212,8 +297,16 @@
     <nav class="navbar" id="navbar">
         <div class="nav-container">
             <a href="#hero" class="nav-logo">
-                <span class="logo-icon">⚡</span>
-                <span class="logo-text">Easy Workflow <span class="logo-pro pro-only">Pro</span></span>
+                <span class="logo-icon">
+                    <span class="pro-only">⚡</span>
+                    <span class="free-only">⚡</span>
+                    <span class="autocaptions-only">🎙️</span>
+                </span>
+                <span class="logo-text">
+                    <span class="pro-only">Easy Workflow <span class="logo-pro">Pro</span></span>
+                    <span class="free-only">Easy Workflow</span>
+                    <span class="autocaptions-only">Auto captions <span class="logo-pro">pro</span></span>
+                </span>
             </a>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#features">Features</a></li>
@@ -227,9 +320,13 @@
                     <span class="toggle-indicator" id="toggleIndicator"></span>
                     <span class="toggle-option" data-version="free">Basic</span>
                     <span class="toggle-option active" data-version="pro">Pro</span>
+
+                    <span class="toggle-option" data-version="autocaptions">Auto captions pro</span>
                 </div>
             </div>
             <div class="nav-actions">
+                <a href="#pricing" class="btn btn-primary autocaptions-only" data-tier="autocaptions">Get Auto
+                    Captions</a>
                 <a href="#pricing" class="btn btn-ghost pro-only">Get Basic</a>
                 <a href="#pricing" class="btn btn-primary pro-only">Get Pro</a>
                 <a href="#pricing" class="btn btn-primary free-only btn-pay" data-tier="basic">Get Basic</a>
@@ -258,21 +355,33 @@
                 <span class="badge-dot"></span>
                 After Effects Extension
             </div>
+            <!-- AUTO CAPTIONS Hero Badge -->
+            <div class="hero-badge reveal autocaptions-only">
+                <span class="badge-dot"></span>
+                Auto Captions Extension
+            </div>
             <!-- FREE Hero Badge -->
             <div class="hero-badge reveal free-only">
                 <span class="badge-dot"></span>
                 After Effects Script
             </div>
-            <h1 class="hero-title reveal">
+            <h1 class="hero-title reveal pro-only free-only">
                 Supercharge Your<br>
                 <span class="gradient-text gradient-text-animated">After Effects</span><br>
                 Workflow
+            </h1>
+            <h1 class="hero-title reveal autocaptions-only">
+                AI-Powered Transcription for<br>
+                <span class="gradient-text gradient-text-animated">After Effects</span>
             </h1>
             <!-- PRO Subtitle -->
             <p class="hero-subtitle reveal pro-only">
                 7 powerful tools in one extension — Align, Precomp, Shape, Font Replacer,
                 FX Manager, Comp Saver & more. Everything you need, right inside AE.
             </p>
+            <!-- AUTO CAPTIONS Subtitle -->
+            <p class="hero-subtitle reveal autocaptions-only">High-precision audio transcription using OpenAI's Whisper
+                engine. Smart punctuation, live editor, and intelligent keyframe matching. All inside AE.</p>
             <!-- FREE Subtitle -->
             <p class="hero-subtitle reveal free-only" id="hero-free-subtitle">
                 6 essential tools in one lightweight script — Align, Anchor, Number Counter,
@@ -287,6 +396,15 @@
                     </svg>
                 </a>
                 <a href="#pricing" class="btn btn-outline btn-lg">Get Basic</a>
+            </div>
+            <!-- AUTO CAPTIONS CTAs -->
+            <div class="hero-ctas reveal autocaptions-only">
+                <a href="#pricing" class="btn btn-primary btn-lg" id="hero-autocaptions-cta">
+                    <span id="hero-autocaptions-cta-text">Get Auto Captions — ₹800</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
             </div>
             <!-- FREE CTAs -->
             <div class="hero-ctas reveal free-only">
@@ -317,6 +435,23 @@
                     <span class="stat-label">Features</span>
                 </div>
             </div>
+            <!-- AUTO CAPTIONS Stats -->
+            <div class="hero-stats reveal autocaptions-only">
+                <div class="stat">
+                    <span class="stat-number" data-target="100">0</span>+
+                    <span class="stat-label">Downloads</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="10">0</span>
+                    <span class="stat-label">Languages</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="99">0</span>%
+                    <span class="stat-label">Accuracy</span>
+                </div>
+            </div>
             <!-- FREE Stats -->
             <div class="hero-stats reveal free-only">
                 <div class="stat">
@@ -335,6 +470,24 @@
                 </div>
             </div>
         </div>
+        <!-- FREE Stats -->
+        <div class="hero-stats reveal free-only">
+            <div class="stat">
+                <span class="stat-number" data-target="200">0</span>+
+                <span class="stat-label">Downloads</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+                <span class="stat-number" data-target="6">0</span>
+                <span class="stat-label">Panels</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+                <span class="stat-number" data-target="20">0</span>+
+                <span class="stat-label">Features</span>
+            </div>
+        </div>
+        </div>
         <div class="hero-mockup reveal" id="mockup3d">
             <div class="mockup-glow"></div>
             <div class="mockup-window">
@@ -343,18 +496,26 @@
                         <span></span><span></span><span></span>
                     </div>
                     <span class="mockup-title"><span class="pro-only">Easy Workflow Pro ≡</span><span
-                            class="free-only">Easy Workflow</span></span>
+                            class="autocaptions-only">Auto captions pro ≡</span><span class="free-only">Easy
+                            Workflow</span></span>
+                    <span class="mockup-disclaimer">Interactive Showcase — Actual UI may vary</span>
                 </div>
                 <div class="mockup-content">
                     <!-- PRO Mockup Tabs -->
                     <div class="mockup-tabs pro-only">
                         <span class="mockup-tab active" data-mockup-tab="workflow">⚡ Easy Workflow</span>
+                        <span class="mockup-tab" data-mockup-tab="graph">📈 Graph</span>
                         <span class="mockup-tab" data-mockup-tab="font">A Font Replacer</span>
                         <span class="mockup-tab" data-mockup-tab="compviewer">🖥 Comp Viewer</span>
                         <span class="mockup-tab" data-mockup-tab="disablefx">✂ Disable FX</span>
                         <span class="mockup-tab" data-mockup-tab="savecomp">💾 Save Comp</span>
                         <span class="mockup-tab" data-mockup-tab="shape">🔷 Shape</span>
+                        <span class="mockup-tab" data-mockup-tab="analyse">📊 Analyse</span>
                         <span class="mockup-tab" data-mockup-tab="about">ℹ About</span>
+                    </div>
+                    <!-- AUTO CAPTIONS Mockup Tabs -->
+                    <div class="mockup-tabs autocaptions-only">
+                        <span class="mockup-tab active" data-mockup-tab="autocaptions">⚡ Auto captions pro</span>
                     </div>
                     <!-- FREE Mockup Tabs (single tab) -->
                     <div class="mockup-tabs free-only">
@@ -467,7 +628,11 @@
                             </div>
                             <!-- SPAN 3: LAYER CREATION & EFFECTS -->
                             <div class="ew-section ew-col3">
-                                <div class="ew-header"><i class="fa-solid fa-layer-group"></i> Layer Creation & Effects
+                                <div class="ew-header">
+                                    <span><i class="fa-solid fa-layer-group"></i> Layer Creation & Effects</span>
+                                    <i class="fa-solid fa-circle-question"
+                                        style="font-size:10px; opacity:0.3; margin-left:auto; cursor:help"
+                                        title="Hover over buttons to see what they do"></i>
                                 </div>
                                 <div class="ew-btn-grid g5">
                                     <span class="ew-btn c-red" data-preview="SOLID">SOLID</span>
@@ -491,10 +656,332 @@
                                     <span class="ew-btn c-green" data-preview="TRUE_DUP">TRUE DUP</span>
                                     <span class="ew-btn c-blue" data-preview="SEQ_LAYERS">Seq Layers</span>
                                 </div>
+                                <div class="ew-btn-grid g2" style="margin-top:8px">
+                                    <span class="ew-btn" data-preview="SPLIT_MASKS"
+                                        title="Separates a layer with multiple masks into individual layers for each mask.">SPLIT
+                                        MASKS</span>
+                                    <span class="ew-btn" data-preview="TRACK_PATH"
+                                        title="Automatically tracks the path of a shape layer.">TRACK PATH</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- ========== TAB: GRAPH EDITOR ========== -->
+                    <div class="mockup-panel pro-only" data-panel="graph">
+                        <div
+                            style="display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box; min-height: 100%; padding: 15px; background: #090909;">
+
+                            <!-- LEFT/TOP COLUMN (Graph & Controls) -->
+                            <div
+                                style="flex: 1 1 280px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; border-right: 1px solid #2a2a2a;">
+
+                                <div id="graph-container-sync"
+                                    style="position:relative; width: 100%; max-width: 320px; aspect-ratio: 4/3; margin: 0 auto 15px auto; background: #1a1a1a; border-radius: 6px; border: 1px solid #222;">
+                                    <div id="graph-bounds-sync"
+                                        style="position:absolute; left: 15%; right: 15%; top: 15%; bottom: 15%; border: 1px solid #333; background: #111;">
+                                        <div
+                                            style="position:absolute; left:25%; top:0; bottom:0; border-left:1px solid #222;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; left:50%; top:0; bottom:0; border-left:1px solid #222;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; left:75%; top:0; bottom:0; border-left:1px solid #222;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; top:25%; left:0; right:0; border-top:1px solid #222;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; top:50%; left:0; right:0; border-top:1px solid #222;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; top:75%; left:0; right:0; border-top:1px solid #222;">
+                                        </div>
+
+                                        <svg id="bezier-svg-sync" viewBox="0 0 100 100" preserveAspectRatio="none"
+                                            style="position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible;">
+                                            <path d="M 0,100 C 30,100 70,0 100,0" stroke="white" stroke-width="3"
+                                                fill="none" />
+                                        </svg>
+
+                                        <div
+                                            style="position:absolute; width:8px; height:8px; background:#FFA500; border-radius:50%; top:100%; left:0; transform:translate(-50%, -50%); z-index:5;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; width:8px; height:8px; background:#FFA500; border-radius:50%; top:0; left:100%; transform:translate(-50%, -50%); z-index:5;">
+                                        </div>
+
+                                        <!-- Handles -->
+                                        <div
+                                            style="position:absolute; width:14px; height:14px; border:2px solid white; background:#FFA500; border-radius:50%; top:100%; left:30%; transform:translate(-50%, -50%); z-index:10;">
+                                        </div>
+                                        <div
+                                            style="position:absolute; width:14px; height:14px; border:2px solid white; background:#FFA500; border-radius:50%; top:0; left:70%; transform:translate(-50%, -50%); z-index:10;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    style="display:flex; justify-content:center; align-items:center; width: 100%; margin-bottom: 12px; gap:8px;">
+                                    <button
+                                        style="flex:1; padding:6px; background:#222; border:1px solid #333; color:#aaa; border-radius:4px; font-size:10px;">IN</button>
+                                    <button
+                                        style="flex:1; padding:6px; background:#3A82F6; border:1px solid #3A82F6; color:white; border-radius:4px; font-size:10px;">BOTH</button>
+                                    <button
+                                        style="flex:1; padding:6px; background:#222; border:1px solid #333; color:#aaa; border-radius:4px; font-size:10px;">OUT</button>
+                                </div>
+
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; width: 100%; margin-bottom: 15px;">
+                                    <button
+                                        style="background:transparent; border:none; color:#4fc3f7; font-size:12px; display:flex; gap:5px; align-items:center; padding:0;"><i
+                                            class="fa-solid fa-arrow-right-to-bracket"></i> Read</button>
+                                    <div
+                                        style="text-align:right; color:#bbb; font-size:12px; font-weight:bold; letter-spacing:1px; flex:1;">
+                                        0.25, 0.10, 0.25, 1.00</div>
+                                </div>
+
+                                <button
+                                    style="width:100%; padding:12px; font-weight:bold; font-size:14px; background:#3A82F6; color:white; border:none; border-radius:4px; cursor:pointer; text-transform:uppercase;">APPLY
+                                    EASING</button>
+                            </div>
+
+                            <!-- RIGHT/BOTTOM COLUMN (Presets) -->
+                            <div
+                                style="flex: 1 1 200px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+                                <div
+                                    style="width:100%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:15px;">
+                                    <div style="font-size:10px; color:#aaa; text-transform:uppercase;">presets</div>
+                                    <button
+                                        style="background:none; border:none; color:var(--accent-blue); padding:0; font-size:11px; cursor:pointer;"><i
+                                            class="fa-solid fa-plus"></i> Add Custom</button>
+                                </div>
+
+                                <div id="graph-presets-sync"
+                                    style="display:grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap:6px; width:100%;">
+                                    <div class="preset-box-sync"><svg viewBox="0 0 40 40" class="pz-svg">
+                                            <path d="M 5,35 L 35,5" stroke="#aaa" stroke-width="2.5" fill="none" />
+                                        </svg>
+                                        <div class="preset-label-sync">linear</div>
+                                    </div>
+                                    <div class="preset-box-sync"><svg viewBox="0 0 40 40" class="pz-svg">
+                                            <path d="M 5,35 Q 35,35 35,5" stroke="#aaa" stroke-width="2.5"
+                                                fill="none" />
+                                        </svg>
+                                        <div class="preset-label-sync">easeIn</div>
+                                    </div>
+                                    <div class="preset-box-sync"><svg viewBox="0 0 40 40" class="pz-svg">
+                                            <path d="M 5,35 Q 5,5 35,5" stroke="#aaa" stroke-width="2.5" fill="none" />
+                                        </svg>
+                                        <div class="preset-label-sync">easeOut</div>
+                                    </div>
+                                    <div class="preset-box-sync" style="opacity:1;"><svg viewBox="0 0 40 40"
+                                            class="pz-svg">
+                                            <path d="M 5,35 C 30,35 10,5 35,5" stroke="white" stroke-width="2.5"
+                                                fill="none" />
+                                        </svg>
+                                        <div class="preset-label-sync" style="color:white;">ease</div>
+                                    </div>
+                                </div>
+                                <style>
+                                    .preset-box-sync {
+                                        text-align: center;
+                                        opacity: 0.6;
+                                        cursor: pointer;
+                                    }
+
+                                    .pz-svg {
+                                        width: 100%;
+                                        aspect-ratio: 1;
+                                        background: #1a1a1a;
+                                        border-radius: 4px;
+                                        padding: 4px;
+                                        border: 1px solid #222;
+                                    }
+
+                                    .preset-label-sync {
+                                        font-size: 8px;
+                                        color: #888;
+                                        margin-top: 2px;
+                                    }
+                                </style>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ========== TAB: ANALYTICAL DASHBOARD ========== -->
+                    <div class="mockup-panel pro-only" data-panel="analyse">
+                        <div
+                            style="display:flex; flex-direction:column; gap:15px; height:100%; padding:15px; background:#090909;">
+
+                            <div class="section-box"
+                                style="text-align:center; padding: 25px 15px; background: linear-gradient(145deg, #1a1a1a, #0b0b0b); border: 1px solid var(--accent-purple); box-shadow: 0 5px 20px rgba(138,43,226,0.15);">
+                                <div
+                                    style="font-size: 11px; color: var(--accent-purple); font-weight: bold; letter-spacing: 2px; margin-bottom: 5px; text-transform: uppercase;">
+                                    Current Session</div>
+                                <div id="an-current-timer"
+                                    style="font-size: 48px; font-family: 'Courier New', monospace; font-weight: 900; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.2);">
+                                    00:00:00</div>
+                                <div style="color: #666; font-size: 10px; margin-top: 5px;">TIME SPENT IN ACTIVE AFTER
+                                    EFFECTS WINDOW
+                                </div>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                                <div class="section-box" style="text-align:center; position:relative; overflow:hidden;">
+                                    <div
+                                        style="position:absolute; top:-10px; right:-10px; font-size:40px; color:rgba(255,145,0,0.05);">
+                                        <i class="fa-solid fa-calendar-day"></i>
+                                    </div>
+                                    <div
+                                        style="font-size: 10px; color: var(--accent-orange); font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase;">
+                                        Today's Focus</div>
+                                    <div id="an-today-timer" style="font-size: 24px; font-weight: 800; color: #eee;">0.0
+                                        hrs</div>
+                                    <div style="color: #666; font-size: 9px; margin-top: 5px;">TOTAL RECORDED TODAY
+                                    </div>
+                                </div>
+
+                                <div class="section-box" style="text-align:center; position:relative; overflow:hidden;">
+                                    <div
+                                        style="position:absolute; top:-10px; right:-10px; font-size:40px; color:rgba(41,121,255,0.05);">
+                                        <i class="fa-solid fa-calendar-week"></i>
+                                    </div>
+                                    <div
+                                        style="font-size: 10px; color: #2979ff; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase;">
+                                        This Week</div>
+                                    <div id="an-week-timer" style="font-size: 24px; font-weight: 800; color: #eee;">0.0
+                                        hrs</div>
+                                    <div style="color: #666; font-size: 9px; margin-top: 5px;">TOTAL RECORDED THIS WEEK
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-box" style="flex:1;">
+                                <div class="mockup-section-header"
+                                    style="justify-content:space-between; margin-bottom: 10px;">
+                                    <span><i class="fa-solid fa-chart-bar" style="color:#888;"></i> Detailed
+                                        Analytics</span>
+                                    <button class="toggle-btn"
+                                        style="border:none; background:none; color:var(--accent-purple);"
+                                        onclick="refreshAnalytics()"><i class="fa-solid fa-rotate-right"></i>
+                                        Refresh</button>
+                                </div>
+
+                                <div id="analytics-empty-state"
+                                    style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#555; text-align:center; padding: 20px;">
+                                    <i class="fa-solid fa-chart-pie"
+                                        style="font-size: 30px; margin-bottom:10px; opacity:0.3;"></i>
+                                    <div style="font-size: 12px; font-weight: bold; color:#777;">Gathering Data...</div>
+                                    <div style="font-size: 10px; max-width: 180px; margin-top: 5px;">Work in After
+                                        Effects for a while
+                                        so we can track and build your charts!</div>
+                                </div>
+
+                                <div id="analytics-data-state" style="display:none; flex-direction:column; gap:8px;">
+                                    <!-- Bar graph visualizations will be injected here via JS -->
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ========== TAB: AUTO CAPTIONS ========== -->
+                    <div class="mockup-panel autocaptions-only" data-panel="autocaptions">
+                        <div class="ew-grid">
+                            <div class="ew-section ew-col2">
+                                <div class="ew-header">Caption Settings</div>
+                                <div class="ew-ctl-row" style="margin-bottom:6px"><span class="ew-prop-label">Max
+                                        Characters</span>
+                                    <div class="ew-input" style="width:40px;text-align:center;">32</div>
+                                </div>
+                                <div class="ew-ctl-row" style="margin-bottom:6px"><span class="ew-prop-label">Max
+                                        Duration(s)</span>
+                                    <div class="ew-input" style="width:40px;text-align:center;">3</div>
+                                </div>
+                                <div class="ew-ctl-row" style="margin-bottom:10px"><span class="ew-prop-label">Line
+                                        Mode</span>
+                                    <div class="ew-dropdown" style="flex:1;margin:0">Single ▾</div>
+                                </div>
+                                <div style="display:flex; gap:6px; align-items:center; justify-content:space-between;">
+                                    <span class="ew-btn c-green" style="padding:6px; flex:1;"><i
+                                            class="fa-solid fa-file-export"></i> Export SRT</span>
+                                    <label class="mock-checkbox" style="margin:0;"><span class="mock-checkbox-box"
+                                            style="width:10px;height:10px;background:#fff;border-radius:2px;"></span>
+                                        Single Layer</label>
+                                    <span class="ew-btn c-cyan" style="padding:6px; flex:1;"><i
+                                            class="fa-solid fa-file-import"></i> Import SRT</span>
+                                </div>
+                            </div>
+                            <div class="ew-section" style="justify-content:space-between;">
+                                <div class="ew-header">AI Settings</div>
+                                <div class="ew-dropdown" style="width:100%;text-align:left;">English (Offline) ▾</div>
+                                <div class="ew-dropdown" style="width:100%;text-align:left;">Large ▾</div>
+                                <div class="ew-dropdown" style="width:100%;text-align:left;">Center ▾</div>
+                                <div class="ew-dropdown" style="width:100%;text-align:left;">AE Default Size ▾</div>
+                            </div>
+                            <!-- TEXT PRESETS -->
+                            <div class="ew-section ew-col3">
+                                <div class="ew-header" style="justify-content:space-between;">
+                                    <span>🪄 TEXT PRESETS</span>
+                                    <span class="ew-btn c-orange" style="font-size:8px;padding:3px"><i
+                                            class="fa-solid fa-key"></i> Match Keyframes</span>
+                                </div>
+                                <div class="ew-btn-grid g5" style="margin-top:4px;">
+                                    <span class="ew-btn c-purple"
+                                        style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-arrow-up" style="font-size:14px;"></i> Bounce Up</span>
+                                    <span class="ew-btn c-purple"
+                                        style="flex-direction:column;gap:2px;padding:8px 0;"><i class="fa-solid fa-bolt"
+                                            style="font-size:14px;"></i> Pop Bouncer</span>
+                                    <span class="ew-btn c-green" style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-arrow-up" style="font-size:14px;"></i> Fade Up</span>
+                                    <span class="ew-btn c-orange"
+                                        style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-expand" style="font-size:14px;"></i> Bounce</span>
+                                    <span class="ew-btn c-red" style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-bolt" style="font-size:14px;"></i> Glitch</span>
+                                </div>
+                                <div style="font-size:8px;color:rgba(255,255,255,0.4);margin-top:6px;">📁 Custom Presets
+                                    (right-click to remove)</div>
+                                <div class="ew-btn-grid g3" style="margin-top:2px;">
+                                    <span class="ew-btn" style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-film" style="color:var(--purple)"></i> Fade Up
+                                        C...</span>
+                                    <span class="ew-btn" style="flex-direction:column;gap:2px;padding:8px 0;"><i
+                                            class="fa-solid fa-film" style="color:var(--purple)"></i> Bounce
+                                        te...</span>
+                                    <span class="ew-btn"
+                                        style="flex-direction:column;gap:2px;padding:8px 0; border:1px dashed rgba(255,255,255,0.2)"><i
+                                            class="fa-solid fa-plus"></i> Add</span>
+                                </div>
+                            </div>
+
+                            <!-- SILENCE REMOVER -->
+                            <div class="ew-section ew-col3">
+                                <div class="ew-header">🔇 SILENCE REMOVER <span
+                                        style="font-size:7px;color:rgba(255,255,255,0.35);font-weight:400;margin-left:4px;">(BETA)</span>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                    <span style="font-size:9px;color:rgba(255,255,255,0.5);">Padding (s):</span>
+                                    <div class="ew-input" style="width:40px;text-align:center;">0.1</div>
+                                    <span class="ew-btn c-red"
+                                        style="flex:1; padding:7px; border:1px solid rgba(239,68,68,0.4); font-size:10px;">✂
+                                        Cut Silence</span>
+                                </div>
+                            </div>
+
+                            <div class="ew-col3" style="display:flex; gap:8px; margin-top:4px;">
+                                <span class="ew-btn c-purple" style="flex:2; padding:12px; font-size:12px;">✨ Generate
+                                    Captions</span>
+                                <span class="ew-btn" style="flex:1; padding:12px;"><i
+                                        class="fa-solid fa-pen-to-square"></i> Edit</span>
+                                <span class="ew-btn c-blue" style="width:40px;"><i class="fa-solid fa-gear"></i></span>
+                            </div>
+                        </div>
+                    </div>
                     <!-- ========== TAB: EASY WORKFLOW FREE (screenshot replica) ========== -->
                     <div class="mockup-panel active free-only" data-panel="workflow">
                         <div class="ew-grid" style="display:block;">
@@ -1045,7 +1532,9 @@
                         <line x1="8" y1="21" x2="16" y2="21" />
                         <line x1="12" y1="17" x2="12" y2="21" />
                     </svg>
-                    <span>Windows & macOS</span>
+                    <span class="pro-only">Windows & macOS</span>
+                    <span class="free-only">Windows & macOS</span>
+                    <span class="autocaptions-only">Windows Only</span>
                 </div>
                 <div class="proof-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1067,6 +1556,14 @@
                         Effects</span></h2>
                 <p class="section-subtitle">7 powerful tabs packed with 50+ features to obliterate your workflow
                     bottlenecks.</p>
+            </div>
+            <!-- AUTO CAPTIONS Features Header -->
+            <div class="section-header reveal autocaptions-only">
+                <span class="section-tag">FEATURES</span>
+                <h2 class="section-title">AI-Powered Captioning,<br><span class="gradient-text">Built for After
+                        Effects</span></h2>
+                <p class="section-subtitle">8 high-performance features including Whisper-powered transcription, speaker
+                    detection, multi-language support and more.</p>
             </div>
             <!-- FREE Features Header -->
             <div class="section-header reveal free-only">
@@ -1168,6 +1665,50 @@
                     <p>Save compositions with thumbnails. Search, filter by client, organize your project library.</p>
                 </div>
             </div>
+            <!-- AUTO CAPTIONS Features Grid -->
+            <div class="features-grid autocaptions-only">
+                <div class="feature-card reveal" data-delay="0">
+                    <div class="feature-icon" style="--icon-color: #7c3aed;">🎙️</div>
+                    <h3>AI Transcription</h3>
+                    <p>High-precision audio transcription using OpenAI's Whisper engine for flawless subtitles.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="100">
+                    <div class="feature-icon" style="--icon-color: #22c55e;">✨</div>
+                    <h3>Smart Punctuation</h3>
+                    <p>Built-in Clean Text logic to fix capitalization and common punctuation errors instantly.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="200">
+                    <div class="feature-icon" style="--icon-color: #f59e0b;">✍️</div>
+                    <h3>Real-time Editor</h3>
+                    <p>Split & Merge tools directly in the UI with instant AE updates and live preview.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="300">
+                    <div class="feature-icon" style="--icon-color: #ef4444;">💾</div>
+                    <h3>SRT Import & Export</h3>
+                    <p>Bring in external SRT files to edit, or export your completed captions for social media
+                        platforms.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="400">
+                    <div class="feature-icon" style="--icon-color: #06b6d4;">🎯</div>
+                    <h3>Intelligent Matching</h3>
+                    <p>Dynamic alignment rescales animations to fit perfectly within each layer's duration.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="500">
+                    <div class="feature-icon" style="--icon-color: #ec4899;">⭐</div>
+                    <h3>Custom Presets</h3>
+                    <p>Unlimited slots for your text presets.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="600">
+                    <div class="feature-icon" style="--icon-color: #3b82f6;">🌐</div>
+                    <h3>Multi-Language</h3>
+                    <p>Transcribe and translate audio from 50+ languages with high accuracy.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="700">
+                    <div class="feature-icon" style="--icon-color: #fbbf24;">👥</div>
+                    <h3>Speaker Labels</h3>
+                    <p>Automatically detect and assign different color styles to multiple speakers.</p>
+                </div>
+            </div>
             <!-- FREE Features Grid -->
             <div class="features-grid free-only">
                 <div class="feature-card reveal" data-delay="0">
@@ -1256,6 +1797,13 @@
                 <p class="section-subtitle">Click on each tab to explore the full power packed inside Easy Workflow Pro.
                 </p>
             </div>
+            <!-- AUTO CAPTIONS Deep Dive Header -->
+            <div class="section-header reveal autocaptions-only">
+                <span class="section-tag">DEEP DIVE</span>
+                <h2 class="section-title">Every Feature,<br><span class="gradient-text">Explored In Detail</span></h2>
+                <p class="section-subtitle">Click on each tab to explore the full power packed inside Auto Captions Pro.
+                </p>
+            </div>
             <!-- FREE Deep Dive Header -->
             <div class="section-header reveal free-only">
                 <span class="section-tag">DEEP DIVE</span>
@@ -1267,10 +1815,19 @@
                 <!-- PRO Tabs Nav -->
                 <div class="tabs-nav pro-only">
                     <button class="tab-btn active" data-tab="workflow">⚡ Easy Workflow</button>
+                    <button class="tab-btn" data-tab="graph">📈 Graph Editor</button>
+                    <button class="tab-btn" data-tab="analytics">📊 Analytics</button>
                     <button class="tab-btn" data-tab="font">A Font Replacer</button>
                     <button class="tab-btn" data-tab="shape">🔷 Shape</button>
                     <button class="tab-btn" data-tab="disablefx">✂ Disable FX</button>
                     <button class="tab-btn" data-tab="savecomp">💾 Save Comp</button>
+                </div>
+                <!-- AUTO CAPTIONS Tabs Nav -->
+                <div class="tabs-nav autocaptions-only">
+                    <button class="tab-btn active" data-tab="ac-transcription">🎙️ Transcription</button>
+                    <button class="tab-btn" data-tab="ac-editor">✍️ Caption Editor</button>
+                    <button class="tab-btn" data-tab="ac-presets">⭐ Text Presets</button>
+                    <button class="tab-btn" data-tab="ac-srt">📄 SRT Tools</button>
                 </div>
                 <!-- FREE Tabs Nav -->
                 <div class="tabs-nav free-only">
@@ -1279,6 +1836,189 @@
                     <button class="tab-btn" data-tab="free-layers">📌 Layer Creation</button>
                 </div>
                 <div class="tabs-content">
+                    <!-- ========== AUTO CAPTIONS: TRANSCRIPTION ========== -->
+                    <div class="tab-panel autocaptions-only" id="tab-ac-transcription">
+                        <div class="tab-info">
+                            <h3>🎙️ AI Transcription</h3>
+                            <p>Industry-leading audio transcription powered by OpenAI's Whisper, running directly inside
+                                After Effects — completely offline, no API keys, no internet required.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🤖</span>
+                                    <div>
+                                        <strong>WHISPER ENGINE</strong>
+                                        <span>OpenAI's Whisper model runs locally on your machine for maximum privacy
+                                            and speed</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🌍</span>
+                                    <div>
+                                        <strong>MULTI-LANGUAGE</strong>
+                                        <span>Supports 10+ languages including English, Hindi, Spanish, French,
+                                            Japanese, and more</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📐</span>
+                                    <div>
+                                        <strong>MAX CHARACTERS</strong>
+                                        <span>Set character limits per caption line for perfect readability — default 32
+                                            characters</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">⏱️</span>
+                                    <div>
+                                        <strong>MAX DURATION</strong>
+                                        <span>Control maximum caption duration in seconds — keeps subtitles readable at
+                                            any pace</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📝</span>
+                                    <div>
+                                        <strong>LINE MODES</strong>
+                                        <span>Single or Multi-line modes — choose how captions break across lines</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">✨</span>
+                                    <div>
+                                        <strong>SMART PUNCTUATION</strong>
+                                        <span>Built-in Clean Text automatically fixes capitalization and common
+                                            punctuation errors</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- ========== AUTO CAPTIONS: EDITOR ========== -->
+                    <div class="tab-panel autocaptions-only" id="tab-ac-editor">
+                        <div class="tab-info">
+                            <h3>✍️ Real-time Caption Editor</h3>
+                            <p>Edit your generated captions directly in the panel. Changes are instantly reflected on
+                                After Effects text layers — no re-generation needed.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">✂️</span>
+                                    <div>
+                                        <strong>SPLIT LINE</strong>
+                                        <span>Break a long caption into two separate layers at any word — instant
+                                            timeline update</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔗</span>
+                                    <div>
+                                        <strong>MERGE LINE</strong>
+                                        <span>Combine two adjacent captions into one — the timeline layers merge
+                                            seamlessly</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📝</span>
+                                    <div>
+                                        <strong>INLINE TEXT EDITING</strong>
+                                        <span>Click any caption to edit its text — changes apply to the AE text layer in
+                                            real-time</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🎯</span>
+                                    <div>
+                                        <strong>LIVE PREVIEW</strong>
+                                        <span>See your edits reflected immediately on the After Effects timeline — zero
+                                            delay</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- ========== AUTO CAPTIONS: PRESETS ========== -->
+                    <div class="tab-panel autocaptions-only" id="tab-ac-presets">
+                        <div class="tab-info">
+                            <h3>⭐ Text Presets & Keyframe Matching</h3>
+                            <p>Apply stunning text animations with one click. Save your own custom presets and let the
+                                intelligent keyframe matching engine rescale animations to fit every caption.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🎬</span>
+                                    <div>
+                                        <strong>BUILT-IN PRESETS</strong>
+                                        <span>5 ready-to-use animation presets — Bounce Up, Pop Bouncer, Fade Up,
+                                            Bounce, Glitch</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">💾</span>
+                                    <div>
+                                        <strong>CUSTOM PRESET SLOTS</strong>
+                                        <span>Save unlimited custom presets to your Documents folder — persistent across
+                                            sessions</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔑</span>
+                                    <div>
+                                        <strong>MATCH KEYFRAMES</strong>
+                                        <span>Intelligent engine automatically rescales keyframes to fit each caption's
+                                            duration</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📐</span>
+                                    <div>
+                                        <strong>TEXT ALIGNMENT</strong>
+                                        <span>Choose Center, Left, or Right alignment — applies across all generated
+                                            captions</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔤</span>
+                                    <div>
+                                        <strong>FONT SIZE CONTROL</strong>
+                                        <span>Set AE Default Size or specify a custom font size for all generated text
+                                            layers</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- ========== AUTO CAPTIONS: SRT TOOLS ========== -->
+                    <div class="tab-panel autocaptions-only" id="tab-ac-srt">
+                        <div class="tab-info">
+                            <h3>📄 SRT Import & Export</h3>
+                            <p>Bring in external SRT files from YouTube, Premiere, or any subtitle tool — or export your
+                                generated captions as standard .srt files for easy sharing.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">📥</span>
+                                    <div>
+                                        <strong>IMPORT SRT</strong>
+                                        <span>Load any standard .srt file and instantly create text layers on the AE
+                                            timeline</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📤</span>
+                                    <div>
+                                        <strong>EXPORT SRT</strong>
+                                        <span>Export your completed captions as .srt — share on YouTube, social media,
+                                            or archive</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🔄</span>
+                                    <div>
+                                        <strong>SINGLE LAYER MODE</strong>
+                                        <span>Optionally generate all captions on a single text layer using source text
+                                            keyframes</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                     <!-- WORKFLOW TAB -->
                     <div class="tab-panel active" id="tab-workflow">
                         <div class="tab-info">
@@ -1508,6 +2248,90 @@
                             </ul>
                         </div>
                     </div>
+                    <!-- GRAPH EDITOR TAB -->
+                    <div class="tab-panel pro-only" id="tab-graph">
+                        <div class="tab-info">
+                            <h3>📈 Graph Editor</h3>
+                            <p>Precision easing made easy. Direct access to Bezier handles and a library of 18+ high-end
+                                preset curves to give your animations professional motion in seconds.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">📊</span>
+                                    <div>
+                                        <strong>VISUAL BEZIER HANDLES</strong>
+                                        <span>Directly manipulate the motion graph with interactive, visual
+                                            handles.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">⚡</span>
+                                    <div>
+                                        <strong>18+ EASING PRESETS</strong>
+                                        <span>A library of high-end easing curves — Bounce, Elastic, Sine, Expo, and
+                                            more.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📐</span>
+                                    <div>
+                                        <strong>NUMERICAL ACCURACY</strong>
+                                        <span>Real-time Influence and Velocity readouts for pixel-perfect motion
+                                            precision.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🪄</span>
+                                    <div>
+                                        <strong>BULK APPLY</strong>
+                                        <span>Select multiple keyframes and apply your custom curve instantly at
+                                            scale.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- ANALYTICS TAB -->
+                    <div class="tab-panel pro-only" id="tab-analytics">
+                        <div class="tab-info">
+                            <h3>📊 Analytical Dashboard</h3>
+                            <p>Your high-performance workspace monitor. Track every second spent in the After Effects
+                                window with automated session logging and deep project-specific metrics.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">⏱️</span>
+                                    <div>
+                                        <strong>SESSION TIMER</strong>
+                                        <span>Premium linear-gradient timer tracks your active editing time in
+                                            real-time.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">🎯</span>
+                                    <div>
+                                        <strong>TODAY'S FOCUS</strong>
+                                        <span>Instant metrics showing total hours recorded for your current workstation
+                                            day.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📈</span>
+                                    <div>
+                                        <strong>WEEKLY PROGRESS</strong>
+                                        <span>Compare your focus time across the week with clear, data-driven progress
+                                            cards.</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">📅</span>
+                                    <div>
+                                        <strong>HISTORICAL CHARTS</strong>
+                                        <span>Detailed bar charts automatically track your most productive hours over
+                                            time.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                     <!-- FREE: SRT TOOLS TAB -->
                     <div class="tab-panel free-only" id="tab-free-srt">
                         <div class="tab-info">
@@ -1621,6 +2445,36 @@
                         never be the same.</p>
                 </div>
             </div>
+            <div class="steps-grid autocaptions-only">
+                <div class="step-card reveal" data-delay="0">
+                    <div class="step-number">01</div>
+                    <div class="step-line"></div>
+                    <h3>Download & Install</h3>
+                    <p>Download the extension, run the ZXP installer. Works on Windows with After Effects
+                        2020+.</p>
+                </div>
+                <div class="step-card reveal" data-delay="150">
+                    <div class="step-number">02</div>
+                    <div class="step-line"></div>
+                    <h3>Setup Whisper</h3>
+                    <p>Download the Whisper engine executable and a language model. The panel guides you through setup
+                        in under 2 minutes.</p>
+                </div>
+                <div class="step-card reveal" data-delay="300">
+                    <div class="step-number">03</div>
+                    <div class="step-line"></div>
+                    <h3>Generate Captions</h3>
+                    <p>Select a composition with audio, configure character limits and duration, then click Generate. AI
+                        does the rest.</p>
+                </div>
+                <div class="step-card reveal" data-delay="450">
+                    <div class="step-number">04</div>
+                    <div class="step-line"></div>
+                    <h3>Edit & Style</h3>
+                    <p>Use the live editor to tweak text, Split/Merge lines, apply animation presets, and export SRT —
+                        all inside AE.</p>
+                </div>
+            </div>
             <div class="steps-grid free-only">
                 <div class="step-card reveal" data-delay="0">
                     <div class="step-number">01</div>
@@ -1689,6 +2543,109 @@
                             <span class="countdown-text">Sec</span>
                         </div>
                     </div>
+                </div>
+            </div>
+            <!-- AUTO CAPTIONS Pricing Header -->
+            <div class="section-header reveal autocaptions-only">
+                <span class="section-tag">PRICING</span>
+                <h2 class="section-title">One Price.<br><span class="gradient-text">Lifetime Access.</span></h2>
+                <p class="section-subtitle">No subscriptions. No hidden fees. One payment, unlimited captions forever.
+                </p>
+            </div>
+            <!-- AUTO CAPTIONS Pricing Card -->
+            <div class="pricing-grid autocaptions-only">
+                <div class="price-card price-card-pro reveal" data-delay="0" style="max-width: 480px; margin: 0 auto;">
+                    <div class="price-badge">AUTO CAPTIONS PRO</div>
+                    <div class="price-header">
+                        <h3>Auto Captions Pro</h3>
+                        <div class="price-amount">
+                            <span class="price-currency">₹</span>
+                            <span class="price-value">800</span>
+                        </div>
+                        <span class="price-period">One-time payment • Lifetime access</span>
+                    </div>
+                    <ul class="price-features">
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Whisper AI transcription engine
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            10+ language support
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Smart punctuation & clean text
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Real-time caption editor
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Split & Merge tools
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            5 built-in animation presets
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Unlimited custom presets
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Intelligent keyframe matching
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            SRT import & export
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Windows Only Support
+                        </li>
+                        <li class="included">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Lifetime updates & support
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-primary btn-block btn-glow" id="btn-autocaptions"
+                        data-tier="autocaptions">Get Auto Captions — ₹800</a>
+                    <span class="price-note">Instant download • Lifetime access</span>
                 </div>
             </div>
             <!-- FREE Pricing Header -->
@@ -1767,11 +2724,12 @@
                             Priority Support
                         </li>
                     </ul>
-                    <a href="#" onclick="document.querySelector('[data-version=free]').click(); window.scrollTo(0,0); return false;"
+                    <a href="#"
+                        onclick="document.querySelector('[data-version=free]').click(); window.scrollTo(0,0); return false;"
                         class="btn btn-outline btn-block" id="btn-free">Get Basic</a>
                     <span class="price-note">Just ₹100 for lifetime access</span>
                 </div>
-                <div class="price-card price-card-pro reveal" data-delay="200">
+                <div class="price-card price-card-pro reveal pro-only" data-delay="200">
                     <div class="price-badge">MOST POPULAR</div>
                     <div class="price-header">
                         <h3>Pro</h3>
@@ -1930,7 +2888,7 @@
                 <span class="section-tag">FAQ</span>
                 <h2 class="section-title">Questions?<br><span class="gradient-text">We've Got Answers.</span></h2>
             </div>
-            <div class="faq-list reveal">
+            <div class="faq-list reveal pro-only free-only">
                 <div class="faq-item">
                     <button class="faq-question">
                         <span>Is there a free version available?</span>
@@ -1956,7 +2914,7 @@
                     </button>
                     <div class="faq-answer">
                         <p>Easy Workflow Pro supports After Effects 2020 (version 17.0) and later on both Windows and
-                            macOS.</p>
+                            macOS. Note: Auto Captions Pro currently supports Windows Only (macOS coming soon).</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -2043,6 +3001,88 @@
                     </div>
                 </div>
             </div>
+            <!-- AUTO CAPTIONS FAQ -->
+            <div class="faq-list reveal autocaptions-only">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Can I transcribe non-English languages?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! Auto Captions Pro supports 10+ major languages including Hindi, Spanish, French, German,
+                            and more with high-precision transcription.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Does it require an internet connection?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No, it uses high-performance AI running locally on your hardware. Your data never leaves your
+                            machine, making it completely secure and internet-independent.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What AE versions and OS are supported?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Auto Captions Pro supports After Effects 2020 and all later versions. Currently, it is
+                            <strong>Windows Only</strong>. macOS support is currently in deep development.
+                        </p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is it a one-time payment or subscription?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Auto Captions Pro is a one-time payment of ₹800. No monthly fees, no credit systems. You get
+                            lifetime access and all future updates included.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How fast is the transcription?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Transcription speed depends on your CPU/GPU hardware. On a modern workstation, it typically
+                            takes only 1/4th of the audio's duration to generate complete captions.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Do I get support if I face issues?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes, all purchasers get priority email support. We respond to technical queries within 24
+                            hours to ensure your workflow stays uninterrupted.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -2051,22 +3091,31 @@
         <div class="container">
             <div class="cta-card reveal">
                 <div class="cta-glow"></div>
+                <!-- AUTO CAPTIONS CTA -->
+                <h2 class="autocaptions-only">Automate Your Captions<br>With <span class="gradient-text">AI
+                        Precision</span></h2>
+                <p class="autocaptions-only">Stop manually timing captions. Let AI handle the hard work while you focus
+                    on the creative motion design.</p>
+
                 <!-- PRO CTA -->
                 <h2 class="pro-only">Ready to Supercharge<br>Your <span class="gradient-text">After Effects</span>
                     Workflow?</h2>
                 <p class="pro-only">Join thousands of motion designers, editors, and creators who work smarter with Easy
-                    Workflow Pro.
-                </p>
+                    Workflow Pro.</p>
+
                 <!-- FREE CTA -->
                 <h2 class="free-only">Start Creating Faster<br>With <span class="gradient-text">Easy Workflow</span>
                 </h2>
-                <p class="free-only">Get the Basic script and join thousands of creators who've already sped up
-                    their After Effects workflow.</p>
+                <p class="free-only">Get the Basic script and join thousands of creators who've already sped up their
+                    After Effects workflow.</p>
+
                 <div class="cta-buttons">
                     <a href="#pricing" class="btn btn-primary btn-lg pro-only">Get Pro — ₹1500</a>
                     <a href="#pricing" class="btn btn-outline btn-lg pro-only">Get Basic</a>
                     <a href="#" class="btn btn-primary btn-lg free-only btn-pay" data-tier="basic">Get Basic Script</a>
                     <a href="#pricing" class="btn btn-outline btn-lg free-only">See Pro Version</a>
+                    <a href="#pricing" class="btn btn-primary btn-lg autocaptions-only" id="final-autocap-cta"
+                        data-tier="autocaptions">Get Auto Captions — ₹800</a>
                 </div>
             </div>
         </div>
@@ -2078,11 +3127,24 @@
             <div class="footer-grid">
                 <div class="footer-brand">
                     <a href="#hero" class="nav-logo">
-                        <span class="logo-icon">⚡</span>
-                        <span class="logo-text">Easy Workflow <span class="logo-pro pro-only">Pro</span></span>
+                        <span class="logo-icon">
+                            <span class="pro-only">⚡</span>
+                            <span class="free-only">⚡</span>
+                            <span class="autocaptions-only">🎙️</span>
+                        </span>
+                        <span class="logo-text">
+                            <span class="pro-only">Easy Workflow <span class="logo-pro">Pro</span></span>
+                            <span class="free-only">Easy Workflow</span>
+                            <span class="autocaptions-only">Auto captions <span class="logo-pro">pro</span></span>
+                        </span>
                     </a>
-                    <p>The ultimate After Effects extension for motion designers and editors. 7 tools, one panel,
+                    <p class="pro-only">The ultimate After Effects extension for motion designers and editors. 7 tools,
+                        one panel,
                         infinite time saved.</p>
+                    <p class="autocaptions-only">High-precision AI transcription and captioning tool for After Effects.
+                        Automated, offline, and built for speed.</p>
+                    <p class="free-only">Essential workflow tools for After Effects. Speed up alignment, anchoring, and
+                        more for just ₹100.</p>
                 </div>
                 <div class="footer-links">
                     <h4>Product</h4>
@@ -2097,16 +3159,19 @@
                     <h4>Support</h4>
                     <ul>
                         <li><a href="#faq">FAQ</a></li>
-                        <li><a href="mailto:support@easyworkflowpro.com">Email Support</a></li>
-                        <li><a href="mailto:bugs@easyworkflowpro.com">Report Bug</a></li>
+                        <li><a href="mailto:harshks7890@gmail.com">Email Support</a></li>
+                        <li><a href="mailto:harshks7890@gmail.com">Report Bug</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
                     <h4>Social</h4>
                     <ul>
-                        <li><a href="https://www.youtube.com/@harshedits2332" target="_blank">YouTube</a></li>
-                        <li><a href="https://www.instagram.com/the.editor_harsh/" target="_blank">Instagram</a></li>
-                        <li><a href="https://discord.gg/y3qnSA4ZbE" target="_blank">Discord</a></li>
+                        <li><a href="https://www.youtube.com/@harshedits2332" target="_blank"
+                                rel="noopener noreferrer">YouTube</a></li>
+                        <li><a href="https://www.instagram.com/the.editor_harsh/" target="_blank"
+                                rel="noopener noreferrer">Instagram</a></li>
+                        <li><a href="https://discord.gg/y3qnSA4ZbE" target="_blank"
+                                rel="noopener noreferrer">Discord</a></li>
                     </ul>
                 </div>
             </div>
@@ -2136,7 +3201,7 @@
         </p>
         <p style="font-size:13px;color:rgba(255,255,255,0.2);line-height:1.8;margin-bottom:12px;">
             Compatible with <strong style="color:rgba(255,255,255,0.25);">Adobe After Effects 2020, 2021, 2022, 2023,
-                2024, and 2025</strong> on both <strong style="color:rgba(255,255,255,0.25);">Windows and
+                2024, 2025, 2026</strong> on both <strong style="color:rgba(255,255,255,0.25);">Windows and
                 macOS</strong>. Easy Workflow is trusted by motion graphics artists who want to speed up repetitive
             tasks, reduce clicks, and build a faster creative workflow inside After Effects.
         </p>
@@ -2145,7 +3210,7 @@
                 alignment</strong>, a <strong style="color:rgba(255,255,255,0.25);">font replacer tool for AE</strong>,
             a <strong style="color:rgba(255,255,255,0.25);">KBar alternative</strong>, or a <strong
                 style="color:rgba(255,255,255,0.25);">Motion Bro alternative</strong> — Easy Workflow Pro offers all of
-            l5 ll this and more in one affordable, one-time-payment package. Available for download at <a
+            this and more in one affordable, one-time-payment package. Available for download at <a
                 href="https://easyworkflow.store" style="color:rgba(255,255,255,0.3);">easyworkflow.store</a>.
         </p>
     </section>

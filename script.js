@@ -8,7 +8,9 @@ const PRICING = {
         symbol: '₹',
         basic: { amount: 100, label: '₹100', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - ₹100' },
         pro: { amount: 1500, label: '₹1500', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹1500' },
+        autocaptions: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
         proAfterDeadline: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
+        autocaptionsAfterDeadline: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
         showUPI: true,
         badge: '🇮🇳 Prices in INR'
     },
@@ -17,7 +19,9 @@ const PRICING = {
         symbol: '$',
         basic: { amount: 2, label: '$2', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - $2' },
         pro: { amount: 18, label: '$18', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $18' },
+        autocaptions: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
         proAfterDeadline: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
+        autocaptionsAfterDeadline: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
         showUPI: false,
         badge: '🌍 Prices in USD'
     }
@@ -112,9 +116,17 @@ function applyPricingToPage(region) {
         const btnBlock = card.querySelector('.btn-block');
         if (!titleEl || !valueEl) return;
 
-        const isProCard = titleEl.textContent.trim().toLowerCase().includes('pro');
+        const isAutoCaptions = titleEl.textContent.trim().toLowerCase().includes('auto captions');
+        const isProCard = titleEl.textContent.trim().toLowerCase().includes('pro') && !isAutoCaptions;
 
-        if (isProCard) {
+
+        if (isAutoCaptions) {
+            valueEl.textContent = p.autocaptions.amount;
+            if (btnBlock && btnBlock.id === 'btn-pro') {
+                btnBlock.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
+            }
+        }
+        else if (isProCard) {
             valueEl.textContent = proAmt;
             // Update inline CTA button text
             if (btnBlock && btnBlock.id === 'btn-pro') {
@@ -605,9 +617,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, { passive: true });
     }
-    // ===== VERSION TOGGLE (FREE / PRO) =====
+    // ===== VERSION TOGGLE (FREE / PRO / AUTOCAPTIONS) =====
     const toggleOptions = document.querySelectorAll('.toggle-option');
     const body = document.body;
+    const toggleIndicator = document.getElementById('toggleIndicator');
+
+    // Position toggle indicator dynamically based on the active option
+    function positionIndicator(activeOption) {
+        if (!toggleIndicator || !activeOption) return;
+        const pill = activeOption.parentElement;
+        const pillRect = pill.getBoundingClientRect();
+        const optRect = activeOption.getBoundingClientRect();
+        toggleIndicator.style.left = (optRect.left - pillRect.left) + 'px';
+        toggleIndicator.style.width = optRect.width + 'px';
+    }
+
+    // Position on page load
+    const initialActive = document.querySelector('.toggle-option.active');
+    if (initialActive) {
+        setTimeout(() => positionIndicator(initialActive), 100);
+        window.addEventListener('resize', () => positionIndicator(document.querySelector('.toggle-option.active')));
+    }
 
     toggleOptions.forEach(option => {
         option.addEventListener('click', () => {
@@ -620,6 +650,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update toggle UI
             toggleOptions.forEach(o => o.classList.remove('active'));
             option.classList.add('active');
+
+            // Slide indicator to the clicked option
+            positionIndicator(option);
 
             // Start transition animation (3D flip out)
             body.classList.add('version-transitioning');
@@ -634,8 +667,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body.classList.add('version-entering');
 
                 // Re-trigger reveal animations for newly visible content
+
+                const classNameMap = { 'free': 'free-only', 'pro': 'pro-only', 'autocaptions': 'autocaptions-only' };
+                const cName = classNameMap[version];
                 const newVisibleElements = document.querySelectorAll(
-                    `.${version === 'free' ? 'free' : 'pro'}-only .reveal, .${version === 'free' ? 'free' : 'pro'}-only.reveal`
+                    `.${cName} .reveal, .${cName}.reveal`
                 );
                 newVisibleElements.forEach(el => {
                     el.classList.remove('active');
@@ -676,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const targetPanels = document.querySelectorAll(`.mockup-panel[data-panel="${targetMockup}"]`);
                         targetPanels.forEach(p => {
                             if (p.classList.contains('pro-only') && version !== 'pro') return;
+                            if (p.classList.contains('autocaptions-only') && version !== 'autocaptions') return;
                             if (p.classList.contains('free-only') && version !== 'free') return;
                             p.classList.add('active');
                         });
@@ -684,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Re-animate stat counters
                 const visibleCounters = document.querySelectorAll(
-                    `.${version === 'free' ? 'free' : 'pro'}-only .stat-number[data-target]`
+                    `.${cName} .stat-number[data-target]`
                 );
                 visibleCounters.forEach(counter => {
                     counter.textContent = '0';
@@ -778,19 +815,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let tier = 'pro';
         if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'basic') {
             tier = 'basic';
+        } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'autocaptions') {
+            tier = 'autocaptions';
         } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'pro') {
             tier = 'pro';
         } else {
             // fallback if called generically, assume current view context
-            tier = document.body.getAttribute('data-version') === 'pro' ? 'pro' : 'basic';
+            tier = document.body.getAttribute('data-version') === 'pro' ? 'pro' : (document.body.getAttribute('data-version') === 'autocaptions' ? 'autocaptions' : 'basic');
         }
 
         // Dynamically update modal content based on the selected tier + detected currency
         const region = window.pricingRegion || PRICING.IN;
-        const tierConfig = (tier === 'basic') ? region.basic : region.pro;
+        const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
 
         if (tier === 'basic') {
             document.getElementById('modal-title').textContent = 'Get Workflow Basic';
+        } else if (tier === 'autocaptions') {
+            document.getElementById('modal-title').textContent = 'Get Auto Captions Pro';
         } else {
             document.getElementById('modal-title').textContent = 'Upgrade to Pro';
         }
@@ -846,6 +887,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Attach listeners to Pro buttons
     proButtons.forEach(btn => btn.addEventListener('click', openModal));
+    const autoCaptionsBtns = document.querySelectorAll('#btn-autocaptions, #hero-autocaptions-cta');
+    autoCaptionsBtns.forEach(btn => btn.addEventListener('click', openModal));
     // Also attach to navbar Get Pro button
     const navProBtns = document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only');
     navProBtns.forEach(btn => btn.addEventListener('click', openModal));
@@ -1306,6 +1349,63 @@ document.addEventListener('DOMContentLoaded', () => {
                     before: () => createLayer(1, '[Image 1]', C.purple, '0%', '20%', false, true) + createLayer(2, '[Image 2]', C.teal, '0%', '20%', false, true) + createLayer(3, '[Image 3]', C.orange, '0%', '20%', false, true),
                     after: () => createLayer(1, '[Image 1]', C.purple, '0%', '20%', true) + createLayer(2, '[Image 2]', C.teal, '20%', '20%', true) + createLayer(3, '[Image 3]', C.orange, '40%', '20%', true),
                     timeBefore: '0;00;00;00', timeAfter: '0;00;00;10'
+                }
+            ]
+        },
+        'SPLIT_MASKS': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#111;position:relative;';
+                o.innerHTML = `
+                    <div id="sm-vid" style="width:140px;height:80px;background:#334155;border:1px solid #475569;border-radius:4px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+                        <!-- Three distinct masked regions -->
+                        <div id="sm-mask1" style="position:absolute;width:30px;height:30px;border:1.5px solid #fbbf24;border-radius:50%;left:20%;top:20%;transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+                        <div id="sm-mask2" style="position:absolute;width:30px;height:30px;border:1.5px solid #fbbf24;left:60%;top:50%;transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+                        <div id="sm-mask3" style="position:absolute;width:40px;height:20px;border:1.5px solid #fbbf24;left:30%;top:65%;transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+                    </div>
+                `;
+            },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Video.mp4] 3 Masks', C.teal, '0%', '100%', false, true),
+                    after: () => {
+                        const m1 = document.getElementById('sm-mask1');
+                        const m2 = document.getElementById('sm-mask2');
+                        const m3 = document.getElementById('sm-mask3');
+                        if (m1) { m1.style.borderColor = '#ef4444'; m1.style.transform = 'scale(1.2)'; }
+                        if (m2) { m2.style.borderColor = '#3b82f6'; m2.style.transform = 'scale(1.2)'; }
+                        if (m3) { m3.style.borderColor = '#10b981'; m3.style.transform = 'scale(1.2)'; }
+                        return createLayer(1, '[Mask 1] Video.mp4', C.red, '0%', '100%', true) +
+                            createLayer(2, '[Mask 2] Video.mp4', C.blue, '0%', '100%', true) +
+                            createLayer(3, '[Mask 3] Video.mp4', C.green, '0%', '100%', true);
+                    },
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;00;05'
+                }
+            ]
+        },
+        'TRACK_PATH': {
+            useViewer: true,
+            setupViewer: (v, o) => {
+                o.className = 'comp-object';
+                o.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0f172a;position:relative;';
+                o.innerHTML = `
+                    <svg width="160" height="90" viewBox="0 0 160 90" style="position:relative;">
+                        <path id="tp-path" d="M 20,70 Q 80,10 140,70" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="2 4" />
+                        <circle id="tp-point" cx="20" cy="70" r="4" fill="#6366f1">
+                            <animate attributeName="cx" from="20" to="140" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="cy" from="70" to="70" values="70;10;70" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
+                    <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:8px;color:#6366f1;font-weight:700;letter-spacing:1px;background:rgba(99,102,241,0.1);padding:2px 8px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);">TRACKING PATH...</div>
+                `;
+            },
+            steps: [
+                {
+                    before: () => createLayer(1, '[Shape Layer 1]', C.purple, '0%', '100%', false, true),
+                    after: () => createLayer(1, '[Shape Layer 1]', C.purple, '0%', '100%', false, true) +
+                        createLayer(2, '[Path Data]', C.teal, '0%', '100%', true, true, '<span style="position:absolute;right:8px;color:#00e676;font-size:8px;">✓ Tracked</span>'),
+                    timeBefore: '0;00;00;00', timeAfter: '0;00;02;00'
                 }
             ]
         },
@@ -2291,4 +2391,86 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Font Interactivity
     initFontInteractivity();
+
+    // ===== GRAPH TAB INTERACTIVITY (SYNCED) =====
+    const initGraphInteractivity = () => {
+        const graphPanel = document.querySelector('.mockup-panel[data-panel="graph"]');
+        if (!graphPanel) return;
+
+        const modeBtns = graphPanel.querySelectorAll('button'); // Select buttons inside the left column
+        const presetItems = graphPanel.querySelectorAll('.preset-box-sync');
+
+        // Mode Switching
+        modeBtns.forEach(btn => {
+            if (btn.textContent === 'APPLY EASING') return; // Skip apply btn
+            btn.addEventListener('click', () => {
+                modeBtns.forEach(b => {
+                    b.style.background = '#222';
+                    b.style.borderColor = '#333';
+                    b.style.color = '#aaa';
+                });
+                btn.style.background = '#3A82F6';
+                btn.style.borderColor = '#3A82F6';
+                btn.style.color = 'white';
+            });
+        });
+
+        // Preset Selection
+        presetItems.forEach(item => {
+            item.addEventListener('click', () => {
+                presetItems.forEach(i => {
+                    i.style.opacity = '0.6';
+                    if (i.querySelector('.preset-label-sync')) i.querySelector('.preset-label-sync').style.color = '#888';
+                    if (i.querySelector('path')) i.querySelector('path').setAttribute('stroke', '#aaa');
+                });
+                
+                item.style.opacity = '1';
+                const labelEl = item.querySelector('.preset-label-sync');
+                const pathEl = item.querySelector('path');
+                if (labelEl) labelEl.style.color = 'white';
+                if (pathEl) pathEl.setAttribute('stroke', 'white');
+
+                // Update the main graph SVG preview with the chosen preset
+                const mainPath = graphPanel.querySelector('#bezier-svg-sync path');
+                if (mainPath && labelEl) {
+                    const label = labelEl.textContent.toLowerCase();
+
+                    let newD = "M 0,100 C 30,100 70,0 100,0"; // default ease
+
+                    if (label === 'linear') newD = "M 0,100 L 100,0";
+                    else if (label === 'easein') newD = "M 0,100 C 60,100 100,60 100,0";
+                    else if (label === 'easeout') newD = "M 0,100 C 0,40 40,0 100,0";
+                    else if (label === 'ease') newD = "M 0,100 C 30,100 70,0 100,0";
+
+                    mainPath.setAttribute('d', newD);
+
+                    // Update values display (mockup functionality)
+                    const valsEl = graphPanel.querySelector('div[style*="text-align:right; color:#bbb"]');
+                    if (valsEl) {
+                        if (label === 'linear') valsEl.textContent = "0.00, 0.00, 1.00, 1.00";
+                        else if (label === 'ease') valsEl.textContent = "0.25, 0.10, 0.25, 1.00";
+                        else if (label.includes('in')) valsEl.textContent = "0.42, 0.00, 1.00, 1.00";
+                        else if (label.includes('out')) valsEl.textContent = "0.00, 0.00, 0.58, 1.00";
+                    }
+                }
+            });
+        });
+
+        // Apply Button Feedback
+        const applyBtn = Array.from(graphPanel.querySelectorAll('button')).find(b => b.textContent.includes('APPLY'));
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const originalText = applyBtn.textContent;
+                applyBtn.innerHTML = '<i class="fa-solid fa-check"></i> EASING APPLIED';
+                applyBtn.style.background = '#059669';
+                setTimeout(() => {
+                    applyBtn.textContent = originalText;
+                    applyBtn.style.background = '#3A82F6';
+                }, 1500);
+            });
+        }
+    };
+
+    initGraphInteractivity();
 });
+
