@@ -1,55 +1,60 @@
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+/* 🚀 ZERO-DEPENDENCY LOCAL SERVER 🚀 */
+// No 'npm install' needed. This works with standard Node.js!
+const http = require('http');
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+const PRICING_REGISTRY = { basic: 100, pro: 1500, autocaptions: 800 };
 
-// 1. Put your production keys here for testing
-const CASHFREE_APP_ID = "TEST10997518058773b9b17be5ef5edc81579901";
-const CASHFREE_SECRET_KEY = "cfsk_ma_test_bea799f09bc30f9e653fd6e1d7584ab4_5e95f3ad";
-const IS_PRODUCTION = false; 
+const server = http.createServer(async (req, res) => {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-const BASE_URL = IS_PRODUCTION
-    ? "https://api.cashfree.com/pg/orders"
-    : "https://sandbox.cashfree.com/pg/orders";
+  if (req.method === 'OPTIONS') { res.end(); return; }
 
-app.post('/create-order', async (req, res) => {
-    try {
-        const { amount, name, email, phone } = req.body;
+  if (req.method === 'POST' && req.url === '/create-order') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        const { tier, name, email, phone } = data;
 
-        const response = await axios.post(BASE_URL, {
-            order_id: "order_" + Date.now(),
-            order_amount: amount,
+        // Keys (Using Sandbox for local testing)
+        const appId = "TEST10997518058773b9b17be5ef5edc81579901";
+        const secretKey = "cfsk_ma_test_bea799f09bc30f9e653fd6e1d7584ab4_5e95f3ad";
+        const baseUrl = "https://sandbox.cashfree.com/pg/orders";
+
+        const cfRes = await fetch(baseUrl, {
+          method: 'POST',
+          headers: {
+            'x-client-id': appId, 'x-client-secret': secretKey,
+            'x-api-version': '2023-08-01', 'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            order_id: "local_" + Date.now(),
+            order_amount: PRICING_REGISTRY[tier] || 1500,
             order_currency: "INR",
-            customer_details: {
-                customer_id: "user_" + Date.now(),
-                customer_name: name,
-                customer_email: email,
-                customer_phone: phone
+            customer_details: { 
+                customer_id: "user_" + Date.now(), customer_name: name || "Customer",
+                customer_email: email, customer_phone: phone || "9999999999" 
             }
-        }, {
-            headers: {
-                'x-client-id': CASHFREE_APP_ID,
-                'x-client-secret': CASHFREE_SECRET_KEY,
-                'x-api-version': '2023-08-01',
-                'Content-Type': 'application/json'
-            }
+          })
         });
 
-        res.json({ payment_session_id: response.data.payment_session_id });
+        const result = await cfRes.json();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ payment_session_id: result.payment_session_id, mode: "sandbox" }));
 
-    } catch (error) {
-        console.error("Local Server Error:", error.response ? error.response.data : error.message);
-        res.status(500).json({ error: "Failed to create payment session" });
-    }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
 });
 
-// A dummy webhook endpoint so you can test if your automation logic is sound
-app.post('/payment-webhook', async (req, res) => {
-    console.log("🔔 Local Webhook received!", req.body);
-    res.json({ success: true, message: "Webhook processed locally" });
-});
-
-app.listen(3000, () => console.log('🚀 Local Payment Server is LIVE at http://localhost:3000'));
+server.listen(3000, () => console.log('✅ Local Server is LIVE at http://localhost:3000 (Zero-Dependency Mode)'));

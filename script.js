@@ -1275,8 +1275,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
+            if (!orderRes.ok) {
+                const errData = await orderRes.json();
+                throw new Error(errData.message || 'Payment Server Offline');
+            }
+
             const { payment_session_id, mode } = await orderRes.json();
-            if (!payment_session_id) throw new Error('Mission Session ID');
+            if (!payment_session_id) throw new Error('Missing Session ID');
 
             // 🟢 DYNAMIC SDK INITIALIZATION: Automatically switches mode based on server! 🟢
             const cfSDK = Cashfree({ mode: mode }); 
