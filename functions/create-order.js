@@ -40,9 +40,8 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { tier, currency, name, email, phone } = JSON.parse(event.body);
+    const { tier, currency, name, email, phone, mode } = JSON.parse(event.body);
 
-    // Get Keys from Netlify Environment Variables
     const appId = process.env.CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
 
@@ -54,7 +53,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Security: Calculate amount on server to prevent tampering
     const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
     const verifiedAmount = registry[tier]?.[currency || "INR"];
 
@@ -66,8 +64,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Determine Environment (Test vs Prod)
-    const isProduction = !secretKey.includes('test');
+    // Determine Environment: Switch to production URL if mode is 'production'
+    const isProduction = mode === 'production' || !secretKey.includes('test');
     const baseUrl = isProduction 
       ? "https://api.cashfree.com/pg/orders" 
       : "https://sandbox.cashfree.com/pg/orders";
