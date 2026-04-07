@@ -1,11 +1,18 @@
 {
-  "name": "easy-workflow-website",
+  "name": "workflow-website",
   "version": "1.0.0",
-  "description": "Easy Workflow website with Netlify Functions",
-  "main": "server.js",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "axios": "^1.14.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }

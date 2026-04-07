@@ -738,10 +738,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== RAZORPAY CHECKOUT + LEAD CAPTURE SYSTEM =====
     // ===== PAYMENT GATEWAY CONFIGURATION =====
+    const ENABLE_RAZORPAY = false; // Set to true when Razorpay KYC is verified
     const RZP_KEY_ID = 'rzp_test_SaJqg7YMwudKqx'; // Razorpay Public Key
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const CF_MODE    = isLocal ? 'sandbox' : 'production';
-    const CF_APP_ID  = isLocal ? 'TEST10997518058773b9b17be5ef5edc81579901' : '121259341f82a4cec1053b822723952121'; 
+    const CF_APP_ID = 'TEST10997518058773b9b17be5ef5edc81579901'; // Cashfree App ID
+    const CF_MODE = 'sandbox'; // 'sandbox' or 'production'
+
+    const GUMROAD_LINKS = {
+        basic: 'https://harshedits55.gumroad.com/l/Easyworkflow',
+        pro: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n',
+        autocaptions: 'https://harshedits55.gumroad.com/l/Autocaptionpro'
+    };
 
     // Initialize Cashfree
     let cashfree;
@@ -750,14 +756,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Security: Amount registry — server-authoritative amounts in paise (prevents client-side price tampering)
     const RZP_AMOUNTS = {
-        basic:        { INR: 10000, USD: 200 },   // ₹100 / $2
-        pro:          { INR: 150000, USD: 1800 },  // ₹1500 / $18
+        basic: { INR: 10000, USD: 200 },   // ₹100 / $2
+        pro: { INR: 150000, USD: 1800 },  // ₹1500 / $18
         autocaptions: { INR: 80000, USD: 1000 }    // ₹800 / $10
     };
     // After-deadline amounts
     const RZP_AMOUNTS_DEADLINE = {
-        basic:        { INR: 10000, USD: 200 },
-        pro:          { INR: 200000, USD: 2400 },  // ₹2000 / $24
+        basic: { INR: 10000, USD: 200 },
+        pro: { INR: 200000, USD: 2400 },  // ₹2000 / $24
         autocaptions: { INR: 80000, USD: 1000 }
     };
 
@@ -868,6 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <!-- Gateway Selection -->
+                ${ENABLE_RAZORPAY ? `
                 <div style="margin-bottom:20px;">
                     <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:8px;font-weight:500;">Select Payment Gateway <span style="color:#ef4444;">*</span></label>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -883,6 +890,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </label>
                     </div>
                 </div>
+                ` : `<input type="hidden" name="gateway" value="cashfree">`}
+
 
                 <!-- Security Badge -->
                 <div id="security-badge-area" style="display:flex;align-items:center;gap:8px;margin-bottom:18px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:10px;">
@@ -1107,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('success-done-btn').addEventListener('click', closeSuccessScreen);
 
     // Gateway UI Toggle Logic
-    const gatewayRadios = document.querySelectorAll('input[name="gateway"]');
+    const gatewayRadios = document.querySelectorAll('input[type="radio"][name="gateway"]');
     gatewayRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             const isCF = radio.value === 'cashfree';
@@ -1134,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Copy Payment ID Function
     document.getElementById('success-payment-id').style.cursor = 'pointer';
     document.getElementById('success-payment-id').title = 'Click to copy';
-    document.getElementById('success-payment-id').addEventListener('click', function() {
+    document.getElementById('success-payment-id').addEventListener('click', function () {
         const id = this.textContent;
         if (id !== '—') {
             navigator.clipboard.writeText(id).then(() => {
@@ -1153,7 +1162,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const emailVal = document.getElementById('rzp-email').value.trim();
         const countryCode = document.getElementById('rzp-country-code').value;
         const phoneInput = document.getElementById('rzp-phone').value.trim();
-        const phoneVal = countryCode + ' ' + phoneInput;
+        // Cashfree requires strict phone formats, often rejecting spaces or hyphens.
+        const phoneVal = (countryCode + phoneInput).replace(/[^\d+]/g, '');
         const tier = document.getElementById('rzp-tier').value;
         const nonce = document.getElementById('rzp-nonce').value;
         const sessionTs = document.getElementById('rzp-session-ts').value;
@@ -1189,7 +1199,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const gateway = document.querySelector('input[name="gateway"]:checked').value;
+        const gatewayInput = document.querySelector('input[name="gateway"]:checked') || document.querySelector('input[name="gateway"][type="hidden"]');
+        const gateway = gatewayInput ? gatewayInput.value : 'cashfree';
 
         const payBtn = document.getElementById('rzp-pay-btn');
         const btnText = document.getElementById('rzp-btn-text');
@@ -1246,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 prefill: { name: nameVal, email: emailVal, contact: phoneVal },
                 notes: { tier, nonce, session_ts: sessionTs, product: badgeMap[tier] },
                 theme: { color: '#7c3aed', backdrop_color: 'rgba(0,0,0,0.85)' },
-                handler: function(response) {
+                handler: function (response) {
                     handlePaymentSuccess(response.razorpay_payment_id || 'N/A', 'razorpay');
                 }
             };
@@ -1261,30 +1272,44 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── Cashfree Logic (Requires Backend) ──
+        // ── International Logic: Redirect to Gumroad for USD ──
+        if (currency === 'USD') {
+            const gumroadUrl = GUMROAD_LINKS[tier];
+            showToast('Redirecting to secure international checkout...', 'success');
+            setTimeout(() => {
+                window.location.href = gumroadUrl;
+            }, 1500);
+            return;
+        }
+
+        // ── Cashfree Logic (For INR/Domestic) ──
+
         try {
-            // AUTOMATIC BACKEND SWITCH: Locally uses localhost:3000, Live uses Netlify API
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const BACKEND_URL = isLocal ? 'http://localhost:3000/create-order' : '/api/create-order'; 
-            
+            // BACKEND URL: Auto-switch between local Node server and Netlify production
+            const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/create-order'
+                : '/api/create-order';
+
             const orderRes = await fetch(BACKEND_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    amount: amountInSmallestUnit / 100,
+                    currency: currency,
                     name: nameVal, email: emailVal, phone: phoneVal, tier: tier
                 })
             });
 
             if (!orderRes.ok) {
-                const errData = await orderRes.json();
-                throw new Error(errData.message || 'Payment Server Offline');
+                const errData = await orderRes.json().catch(() => ({}));
+                if (errData.code === 'customer_phone_invalid' || (errData.details && errData.details.includes('phone'))) {
+                    throw new Error('Please enter a valid phone number.');
+                }
+                throw new Error(errData.details || errData.error || 'Payment Server Offline');
             }
+            const { payment_session_id } = await orderRes.json();
 
-            const { payment_session_id, mode } = await orderRes.json();
-            if (!payment_session_id) throw new Error('Missing Session ID');
-
-            // 🟢 DYNAMIC SDK INITIALIZATION: Automatically switches mode based on server! 🟢
-            const cfSDK = Cashfree({ mode: mode }); 
+            if (!payment_session_id) throw new Error('Mission Session ID');
 
             const checkoutOptions = {
                 paymentSessionId: payment_session_id,
@@ -1292,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 redirectTarget: "_modal"
             };
 
-            cfSDK.checkout(checkoutOptions).then((result) => {
+            cashfree.checkout(checkoutOptions).then((result) => {
                 payBtn.disabled = false;
                 btnText.style.display = 'inline';
                 btnLoader.style.display = 'none';
@@ -1308,21 +1333,30 @@ document.addEventListener('DOMContentLoaded', () => {
             payBtn.disabled = false;
             btnText.style.display = 'inline';
             btnLoader.style.display = 'none';
-            showToast('Unable to connect to ' + gateway + ' payment server.', 'error');
+            // Show the exact error if it's a known validation failure
+            const msg = err.message === 'Payment Server Offline' || err.message === 'Failed to fetch'
+                ? 'Unable to connect to ' + gateway + ' payment server.'
+                : err.message;
+            showToast(msg, 'error');
         }
 
         async function handlePaymentSuccess(paymentId, method) {
             paymentSessions.add(nonce);
             closeModal();
-            checkoutForm.reset();
 
             // Send confirmation to Formspree
             const confirmData = new FormData();
             confirmData.append('_subject', `✅ PAYMENT SUCCESS: ${badgeMap[tier]}`);
+            confirmData.append('name', nameVal);
+            confirmData.append('email', emailVal);
+            confirmData.append('phone', phoneVal);
             confirmData.append('payment_id', paymentId);
             confirmData.append('payment_method', method);
+            confirmData.append('purchased_tier', tierConfig.formValue);
+            
             fetch('https://formspree.io/f/mgolnydk', { method: 'POST', body: confirmData });
 
+            checkoutForm.reset();
             showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
         }
     });
@@ -2803,7 +2837,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (i.querySelector('.preset-label-sync')) i.querySelector('.preset-label-sync').style.color = '#888';
                     if (i.querySelector('path')) i.querySelector('path').setAttribute('stroke', '#aaa');
                 });
-                
+
                 item.style.opacity = '1';
                 const labelEl = item.querySelector('.preset-label-sync');
                 const pathEl = item.querySelector('path');
