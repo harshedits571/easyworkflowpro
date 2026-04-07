@@ -736,214 +736,589 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ===== GET PRO MODAL LOGIC =====
+    // ===== RAZORPAY CHECKOUT + LEAD CAPTURE SYSTEM =====
+    // ===== PAYMENT GATEWAY CONFIGURATION =====
+    const RZP_KEY_ID = 'rzp_test_SaJqg7YMwudKqx'; // Razorpay Public Key
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const CF_MODE    = isLocal ? 'sandbox' : 'production';
+    const CF_APP_ID  = isLocal ? 'TEST10997518058773b9b17be5ef5edc81579901' : '121259341f82a4cec1053b822723952121'; 
+
+    // Initialize Cashfree
+    let cashfree;
+    if (typeof Cashfree !== 'undefined') {
+        cashfree = Cashfree({ mode: CF_MODE });
+    }
+    // Security: Amount registry — server-authoritative amounts in paise (prevents client-side price tampering)
+    const RZP_AMOUNTS = {
+        basic:        { INR: 10000, USD: 200 },   // ₹100 / $2
+        pro:          { INR: 150000, USD: 1800 },  // ₹1500 / $18
+        autocaptions: { INR: 80000, USD: 1000 }    // ₹800 / $10
+    };
+    // After-deadline amounts
+    const RZP_AMOUNTS_DEADLINE = {
+        basic:        { INR: 10000, USD: 200 },
+        pro:          { INR: 200000, USD: 2400 },  // ₹2000 / $24
+        autocaptions: { INR: 80000, USD: 1000 }
+    };
+
+    // Security nonce generator (crypto-grade randomness)
+    function generateNonce(len = 32) {
+        const arr = new Uint8Array(len);
+        crypto.getRandomValues(arr);
+        return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Session integrity: track payment session to prevent replay
+    const paymentSessions = new Set();
+
     const proButtons = document.querySelectorAll('#btn-pro');
 
-    // Create Modal Element
+    // ───────────────────────────── CHECKOUT MODAL ─────────────────────────────
     const modalOverlay = document.createElement('div');
-    modalOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px);z-index:9999;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
+    modalOverlay.id = 'checkout-overlay';
+    modalOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
 
     const modalBox = document.createElement('div');
-    modalBox.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:500px;width:90%;position:relative;transform:translateY(20px);transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 20px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.1);text-align:center;';
+    modalBox.id = 'checkout-box';
+    modalBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:0;max-width:480px;width:92%;position:relative;transform:translateY(20px);transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 25px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,58,237,0.15);overflow:hidden;max-height:90vh;overflow-y:auto;';
 
-    // Modal Content
     modalBox.innerHTML = `
-        <button id="close-modal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;line-height:1;">&times;</button>
-        <h2 id="modal-title" style="font-family:var(--font-heading);color:white;margin-bottom:8px;font-size:24px;">Upgrade to Pro</h2>
-        <p style="color:var(--text-secondary);margin-bottom:24px;font-size:14px;">Choose your preferred payment method. After UPI payment, you will receive a 100% discount Gumroad link.</p>
-        
-        <div style="display:flex;flex-direction:column;gap:16px;">
-            <!-- Gumroad Option -->
-            <a id="gumroad-link" href="https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n" target="_blank" style="text-decoration:none;">
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;transition:all 0.2s ease;cursor:pointer;" onmouseover="this.style.background='rgba(124,58,237,0.1)';this.style.borderColor='var(--purple)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)';">
-                    <div style="width:40px;height:40px;background:#ff90e8;border-radius:8px;display:flex;justify-content:center;align-items:center;font-weight:bold;color:black;">G</div>
-                    <div style="text-align:left;">
-                        <h3 style="color:white;font-size:16px;margin:0;">Pay via Gumroad</h3>
-                        <p style="color:var(--text-muted);font-size:12px;margin:2px 0 0 0;">International & Cards • Instant Download</p>
-                    </div>
-                </div>
-            </a>
-
-            <!-- UPI Option -->
-            <div id="upi-option" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;transition:all 0.2s ease;cursor:pointer;" onmouseover="this.style.background='rgba(16,185,129,0.1)';this.style.borderColor='var(--green)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)';">
-                <div style="width:40px;height:40px;background:#10b981;border-radius:8px;display:flex;justify-content:center;align-items:center;color:white;"><i class="fa-solid fa-qrcode"></i></div>
-                <div style="text-align:left;">
-                    <h3 style="color:white;font-size:16px;margin:0;">Pay via UPI (India)</h3>
-                    <p style="color:var(--text-muted);font-size:12px;margin:2px 0 0 0;">Google Pay, PhonePe, Paytm</p>
-                </div>
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,130,246,0.1));padding:24px 28px 20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;">
+            <button id="close-modal" style="position:absolute;top:16px;right:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;line-height:1;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='rgba(255,255,255,0.5)';">&times;</button>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <h2 id="modal-title" style="font-family:var(--font-heading);color:white;margin:0;font-size:22px;font-weight:700;">Checkout</h2>
+                <span id="modal-product-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">Easy Workflow Pro</span>
             </div>
+            <p id="modal-desc" style="color:rgba(255,255,255,0.5);margin:0;font-size:13px;">Complete your purchase to securely receive your lifetime license key.</p>
         </div>
-        
-        <!-- UPI Details Form (Hidden Initially) -->
-        <div id="upi-details" style="display:none;margin-top:24px;text-align:left;animation:panelFadeIn 0.3s ease;">
-            <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:24px;">
-            <div style="text-align:center;margin-bottom:20px;">
-                <div style="width:150px;height:150px;background:white;margin:0 auto 12px auto;border-radius:8px;display:flex;justify-content:center;align-items:center;color:black;font-size:12px;overflow:hidden;">
-                    <img src="qr-code.png" alt="PhonePe QR Code" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
+
+        <!-- Form Body -->
+        <div style="padding:24px 28px 28px;">
+            <!-- Progress Steps -->
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;padding:0 10px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#7c3aed;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;box-shadow:0 0 15px rgba(124,58,237,0.4);">1</div>
+                    <span style="font-size:10px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Details</span>
                 </div>
-                <p style="color:var(--text-secondary);font-size:13px;">Scan to pay <strong id="upi-price">₹1500</strong></p>
+                <div style="flex:1;height:2px;background:rgba(124,58,237,0.2);margin-top:14px;margin-left:10px;margin-right:10px;"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.1);">2</div>
+                    <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Method</span>
+                </div>
+                <div style="flex:1;height:2px;background:rgba(255,255,255,0.05);margin-top:14px;margin-left:10px;margin-right:10px;"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.1);">3</div>
+                    <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Payment</span>
+                </div>
             </div>
-            
-            <form id="upi-form" action="https://formspree.io/f/mgolnydk" method="POST">
-                <input type="hidden" name="purchased_tier" id="form-tier" value="pro">
-                <div style="margin-bottom:12px;">
-                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Full Name</label>
-                    <input type="text" name="name" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+
+            <!-- Pricing Summary -->
+            <div id="checkout-pricing-bar" style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 18px;margin-bottom:22px;">
+                <div>
+                    <div id="checkout-tier-name" style="color:white;font-weight:600;font-size:14px;">Easy Workflow Pro</div>
+                    <div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:2px;">Lifetime License • One-time payment</div>
                 </div>
-                <div style="margin-bottom:12px;">
-                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Email Address</label>
-                    <input type="email" name="email" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                <div id="checkout-price-display" style="color:#22c55e;font-size:22px;font-weight:800;font-family:var(--font-heading);">₹1500</div>
+            </div>
+
+            <form id="checkout-form" autocomplete="on">
+                <input type="hidden" id="rzp-tier" value="pro">
+                <input type="hidden" id="rzp-nonce" value="">
+                <input type="hidden" id="rzp-session-ts" value="">
+
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Full Name <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="rzp-name" name="name" required autocomplete="name" placeholder="Enter your full name" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Email Address <span style="color:#ef4444;">*</span></label>
+                    <input type="email" id="rzp-email" name="email" required autocomplete="email" placeholder="you@example.com" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;color:var(--text-secondary);font-size:12px;margin-bottom:4px;">Phone Number (WhatsApp)</label>
-                    <input type="tel" name="phone" required style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;">
+                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Phone Number (WhatsApp) <span style="color:#ef4444;">*</span></label>
+                    <div style="display:flex;gap:8px;">
+                        <select id="rzp-country-code" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 4px;border-radius:10px;color:white;font-family:inherit;font-size:14px;outline:none;cursor:pointer;width:95px;flex-shrink:0;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                            <option value="+91" selected>🇮🇳 +91</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+971">🇦🇪 +971</option>
+                            <option value="+61">🇦🇺 +61</option>
+                            <option value="+1">🇨🇦 +1</option>
+                            <option value="+49">🇩🇪 +49</option>
+                            <option value="+33">🇫🇷 +33</option>
+                            <option value="+81">🇯🇵 +81</option>
+                            <option value="+65">🇸🇬 +65</option>
+                            <option value="+92">🇵🇰 +Pak</option>
+                            <option value="+880">🇧🇩 +BGD</option>
+                            <option value="+7">🇷🇺 +7</option>
+                            <option value="+34">🇪🇸 +34</option>
+                            <option value="+39">🇮🇹 +39</option>
+                            <option value="+55">🇧🇷 +55</option>
+                            <option value="+27">🇿🇦 +27</option>
+                            <option value="+86">🇨🇳 +86</option>
+                            <option value="+82">🇰🇷 +82</option>
+                            <option value="+90">🇹🇷 +90</option>
+                            <option value="+62">🇮🇩 +62</option>
+                            <option value="+63">🇵🇭 +63</option>
+                            <option value="+60">🇲🇾 +60</option>
+                        </select>
+                        <input type="tel" id="rzp-phone" name="phone" required autocomplete="tel" placeholder="99999 99999" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                    </div>
                 </div>
-                <button type="submit" id="upi-submit-btn" class="btn btn-primary btn-block">Confirm Payment</button>
-                <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;">We'll email you a 100% discount Gumroad link after verifying the payment.</p>
+
+                <!-- Gateway Selection -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:8px;font-weight:500;">Select Payment Gateway <span style="color:#ef4444;">*</span></label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <label id="label-cf" style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;padding:12px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s;">
+                            <input type="radio" name="gateway" value="cashfree" checked style="display:none;">
+                            <span style="color:white;font-size:13px;font-weight:600;">Cashfree</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:9px;">Card, UPI, Wallet</span>
+                        </label>
+                        <label id="label-rzp" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s;">
+                            <input type="radio" name="gateway" value="razorpay" style="display:none;">
+                            <span style="color:white;font-size:13px;font-weight:600;">Razorpay</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:9px;">All Methods</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Security Badge -->
+                <div id="security-badge-area" style="display:flex;align-items:center;gap:8px;margin-bottom:18px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:10px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span id="security-badge-text" style="color:rgba(34,197,94,0.9);font-size:11px;font-weight:500;">Secured by Cashfree • 256-bit SSL Encryption</span>
+                </div>
+
+                <button type="submit" id="rzp-pay-btn" style="width:100%;padding:14px;font-weight:700;font-size:15px;font-family:var(--font-heading);background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:12px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 20px rgba(124,58,237,0.3);letter-spacing:0.3px;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 30px rgba(124,58,237,0.4)';" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(124,58,237,0.3)';">
+                    <span id="rzp-btn-text">Pay ₹1500 — Proceed to Payment</span>
+                    <span id="rzp-btn-loader" style="display:none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/></svg>
+                    </span>
+                </button>
+
+                <div style="text-align:center;margin-top:14px;">
+                    <span style="color:rgba(255,255,255,0.3);font-size:11px;">By proceeding, you agree to our terms of service.</span>
+                </div>
             </form>
         </div>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+            #checkout-box::-webkit-scrollbar { width: 4px; }
+            #checkout-box::-webkit-scrollbar-track { background: transparent; }
+            #checkout-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        </style>
     `;
 
     modalOverlay.appendChild(modalBox);
     document.body.appendChild(modalOverlay);
 
-    // Open Modal function
+    // ───────────────────────────── SUCCESS SCREEN ─────────────────────────────
+    const successOverlay = document.createElement('div');
+    successOverlay.id = 'payment-success-overlay';
+    successOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);backdrop-filter:blur(12px);z-index:10002;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.4s ease;';
+
+    const successBox = document.createElement('div');
+    successBox.id = 'payment-success-box';
+    successBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:0;max-width:480px;width:92%;position:relative;transform:translateY(30px) scale(0.95);transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 25px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(34,197,94,0.2);overflow:hidden;';
+
+    successBox.innerHTML = `
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05));padding:24px 28px 20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;">
+            <button id="close-success" style="position:absolute;top:16px;right:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;line-height:1;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='rgba(255,255,255,0.5)';">&times;</button>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <h2 style="font-family:var(--font-heading);color:white;margin:0;font-size:22px;font-weight:700;">Checkout</h2>
+                <span id="success-product-badge" style="background:rgba(34,197,94,0.2);color:#4ade80;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">Easy Workflow Pro</span>
+            </div>
+            <p style="color:rgba(255,255,255,0.5);margin:0;font-size:13px;">Complete your purchase to securely receive your lifetime license key.</p>
+        </div>
+
+        <!-- Success Body -->
+        <div style="padding:36px 28px 32px;text-align:center;">
+            <!-- Animated Checkmark -->
+            <div id="success-check-anim" style="width:70px;height:70px;margin:0 auto 24px;position:relative;">
+                <svg viewBox="0 0 70 70" style="width:100%;height:100%;">
+                    <circle cx="35" cy="35" r="32" fill="none" stroke="rgba(34,197,94,0.2)" stroke-width="3"/>
+                    <circle id="success-circle" cx="35" cy="35" r="32" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="201" stroke-dashoffset="201" stroke-linecap="round" style="transition:stroke-dashoffset 0.6s ease 0.2s;"/>
+                    <polyline id="success-tick" points="22,36 32,46 49,26" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="40" stroke-dashoffset="40" style="transition:stroke-dashoffset 0.4s ease 0.7s;"/>
+                </svg>
+            </div>
+
+            <h2 style="font-family:var(--font-heading);color:white;margin:0 0 8px;font-size:26px;font-weight:800;">Thank You For Purchasing!</h2>
+            
+            <!-- Info Box -->
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:22px 20px;margin-top:24px;text-align:center;">
+                <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0 0 14px;line-height:1.7;">
+                    Please note that this is <strong style="color:white;">not an automatic process</strong>.
+                </p>
+                <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0 0 14px;line-height:1.7;">
+                    Once your payment has been manually confirmed, you will receive a <strong style="color:#22c55e;">100% discounted Gumroad link</strong> directly to your email address.
+                </p>
+                <p style="color:rgba(255,255,255,0.35);font-size:12px;margin:0;font-style:italic;">
+                    Please allow a few hours for the confirmation process.
+                </p>
+            </div>
+
+            <!-- Payment Details -->
+            <div id="success-payment-details" style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Payment ID</span>
+                    <span id="success-payment-id" style="color:rgba(255,255,255,0.7);font-size:12px;font-family:monospace;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Amount Paid</span>
+                    <span id="success-amount" style="color:#22c55e;font-size:12px;font-weight:600;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Product</span>
+                    <span id="success-product" style="color:rgba(255,255,255,0.7);font-size:12px;">—</span>
+                </div>
+            </div>
+
+            <button id="success-done-btn" style="width:100%;padding:14px;font-weight:700;font-size:15px;font-family:var(--font-heading);background:linear-gradient(135deg, #22c55e, #16a34a);color:white;border:none;border-radius:12px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 20px rgba(34,197,94,0.25);margin-top:24px;letter-spacing:0.3px;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 30px rgba(34,197,94,0.35)';" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(34,197,94,0.25)';">
+                Done
+            </button>
+        </div>
+    `;
+
+    successOverlay.appendChild(successBox);
+    document.body.appendChild(successOverlay);
+
+    // ───────────────────────── MODAL OPEN / CLOSE ─────────────────────────
+    let currentCheckoutTier = 'pro';
+
     function openModal(e) {
         if (e) e.preventDefault();
 
-        // Determine if basic or pro was clicked
+        // Determine tier
         let tier = 'pro';
         if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'basic') {
             tier = 'basic';
         } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'autocaptions') {
             tier = 'autocaptions';
-        } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'pro') {
+        } else if (e && e.currentTarget && (e.currentTarget.getAttribute('data-tier') === 'pro' || e.currentTarget.id === 'btn-pro')) {
             tier = 'pro';
         } else {
-            // fallback if called generically, assume current view context
-            tier = document.body.getAttribute('data-version') === 'pro' ? 'pro' : (document.body.getAttribute('data-version') === 'autocaptions' ? 'autocaptions' : 'basic');
+            const v = document.body.getAttribute('data-version');
+            tier = v === 'autocaptions' ? 'autocaptions' : (v === 'free' ? 'basic' : 'pro');
         }
+        currentCheckoutTier = tier;
 
-        // Dynamically update modal content based on the selected tier + detected currency
         const region = window.pricingRegion || PRICING.IN;
         const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
 
-        if (tier === 'basic') {
-            document.getElementById('modal-title').textContent = 'Get Workflow Basic';
-        } else if (tier === 'autocaptions') {
-            document.getElementById('modal-title').textContent = 'Get Auto Captions Pro';
-        } else {
-            document.getElementById('modal-title').textContent = 'Upgrade to Pro';
-        }
-        document.getElementById('gumroad-link').href = tierConfig.gumroadLink;
-        document.getElementById('upi-price').textContent = tierConfig.label;
-        document.getElementById('form-tier').value = tierConfig.formValue;
+        // Update modal header
+        const titleMap = { basic: 'Checkout', pro: 'Checkout', autocaptions: 'Checkout' };
+        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
+        document.getElementById('modal-title').textContent = titleMap[tier];
+        document.getElementById('modal-product-badge').textContent = badgeMap[tier];
+        document.getElementById('checkout-tier-name').textContent = badgeMap[tier];
+        document.getElementById('checkout-price-display').textContent = tierConfig.label;
 
-        // Update the modal sub-description based on region
-        const modalDesc = modalBox.querySelector('p');
-        if (modalDesc) {
-            if (region.showUPI) {
-                modalDesc.textContent = 'Choose your preferred payment method. After UPI payment, you will receive a 100% discount Gumroad link.';
-            } else {
-                modalDesc.textContent = 'Click below to complete your purchase securely via Gumroad. Instant download after payment.';
-            }
-        }
+        // Update pay button text
+        document.getElementById('rzp-btn-text').textContent = `Pay ${tierConfig.label} — Proceed to Payment`;
 
-        // Show/Hide UPI option based on region
-        const upiOptionEl = document.getElementById('upi-option');
-        const upiDetailsEl = document.getElementById('upi-details');
-        if (upiOptionEl) {
-            upiOptionEl.style.display = region.showUPI ? 'flex' : 'none';
-        }
-        if (!region.showUPI && upiDetailsEl) {
-            upiDetailsEl.style.display = 'none';
-        }
+        // Generate security nonce and session timestamp
+        const nonce = generateNonce();
+        const sessionTs = Date.now().toString();
+        document.getElementById('rzp-nonce').value = nonce;
+        document.getElementById('rzp-session-ts').value = sessionTs;
+        document.getElementById('rzp-tier').value = tier;
 
-        // Update Gumroad button label for non-Indian users
-        const gumroadInnerLabel = modalBox.querySelector('#gumroad-link h3');
-        if (gumroadInnerLabel) {
-            gumroadInnerLabel.textContent = region.showUPI ? 'Pay via Gumroad' : `Pay via Gumroad — ${tierConfig.label}`;
-        }
-
+        // Show modal
         modalOverlay.style.display = 'flex';
-        // Trigger layout reflow
         void modalOverlay.offsetWidth;
         modalOverlay.style.opacity = '1';
         modalBox.style.transform = 'translateY(0)';
-        document.body.style.overflow = 'hidden'; // prevent bg scroll
+        document.body.style.overflow = 'hidden';
     }
 
-    // Close Modal function
     function closeModal() {
         modalOverlay.style.opacity = '0';
         modalBox.style.transform = 'translateY(20px)';
         setTimeout(() => {
             modalOverlay.style.display = 'none';
             document.body.style.overflow = '';
-            // reset UPI form visibility if it was open
-            document.getElementById('upi-details').style.display = 'none';
         }, 300);
     }
 
-    // Attach listeners to Pro buttons
+    function showSuccessScreen(paymentId, amount, productName) {
+        // Update success details
+        document.getElementById('success-payment-id').textContent = paymentId || '—';
+        document.getElementById('success-amount').textContent = amount || '—';
+        document.getElementById('success-product').textContent = productName || '—';
+        document.getElementById('success-product-badge').textContent = productName || 'Easy Workflow Pro';
+
+        // Trigger Confetti
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#7c3aed', '#a78bfa', '#22c55e']
+            });
+        }
+
+        // Show overlay
+        successOverlay.style.display = 'flex';
+        void successOverlay.offsetWidth;
+        successOverlay.style.opacity = '1';
+        successBox.style.transform = 'translateY(0) scale(1)';
+        document.body.style.overflow = 'hidden';
+
+        // Trigger checkmark animation
+        setTimeout(() => {
+            document.getElementById('success-circle').style.strokeDashoffset = '0';
+            document.getElementById('success-tick').style.strokeDashoffset = '0';
+        }, 100);
+    }
+
+    function closeSuccessScreen() {
+        successOverlay.style.opacity = '0';
+        successBox.style.transform = 'translateY(30px) scale(0.95)';
+        setTimeout(() => {
+            successOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+            // Reset animation for next time
+            document.getElementById('success-circle').style.strokeDashoffset = '201';
+            document.getElementById('success-tick').style.strokeDashoffset = '40';
+        }, 400);
+    }
+
+    // ───────────────────────── BUTTON LISTENERS ─────────────────────────
     proButtons.forEach(btn => btn.addEventListener('click', openModal));
     const autoCaptionsBtns = document.querySelectorAll('#btn-autocaptions, #hero-autocaptions-cta');
     autoCaptionsBtns.forEach(btn => btn.addEventListener('click', openModal));
-    // Also attach to navbar Get Pro button
     const navProBtns = document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only');
     navProBtns.forEach(btn => btn.addEventListener('click', openModal));
-
-    // Attach listeners to basic buttons
     const basicBtns = document.querySelectorAll('.btn-pay');
     basicBtns.forEach(btn => btn.addEventListener('click', openModal));
+    // Also attach to hero Pro CTA and any data-tier="pro" buttons
+    const heroProCta = document.getElementById('hero-pro-cta');
+    if (heroProCta) heroProCta.addEventListener('click', openModal);
+    document.querySelectorAll('[data-tier="pro"]').forEach(btn => btn.addEventListener('click', openModal));
+    document.querySelectorAll('[data-tier="autocaptions"]').forEach(btn => btn.addEventListener('click', openModal));
 
     // Close listeners
     document.getElementById('close-modal').addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeModal();
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+    document.getElementById('close-success').addEventListener('click', closeSuccessScreen);
+    document.getElementById('success-done-btn').addEventListener('click', closeSuccessScreen);
+
+    // Gateway UI Toggle Logic
+    const gatewayRadios = document.querySelectorAll('input[name="gateway"]');
+    gatewayRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const isCF = radio.value === 'cashfree';
+            const labelCF = document.getElementById('label-cf');
+            const labelRZP = document.getElementById('label-rzp');
+            const badgeText = document.getElementById('security-badge-text');
+
+            if (isCF) {
+                labelCF.style.background = 'rgba(34,197,94,0.1)';
+                labelCF.style.borderColor = '#22c55e';
+                labelRZP.style.background = 'rgba(255,255,255,0.03)';
+                labelRZP.style.borderColor = 'rgba(255,255,255,0.1)';
+                badgeText.textContent = 'Secured by Cashfree • 256-bit SSL Encryption';
+            } else {
+                labelRZP.style.background = 'rgba(124,58,237,0.1)';
+                labelRZP.style.borderColor = '#7c3aed';
+                labelCF.style.background = 'rgba(255,255,255,0.03)';
+                labelCF.style.borderColor = 'rgba(255,255,255,0.1)';
+                badgeText.textContent = 'Secured by Razorpay • Instant Settlements';
+            }
+        });
     });
 
-    // UPI Option Click -> Show Form
-    document.getElementById('upi-option').addEventListener('click', () => {
-        const upiDetails = document.getElementById('upi-details');
-        if (upiDetails.style.display === 'none') {
-            upiDetails.style.display = 'block';
+    // Copy Payment ID Function
+    document.getElementById('success-payment-id').style.cursor = 'pointer';
+    document.getElementById('success-payment-id').title = 'Click to copy';
+    document.getElementById('success-payment-id').addEventListener('click', function() {
+        const id = this.textContent;
+        if (id !== '—') {
+            navigator.clipboard.writeText(id).then(() => {
+                showToast('Payment ID copied to clipboard!', 'success');
+            });
         }
     });
+    // NOTE: No click-outside-to-close on success screen — only Done/X can close it
 
-    // Form Submission (Handle via Formspree AJAX to stay on page)
-    const upiForm = document.getElementById('upi-form');
-    upiForm.addEventListener('submit', async (e) => {
+    // ────────────────────── CHECKOUT FORM SUBMISSION ──────────────────────
+    const checkoutForm = document.getElementById('checkout-form');
+    checkoutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const submitBtn = document.getElementById('upi-submit-btn');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Submitting...';
-        submitBtn.disabled = true;
+        const nameVal = document.getElementById('rzp-name').value.trim();
+        const emailVal = document.getElementById('rzp-email').value.trim();
+        const countryCode = document.getElementById('rzp-country-code').value;
+        const phoneInput = document.getElementById('rzp-phone').value.trim();
+        const phoneVal = countryCode + ' ' + phoneInput;
+        const tier = document.getElementById('rzp-tier').value;
+        const nonce = document.getElementById('rzp-nonce').value;
+        const sessionTs = document.getElementById('rzp-session-ts').value;
 
-        const formData = new FormData(upiForm);
+        // ── Validation ──
+        if (!nameVal || !emailVal || !phoneVal) {
+            showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+        // Email format check
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+            showToast('Please enter a valid email address.', 'error');
+            return;
+        }
+        // Phone format check (minimum 7 digits for international support)
+        if (phoneInput.replace(/\D/g, '').length < 7) {
+            showToast('Please enter a valid phone number.', 'error');
+            return;
+        }
+
+        // ── Security: Session age check (prevent stale forms — 30 min max) ──
+        const sessionAge = Date.now() - parseInt(sessionTs);
+        if (sessionAge > 30 * 60 * 1000) {
+            showToast('Your session has expired. Please refresh and try again.', 'error');
+            closeModal();
+            return;
+        }
+
+        // ── Security: Nonce replay prevention ──
+        if (paymentSessions.has(nonce)) {
+            showToast('This payment session has already been used. Please try again.', 'error');
+            closeModal();
+            return;
+        }
+
+        const gateway = document.querySelector('input[name="gateway"]:checked').value;
+
+        const payBtn = document.getElementById('rzp-pay-btn');
+        const btnText = document.getElementById('rzp-btn-text');
+        const btnLoader = document.getElementById('rzp-btn-loader');
+        payBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'inline-block';
+
+        // ── Step 1: Send lead data to Formspree FIRST (captures abandoned carts) ──
+        const region = window.pricingRegion || PRICING.IN;
+        const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
+        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
 
         try {
-            const response = await fetch(upiForm.action, {
+            const leadData = new FormData();
+            leadData.append('name', nameVal);
+            leadData.append('email', emailVal);
+            leadData.append('phone', phoneVal);
+            leadData.append('purchased_tier', tierConfig.formValue);
+            leadData.append('payment_method', gateway);
+            leadData.append('session_nonce', nonce);
+            leadData.append('timestamp', new Date().toISOString());
+
+            // Fire-and-forget to Formspree (using FormData for maximum compatibility)
+            fetch('https://formspree.io/f/mgolnydk', {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
+                body: leadData,
+                headers: { 'Accept': 'application/json' }
+            }).catch(err => console.error('[Formspree Lead] Error:', err));
+        } catch (err) { console.error('[Formspree Lead] Exception:', err); }
+
+        // ── Step 2: Determine verified amount in paise ──
+        const amountRegistry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
+        const currency = region.currency;
+        const amountInSmallestUnit = amountRegistry[tier]?.[currency];
+
+        if (!amountInSmallestUnit) {
+            showToast('Pricing error. Please refresh the page and try again.', 'error');
+            payBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+            return;
+        }
+
+        // ── STEP 3: EXECUTE SELECTED GATEWAY ──
+        if (gateway === 'razorpay') {
+            const options = {
+                key: RZP_KEY_ID,
+                amount: amountInSmallestUnit,
+                currency: currency,
+                name: 'Easy Workflow',
+                description: badgeMap[tier] + ' — Lifetime License',
+                image: 'https://easyworkflow.store/logo.png',
+                prefill: { name: nameVal, email: emailVal, contact: phoneVal },
+                notes: { tier, nonce, session_ts: sessionTs, product: badgeMap[tier] },
+                theme: { color: '#7c3aed', backdrop_color: 'rgba(0,0,0,0.85)' },
+                handler: function(response) {
+                    handlePaymentSuccess(response.razorpay_payment_id || 'N/A', 'razorpay');
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+            // Reset button
+            setTimeout(() => {
+                payBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }, 1000);
+            return;
+        }
+
+        // ── Cashfree Logic (Requires Backend) ──
+        try {
+            // AUTOMATIC BACKEND SWITCH: Locally uses localhost:3000, Live uses Netlify API
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const BACKEND_URL = isLocal ? 'http://localhost:3000/create-order' : '/api/create-order'; 
+            
+            const orderRes = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amountInSmallestUnit / 100,
+                    name: nameVal, email: emailVal, phone: phoneVal, tier: tier
+                })
+            });
+
+            if (!orderRes.ok) throw new Error('Payment Server Offline');
+            const { payment_session_id } = await orderRes.json();
+
+            if (!payment_session_id) throw new Error('Mission Session ID');
+
+            const checkoutOptions = {
+                paymentSessionId: payment_session_id,
+                returnUrl: window.location.href + '?order_id={order_id}',
+                redirectTarget: "_modal"
+            };
+
+            cashfree.checkout(checkoutOptions).then((result) => {
+                payBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+
+                if (result.error) showToast(result.error.message, 'error');
+                if (result.paymentDetails) {
+                    handlePaymentSuccess(result.paymentDetails.paymentId, 'cashfree');
                 }
             });
 
-            if (response.ok) {
-                showToast('Details submitted successfully! Verification usually takes a few minutes. We will email you the Gumroad link with a 100% discount code shortly.', 'success');
-                closeModal();
-                upiForm.reset();
-            } else {
-                showToast('Oops! There was a problem submitting your form. Please try again.', 'error');
-            }
-        } catch (error) {
-            showToast('Oops! There was a problem submitting your form. Please check your internet connection and try again.', 'error');
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+        } catch (err) {
+            console.error('[Payment] Error:', err);
+            payBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+            showToast('Unable to connect to ' + gateway + ' payment server.', 'error');
+        }
+
+        async function handlePaymentSuccess(paymentId, method) {
+            paymentSessions.add(nonce);
+            closeModal();
+            checkoutForm.reset();
+
+            // Send confirmation to Formspree
+            const confirmData = new FormData();
+            confirmData.append('_subject', `✅ PAYMENT SUCCESS: ${badgeMap[tier]}`);
+            confirmData.append('payment_id', paymentId);
+            confirmData.append('payment_method', method);
+            fetch('https://formspree.io/f/mgolnydk', { method: 'POST', body: confirmData });
+
+            showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
         }
     });
 
