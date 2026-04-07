@@ -1,15 +1,16 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+require('dotenv').config(); // Load variables from .env file for local testing
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 1. YOUR CASHFREE KEYS (For Local Testing)
-const CASHFREE_APP_ID = "TEST10997518058773b9b17be5ef5edc81579901";
-const CASHFREE_SECRET_KEY = "cfsk_ma_test_bea799f09bc30f9e653fd6e1d7584ab4_5e95f3ad";
-const IS_PRODUCTION = false; 
+// 1. YOUR CASHFREE KEYS (Safely pulled from environment)
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'; 
 
 // Security: Server-authoritative Pricing Registry
 const RZP_AMOUNTS = {
@@ -36,9 +37,12 @@ const BASE_URL = IS_PRODUCTION
 
 app.post('/create-order', async (req, res) => {
     try {
+        if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
+            return res.status(500).json({ error: "API Keys missing from environment" });
+        }
+
         const { tier, currency, name, email, phone } = req.body;
 
-        // Security: Calculate amount on server
         const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
         const verifiedAmount = registry[tier]?.[currency || "INR"];
 
