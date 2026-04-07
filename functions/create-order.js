@@ -1,51 +1,54 @@
 const axios = require('axios');
 
+// --- SECURE SERVER-SIDE PRICE REGISTRY ---
+// This registry is HIDDEN from the browser. No one can bypass this via Inspect.
+const PRICING_REGISTRY = {
+  basic: 100,         // ₹100
+  pro: 1500,          // ₹1500
+  autocaptions: 800   // ₹800
+};
+
 exports.handler = async (event, context) => {
-  // 1. CORS Headers (Security)
+  // CORS Headers
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
-  // Handle Preflight
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers };
-  }
-
-  // Only allow POST
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers, body: "Method Not Allowed" };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
   try {
-    const { amount, name, email, phone } = JSON.parse(event.body);
+    const { tier, name, email, phone } = JSON.parse(event.body);
 
-    // Get Keys from Netlify Environment Variables
+    // 1. SECURITY CHECK: Verify the tier exists on our server registry
+    let verifiedAmount = PRICING_REGISTRY[tier];
+    if (!verifiedAmount) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid product tier selected." }) };
+    }
+
+    // 2. Get Keys from Netlify Environment Variables
     const appId = process.env.CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
 
     if (!appId || !secretKey) {
-      return { 
-        statusCode: 500, 
-        headers, 
-        body: JSON.stringify({ error: "API Keys missing from Netlify settings" }) 
-      };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "Server Configuration Error (Keys missing)" }) };
     }
 
-    // Determine Environment (Test vs Prod)
+    // 3. Environment Check
     const isProduction = !secretKey.includes('test');
     const baseUrl = isProduction 
       ? "https://api.cashfree.com/pg/orders" 
       : "https://sandbox.cashfree.com/pg/orders";
 
-    // Call Cashfree API
+    // 4. Secure API Call to Cashfree
     const response = await axios.post(baseUrl, {
-      order_id: "order_" + Date.now(),
-      order_amount: amount,
+      order_id: "order_" + Math.random().toString(36).substring(2, 12).toUpperCase(),
+      order_amount: verifiedAmount,
       order_currency: "INR",
       customer_details: {
-        customer_id: "user_" + Date.now(),
+        customer_id: "client_" + Date.now(),
         customer_name: name,
         customer_email: email,
         customer_phone: phone
@@ -66,14 +69,11 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error("Netlify Function Error:", error.response ? error.response.data : error.message);
+    console.error("Payment Order Error:", error.response ? error.response.data : error.message);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: "Failed to create payment session", 
-        details: error.response ? error.response.data.message : error.message 
-      }),
+      body: JSON.stringify({ error: "Failed to create payment session", details: "Unable to reach Cashfree API" }),
     };
   }
 };
