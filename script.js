@@ -740,8 +740,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== PAYMENT GATEWAY CONFIGURATION =====
     const ENABLE_RAZORPAY = false; // Set to true when Razorpay KYC is verified
     const RZP_KEY_ID = 'rzp_test_SaJqg7YMwudKqx'; // Razorpay Public Key
-    const CF_APP_ID = 'TEST10997518058773b9b17be5ef5edc81579901'; // <-- REPLACE with your Real Production App ID
-    const CF_MODE = 'sandbox'; // <-- Change to 'production' for live payments
+    const CF_APP_ID = '121259341f82a4cec1053b822723952121'; // <-- REPLACE with your Real Production App ID
+    const CF_MODE = 'production'; // <-- Change to 'production' for live payments
 
     const GUMROAD_LINKS = {
         basic: 'https://harshedits55.gumroad.com/l/Easyworkflow',
