@@ -1275,10 +1275,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!orderRes.ok) throw new Error('Payment Server Offline');
-            const { payment_session_id } = await orderRes.json();
-
+            const { payment_session_id, mode } = await orderRes.json();
             if (!payment_session_id) throw new Error('Mission Session ID');
+
+            // 🟢 DYNAMIC SDK INITIALIZATION: Automatically switches mode based on server! 🟢
+            const cfSDK = Cashfree({ mode: mode }); 
 
             const checkoutOptions = {
                 paymentSessionId: payment_session_id,
@@ -1286,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 redirectTarget: "_modal"
             };
 
-            cashfree.checkout(checkoutOptions).then((result) => {
+            cfSDK.checkout(checkoutOptions).then((result) => {
                 payBtn.disabled = false;
                 btnText.style.display = 'inline';
                 btnLoader.style.display = 'none';
