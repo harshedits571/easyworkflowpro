@@ -738,8 +738,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== RAZORPAY CHECKOUT + LEAD CAPTURE SYSTEM =====
     // ===== PAYMENT GATEWAY CONFIGURATION =====
-    const ENABLE_RAZORPAY = false; // Set to true when Razorpay KYC is verified
-    const RZP_KEY_ID = 'rzp_test_SaJqg7YMwudKqx'; // Razorpay Public Key
+    const ENABLE_RAZORPAY = true; // Set to true when Razorpay KYC is verified
+    const RZP_KEY_ID = 'rzp_live_SbYS9Uxg3z4s4k'; // Razorpay Public Key
     const CF_APP_ID = '121259341f82a4cec1053b822723952121'; // <-- REPLACE with your Real Production App ID
     const CF_MODE = 'production'; // <-- Change to 'production' for live payments
 
@@ -1224,12 +1224,26 @@ document.addEventListener('DOMContentLoaded', () => {
             leadData.append('session_nonce', nonce);
             leadData.append('timestamp', new Date().toISOString());
 
-            // Fire-and-forget to Formspree (using FormData for maximum compatibility)
-            fetch('https://formspree.io/f/mgolnydk', {
-                method: 'POST',
-                body: leadData,
-                headers: { 'Accept': 'application/json' }
-            }).catch(err => console.error('[Formspree Lead] Error:', err));
+            // Step 1: Send lead data to Formspree (FormData is most reliable)
+            try {
+                console.log('[Formspree] Sending lead notification...');
+                const fd = new FormData();
+                fd.append('_subject', `🔍 NEW LEAD: ${badgeMap[tier]}`);
+                fd.append('name', nameVal);
+                fd.append('email', emailVal);
+                fd.append('phone', phoneVal);
+                fd.append('tier', tierConfig.formValue);
+                fd.append('status', 'INTERESTED_BUT_NOT_PAID_YET');
+
+                await fetch('https://formspree.io/f/xykbqznk', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'Accept': 'application/json' }
+                });
+                console.log('[Formspree] Lead notification sent.');
+            } catch (err) {
+                console.error('[Formspree Lead] Error:', err);
+            }
         } catch (err) { console.error('[Formspree Lead] Exception:', err); }
 
         // ── Step 2: Determine verified amount in paise ──
@@ -1343,22 +1357,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function handlePaymentSuccess(paymentId, method) {
             paymentSessions.add(nonce);
-            closeModal();
 
-            // Send confirmation to Formspree
-            const confirmData = new FormData();
-            confirmData.append('_subject', `✅ PAYMENT SUCCESS: ${badgeMap[tier]}`);
-            confirmData.append('name', nameVal);
-            confirmData.append('email', emailVal);
-            confirmData.append('phone', phoneVal);
-            confirmData.append('payment_id', paymentId);
-            confirmData.append('payment_method', method);
-            confirmData.append('purchased_tier', tierConfig.formValue);
-            
-            fetch('https://formspree.io/f/mgolnydk', { method: 'POST', body: confirmData });
+            // Show a "Verifying" state
+            showToast('Verifying payment with bank... Please wait.', 'success');
 
-            checkoutForm.reset();
-            showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
+            try {
+                const VERIFY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:3000/verify-payment' // If you add this to server.js
+                    : '/api/verify-payment';
+
+                const verifyRes = await fetch(VERIFY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        paymentId,
+                        method,
+                        tier: badgeMap[tier],
+                        name: nameVal,
+                        email: emailVal,
+                        phone: phoneVal
+                    })
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.verified) {
+                    closeModal();
+                    checkoutForm.reset();
+                    showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
+                } else {
+                    throw new Error(verifyData.error || 'Payment could not be verified.');
+                }
+            } catch (err) {
+                console.error('[Verification] Failed:', err);
+                showToast('Warning: Payment verification pending. We will contact you if there is an issue.', 'error');
+                // Even if verification fails, we don't show the success screen to avoid bypasses
+            }
         }
     });
 
