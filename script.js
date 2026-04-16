@@ -7,7 +7,7 @@ const PRICING = {
         currency: 'INR',
         symbol: '₹',
         basic: { amount: 100, label: '₹100', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - ₹100' },
-        pro: { amount: 1500, label: '₹1500', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹1500' },
+        pro: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
         autocaptions: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
         proAfterDeadline: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
         autocaptionsAfterDeadline: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
@@ -18,7 +18,7 @@ const PRICING = {
         currency: 'USD',
         symbol: '$',
         basic: { amount: 2, label: '$2', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - $2' },
-        pro: { amount: 18, label: '$18', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $18' },
+        pro: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
         autocaptions: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
         proAfterDeadline: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
         autocaptionsAfterDeadline: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
@@ -34,6 +34,23 @@ let PRICE_DEADLINE = new Date('2026-05-20T23:59:59+05:30'); // May 20, 2026 end 
 function isPastDeadline() {
     return new Date() > PRICE_DEADLINE;
 }
+
+// ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
+var RZP_KEY_ID = 'kAkQYdYDxrZZGifmZWfqdLeh';
+var CF_APP_ID = '121259341f82a4cec1053b822723952121';
+var CF_MODE = 'production';
+
+var RZP_AMOUNTS = {
+    basic: { INR: 10000, USD: 200 },
+    pro: { INR: 200000, USD: 2400 }, // Default ₹2000
+    autocaptions: { INR: 80000, USD: 1000 }
+};
+
+var RZP_AMOUNTS_DEADLINE = {
+    basic: { INR: 10000, USD: 200 },
+    pro: { INR: 200000, USD: 2400 }, // Default ₹2000
+    autocaptions: { INR: 80000, USD: 1000 }
+};
 
 // Apply deadline pricing — overwrite pro config if past deadline
 function applyDeadlinePricing(region) {
@@ -867,36 +884,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ===== RAZORPAY CHECKOUT + LEAD CAPTURE SYSTEM =====
-    // ===== PAYMENT GATEWAY CONFIGURATION =====
-    const ENABLE_RAZORPAY = true; // Set to true when Razorpay KYC is verified
-    const RZP_KEY_ID = 'rzp_live_SbYS9Uxg3z4s4k'; // Razorpay Public Key
-    const CF_APP_ID = '121259341f82a4cec1053b822723952121'; // <-- REPLACE with your Real Production App ID
-    const CF_MODE = 'production'; // <-- Change to 'production' for live payments
-
     const GUMROAD_LINKS = {
         basic: 'https://harshedits55.gumroad.com/l/Easyworkflow',
         pro: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n',
         autocaptions: 'https://harshedits55.gumroad.com/l/Autocaptionpro'
     };
 
-    // Initialize Cashfree
+    // Initialized from Global Scope above
     let cashfree;
     if (typeof Cashfree !== 'undefined') {
         cashfree = Cashfree({ mode: CF_MODE });
     }
-    // Security: Amount registry — server-authoritative amounts in paise (prevents client-side price tampering)
-    const RZP_AMOUNTS = {
-        basic: { INR: 10000, USD: 200 },   // ₹100 / $2
-        pro: { INR: 150000, USD: 1800 },  // ₹1500 / $18
-        autocaptions: { INR: 80000, USD: 1000 }    // ₹800 / $10
-    };
-    // After-deadline amounts
-    const RZP_AMOUNTS_DEADLINE = {
-        basic: { INR: 10000, USD: 200 },
-        pro: { INR: 150000, USD: 1800 },  // SYNCED: Now matches current price of 1500
-        autocaptions: { INR: 80000, USD: 1000 }
-    };
     // Security nonce generator (crypto-grade randomness)
     function generateNonce(len = 32) {
         const arr = new Uint8Array(len);
@@ -916,10 +914,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modalBox = document.createElement('div');
     modalBox.id = 'checkout-box';
-    modalBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:0;max-width:880px;width:95%;position:relative;transform:translateY(20px);transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 30px 120px rgba(0,0,0,0.8);overflow:hidden;max-height:calc(100vh - 60px);display:flex;flex-direction:column;';
+    modalBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:0;max-width:880px;width:95%;position:relative;transform:translateY(20px);transition:all 0.4s;box-shadow:0 30px 120px rgba(0,0,0,0.8);overflow:hidden;max-height:calc(100vh - 40px);display:flex;flex-direction:column;';
 
     modalBox.innerHTML = `
-        <div id="modal-main-split" style="display:flex;height:100%;flex-direction:row;overflow:hidden;min-height:500px;">
+        <div id="modal-main-split" style="display:flex;height:100%;flex-direction:row;overflow:hidden;min-height:0;">
             <!-- Left Sidebar (Order Summary) -->
             <div id="modal-sidebar" style="width:340px;background:linear-gradient(165deg, #1e1e2d, #121218);border-right:1px solid rgba(255,255,255,0.05);padding:40px;display:flex;flex-direction:column;flex-shrink:0;">
                 <div style="flex:1;">
@@ -1099,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: 'Turkey', code: '+90', flag: '🇹🇷' }
     ];
 
-    window.toggleCountryDropdown = function() {
+    window.toggleCountryDropdown = function () {
         const dropdown = document.getElementById('country-dropdown');
         const arrow = document.getElementById('country-arrow');
         const isVisible = dropdown.style.display === 'block';
@@ -1108,13 +1106,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isVisible) document.getElementById('country-search').focus();
     };
 
-    window.selectCountry = function(code, flag) {
+    window.selectCountry = function (code, flag) {
         document.getElementById('rzp-country-code').value = code;
         document.getElementById('selected-flag-text').textContent = `${flag} ${code}`;
         window.toggleCountryDropdown();
     };
 
-    window.filterCountries = function() {
+    window.filterCountries = function () {
         const term = document.getElementById('country-search').value.toLowerCase();
         const items = document.querySelectorAll('.country-item');
         items.forEach(item => {
@@ -1133,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
     }
-    
+
     // Call init after everything is appended or in openModal
     setTimeout(initCountryList, 100);
 
