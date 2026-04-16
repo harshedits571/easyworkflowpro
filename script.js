@@ -36,7 +36,7 @@ function isPastDeadline() {
 }
 
 // ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
-var RZP_KEY_ID = 'kAkQYdYDxrZZGifmZWfqdLeh';
+var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
 var CF_APP_ID = '121259341f82a4cec1053b822723952121';
 var CF_MODE = 'production';
 
