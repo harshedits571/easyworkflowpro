@@ -3172,6 +3172,25 @@
         </div>
     </footer>
 
+    <!-- Firebase SDK (Firestore for leads & dynamic pricing) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // 🔑 FIREBASE CONFIG — MUST MATCH admin.js CONFIG
+        // ═══════════════════════════════════════════════════════════════
+        const firebaseConfig = {
+            apiKey: "AIzaSyDE0F8ZF1yGWuju-tBUmzCAvN8_LinhW9Y",
+            authDomain: "easy-workflow-pro.firebaseapp.com",
+            projectId: "easy-workflow-pro",
+            storageBucket: "easy-workflow-pro.firebasestorage.app",
+            messagingSenderId: "326042721605",
+            appId: "1:326042721605:web:759d3d272f263299dd722c",
+        };
+        firebase.initializeApp(firebaseConfig);
+        window.firestore = firebase.firestore();
+    </script>
+
     <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>

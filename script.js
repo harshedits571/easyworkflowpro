@@ -29,7 +29,7 @@ const PRICING = {
 
 // ===== PRICE INCREASE DEADLINE =====
 // After this date, Pro price increases automatically
-const PRICE_DEADLINE = new Date('2026-03-20T23:59:59+05:30'); // March 20, 2026 end of day IST
+let PRICE_DEADLINE = new Date('2026-05-20T23:59:59+05:30'); // May 20, 2026 end of day IST
 
 function isPastDeadline() {
     return new Date() > PRICE_DEADLINE;
@@ -76,6 +76,9 @@ function initCountdownTimer() {
             // Deadline passed — completely hide the countdown banner
             banner.style.display = 'none';
             return; // stop ticking
+        } else {
+            // Ensure banner is visible if we fetched a new deadline from Firebase
+            banner.style.display = 'block';
         }
 
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -265,14 +268,142 @@ async function detectAndApplyCurrency() {
 // Run geo-detection immediately (before DOM ready, catches early elements)
 detectAndApplyCurrency();
 
+// ═══════════════════════════════════════════════════════════════════
+// 🔥 FIRESTORE DYNAMIC PRICING — Overrides hardcoded prices with
+//    values from Firebase, editable from the Admin Dashboard.
+//    Falls back to hardcoded PRICING if Firestore is unavailable.
+// ═══════════════════════════════════════════════════════════════════
+async function loadFirestorePricing() {
+    try {
+        if (!window.firestore) return; // Firebase not loaded yet
+        const doc = await window.firestore.collection('config').doc('pricing').get();
+        if (!doc.exists) return; // No pricing doc — use hardcoded defaults
+
+        const p = doc.data();
+        console.log('[Firebase] Dynamic pricing loaded:', p);
+
+        // Override the hardcoded PRICING object with Firestore values
+        if (p.basic_inr !== undefined) {
+            PRICING.IN.basic.amount = p.basic_inr;
+            PRICING.IN.basic.label = '₹' + p.basic_inr;
+            PRICING.IN.basic.formValue = 'basic - ₹' + p.basic_inr;
+        }
+        if (p.pro_inr !== undefined) {
+            PRICING.IN.pro.amount = p.pro_inr;
+            PRICING.IN.pro.label = '₹' + p.pro_inr;
+            PRICING.IN.pro.formValue = 'pro - ₹' + p.pro_inr;
+            PRICING.IN.proAfterDeadline.amount = p.pro_inr;
+            PRICING.IN.proAfterDeadline.label = '₹' + p.pro_inr;
+            PRICING.IN.proAfterDeadline.formValue = 'pro - ₹' + p.pro_inr;
+        }
+        if (p.autocaptions_inr !== undefined) {
+            PRICING.IN.autocaptions.amount = p.autocaptions_inr;
+            PRICING.IN.autocaptions.label = '₹' + p.autocaptions_inr;
+            PRICING.IN.autocaptions.formValue = 'autocaptions - ₹' + p.autocaptions_inr;
+            PRICING.IN.autocaptionsAfterDeadline.amount = p.autocaptions_inr;
+            PRICING.IN.autocaptionsAfterDeadline.label = '₹' + p.autocaptions_inr;
+            PRICING.IN.autocaptionsAfterDeadline.formValue = 'autocaptions - ₹' + p.autocaptions_inr;
+        }
+        if (p.basic_usd !== undefined) {
+            PRICING.US.basic.amount = p.basic_usd;
+            PRICING.US.basic.label = '$' + p.basic_usd;
+            PRICING.US.basic.formValue = 'basic - $' + p.basic_usd;
+        }
+        if (p.pro_usd !== undefined) {
+            PRICING.US.pro.amount = p.pro_usd;
+            PRICING.US.pro.label = '$' + p.pro_usd;
+            PRICING.US.pro.formValue = 'pro - $' + p.pro_usd;
+            PRICING.US.proAfterDeadline.amount = p.pro_usd;
+            PRICING.US.proAfterDeadline.label = '$' + p.pro_usd;
+            PRICING.US.proAfterDeadline.formValue = 'pro - $' + p.pro_usd;
+        }
+        if (p.autocaptions_usd !== undefined) {
+            PRICING.US.autocaptions.amount = p.autocaptions_usd;
+            PRICING.US.autocaptions.label = '$' + p.autocaptions_usd;
+            PRICING.US.autocaptions.formValue = 'autocaptions - $' + p.autocaptions_usd;
+            PRICING.US.autocaptionsAfterDeadline.amount = p.autocaptions_usd;
+            PRICING.US.autocaptionsAfterDeadline.label = '$' + p.autocaptions_usd;
+            PRICING.US.autocaptionsAfterDeadline.formValue = 'autocaptions - $' + p.autocaptions_usd;
+        }
+
+        // Also update the RZP_AMOUNTS (used for payment validation in paise)
+        if (p.basic_inr !== undefined) {
+            RZP_AMOUNTS.basic.INR = p.basic_inr * 100;
+            RZP_AMOUNTS_DEADLINE.basic.INR = p.basic_inr * 100;
+        }
+        if (p.pro_inr !== undefined) {
+            RZP_AMOUNTS.pro.INR = p.pro_inr * 100;
+            RZP_AMOUNTS_DEADLINE.pro.INR = p.pro_inr * 100;
+        }
+        if (p.autocaptions_inr !== undefined) {
+            RZP_AMOUNTS.autocaptions.INR = p.autocaptions_inr * 100;
+            RZP_AMOUNTS_DEADLINE.autocaptions.INR = p.autocaptions_inr * 100;
+        }
+        if (p.basic_usd !== undefined) {
+            RZP_AMOUNTS.basic.USD = p.basic_usd * 100;
+            RZP_AMOUNTS_DEADLINE.basic.USD = p.basic_usd * 100;
+        }
+        if (p.pro_usd !== undefined) {
+            RZP_AMOUNTS.pro.USD = p.pro_usd * 100;
+            RZP_AMOUNTS_DEADLINE.pro.USD = p.pro_usd * 100;
+        }
+        if (p.autocaptions_usd !== undefined) {
+            RZP_AMOUNTS.autocaptions.USD = p.autocaptions_usd * 100;
+            RZP_AMOUNTS_DEADLINE.autocaptions.USD = p.autocaptions_usd * 100;
+        }
+
+        // Re-apply correct region logic after Firestore load
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING[window.pricingRegion.currency === 'USD' ? 'US' : 'IN'] });
+        applyPricingToPage(window.pricingRegion);
+        if (window._updateCountdownLabel) window._updateCountdownLabel();
+    } catch (err) {
+        console.warn('[Firebase] Could not load dynamic pricing. Using hardcoded fallback.', err);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔥 FIRESTORE DYNAMIC SETTINGS — Overrides banner & countdown text
+// ═══════════════════════════════════════════════════════════════════
+async function loadFirestoreSettings() {
+    try {
+        if (!window.firestore) return;
+        const doc = await window.firestore.collection('config').doc('settings').get();
+        if (!doc.exists) return;
+
+        const data = doc.data();
+        if (data.deadlineDate) {
+            PRICE_DEADLINE = new Date(data.deadlineDate);
+        }
+        if (data.bannerText !== undefined) {
+            const bannerTextEl = document.querySelector('#countdown-banner .countdown-label');
+            if (bannerTextEl && data.bannerText.trim() !== '') {
+                bannerTextEl.innerHTML = data.bannerText;
+            }
+        }
+
+    } catch (err) {
+        console.warn('[Firebase] Could not load dynamic settings.', err);
+    }
+}
+
 // Re-apply after DOM is fully ready to catch elements rendered after script runs
 document.addEventListener('DOMContentLoaded', () => {
     // Small delay to let the page fully paint before re-applying
     setTimeout(() => applyPricingToPage(window.pricingRegion), 100);
     initCountdownTimer(); // Start the countdown!
-});
 
-document.addEventListener('DOMContentLoaded', () => {
+    // Load config from Firestore robustly (public read enabled in Firestore rules)
+    const initDbFeatures = async () => {
+        if (!window.firestore) {
+            setTimeout(initDbFeatures, 100);
+            return;
+        }
+        await loadFirestorePricing();
+        await loadFirestoreSettings();
+        initCountdownTimer(); // Re-init timer after fetching any new deadline
+    };
+    initDbFeatures();
+
 
     // ===== LENIS SMOOTH SCROLL =====
     const lenis = new Lenis({
@@ -763,10 +894,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // After-deadline amounts
     const RZP_AMOUNTS_DEADLINE = {
         basic: { INR: 10000, USD: 200 },
-        pro: { INR: 200000, USD: 2400 },  // ₹2000 / $24
+        pro: { INR: 150000, USD: 1800 },  // SYNCED: Now matches current price of 1500
         autocaptions: { INR: 80000, USD: 1000 }
     };
-
     // Security nonce generator (crypto-grade randomness)
     function generateNonce(len = 32) {
         const arr = new Uint8Array(len);
@@ -786,216 +916,277 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modalBox = document.createElement('div');
     modalBox.id = 'checkout-box';
-    modalBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:0;max-width:480px;width:92%;position:relative;transform:translateY(20px);transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 25px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,58,237,0.15);overflow:hidden;max-height:90vh;overflow-y:auto;';
+    modalBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:0;max-width:880px;width:95%;position:relative;transform:translateY(20px);transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 30px 120px rgba(0,0,0,0.8);overflow:hidden;max-height:calc(100vh - 60px);display:flex;flex-direction:column;';
 
     modalBox.innerHTML = `
-        <!-- Header -->
-        <div style="background:linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,130,246,0.1));padding:24px 28px 20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;">
-            <button id="close-modal" style="position:absolute;top:16px;right:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;line-height:1;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='rgba(255,255,255,0.5)';">&times;</button>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                <h2 id="modal-title" style="font-family:var(--font-heading);color:white;margin:0;font-size:22px;font-weight:700;">Checkout</h2>
-                <span id="modal-product-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">Easy Workflow Pro</span>
-            </div>
-            <p id="modal-desc" style="color:rgba(255,255,255,0.5);margin:0;font-size:13px;">Complete your purchase to securely receive your lifetime license key.</p>
-        </div>
-
-        <!-- Form Body -->
-        <div style="padding:24px 28px 28px;">
-            <!-- Progress Steps -->
-            <div style="display:flex;justify-content:space-between;margin-bottom:20px;padding:0 10px;">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:#7c3aed;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;box-shadow:0 0 15px rgba(124,58,237,0.4);">1</div>
-                    <span style="font-size:10px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Details</span>
-                </div>
-                <div style="flex:1;height:2px;background:rgba(124,58,237,0.2);margin-top:14px;margin-left:10px;margin-right:10px;"></div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.1);">2</div>
-                    <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Method</span>
-                </div>
-                <div style="flex:1;height:2px;background:rgba(255,255,255,0.05);margin-top:14px;margin-left:10px;margin-right:10px;"></div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.1);">3</div>
-                    <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Payment</span>
-                </div>
-            </div>
-
-            <!-- Pricing Summary -->
-            <div id="checkout-pricing-bar" style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 18px;margin-bottom:22px;">
-                <div>
-                    <div id="checkout-tier-name" style="color:white;font-weight:600;font-size:14px;">Easy Workflow Pro</div>
-                    <div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:2px;">Lifetime License • One-time payment</div>
-                </div>
-                <div id="checkout-price-display" style="color:#22c55e;font-size:22px;font-weight:800;font-family:var(--font-heading);">₹1500</div>
-            </div>
-
-            <form id="checkout-form" autocomplete="on">
-                <input type="hidden" id="rzp-tier" value="pro">
-                <input type="hidden" id="rzp-nonce" value="">
-                <input type="hidden" id="rzp-session-ts" value="">
-
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Full Name <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="rzp-name" name="name" required autocomplete="name" placeholder="Enter your full name" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                </div>
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Email Address <span style="color:#ef4444;">*</span></label>
-                    <input type="email" id="rzp-email" name="email" required autocomplete="email" placeholder="you@example.com" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;font-weight:500;">Phone Number (WhatsApp) <span style="color:#ef4444;">*</span></label>
-                    <div style="display:flex;gap:8px;">
-                        <select id="rzp-country-code" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 4px;border-radius:10px;color:white;font-family:inherit;font-size:14px;outline:none;cursor:pointer;width:95px;flex-shrink:0;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                            <option value="+91" selected>🇮🇳 +91</option>
-                            <option value="+1">🇺🇸 +1</option>
-                            <option value="+44">🇬🇧 +44</option>
-                            <option value="+971">🇦🇪 +971</option>
-                            <option value="+61">🇦🇺 +61</option>
-                            <option value="+1">🇨🇦 +1</option>
-                            <option value="+49">🇩🇪 +49</option>
-                            <option value="+33">🇫🇷 +33</option>
-                            <option value="+81">🇯🇵 +81</option>
-                            <option value="+65">🇸🇬 +65</option>
-                            <option value="+92">🇵🇰 +Pak</option>
-                            <option value="+880">🇧🇩 +BGD</option>
-                            <option value="+7">🇷🇺 +7</option>
-                            <option value="+34">🇪🇸 +34</option>
-                            <option value="+39">🇮🇹 +39</option>
-                            <option value="+55">🇧🇷 +55</option>
-                            <option value="+27">🇿🇦 +27</option>
-                            <option value="+86">🇨🇳 +86</option>
-                            <option value="+82">🇰🇷 +82</option>
-                            <option value="+90">🇹🇷 +90</option>
-                            <option value="+62">🇮🇩 +62</option>
-                            <option value="+63">🇵🇭 +63</option>
-                            <option value="+60">🇲🇾 +60</option>
-                        </select>
-                        <input type="tel" id="rzp-phone" name="phone" required autocomplete="tel" placeholder="99999 99999" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:11px 14px;border-radius:10px;color:white;font-family:inherit;font-size:14px;box-sizing:border-box;transition:border-color 0.2s;outline:none;" onfocus="this.style.borderColor='rgba(124,58,237,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <div id="modal-main-split" style="display:flex;height:100%;flex-direction:row;overflow:hidden;min-height:500px;">
+            <!-- Left Sidebar (Order Summary) -->
+            <div id="modal-sidebar" style="width:340px;background:linear-gradient(165deg, #1e1e2d, #121218);border-right:1px solid rgba(255,255,255,0.05);padding:40px;display:flex;flex-direction:column;flex-shrink:0;">
+                <div style="flex:1;">
+                    <div style="display:inline-flex;align-items:center;background:rgba(124,58,237,0.2);color:#a78bfa;padding:5px 14px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;">SECURE CHECKOUT</div>
+                    <h2 id="checkout-tier-name" style="font-family:var(--font-heading);color:white;margin:0;font-size:26px;font-weight:800;line-height:1.2;">Easy Workflow Pro</h2>
+                    <p style="color:rgba(255,255,255,0.4);font-size:14px;margin-top:10px;line-height:1.5;">Get instant access to the ultimate After Effects toolkit.</p>
+                    
+                    <div style="margin-top:30px;display:flex;flex-direction:column;gap:15px;">
+                        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.7);font-size:13px;">
+                            <div style="width:20px;height:20px;border-radius:50%;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></div>
+                            Lifetime Updates
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.7);font-size:13px;">
+                            <div style="width:20px;height:20px;border-radius:50%;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></div>
+                            Priority Discord Support
+                        </div>
                     </div>
                 </div>
 
-                <!-- Gateway Selection -->
-                ${ENABLE_RAZORPAY ? `
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:8px;font-weight:500;">Select Payment Gateway <span style="color:#ef4444;">*</span></label>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <label id="label-cf" style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;padding:12px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s;">
-                            <input type="radio" name="gateway" value="cashfree" checked style="display:none;">
-                            <span style="color:white;font-size:13px;font-weight:600;">Cashfree</span>
-                            <span style="color:rgba(255,255,255,0.4);font-size:9px;">Card, UPI, Wallet</span>
-                        </label>
-                        <label id="label-rzp" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s;">
-                            <input type="radio" name="gateway" value="razorpay" style="display:none;">
-                            <span style="color:white;font-size:13px;font-weight:600;">Razorpay</span>
-                            <span style="color:rgba(255,255,255,0.4);font-size:9px;">All Methods</span>
-                        </label>
+                <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:30px;">
+                    <div id="checkout-original-price" style="display:none;color:rgba(255,255,255,0.3);font-size:16px;text-decoration:line-through;margin-bottom:5px;">1500</div>
+                    <div style="display:flex;align-items:baseline;gap:10px;">
+                        <span id="checkout-price-display" style="color:white;font-size:42px;font-weight:800;font-family:var(--font-heading);">1500</span>
+                        <span style="color:rgba(255,255,255,0.3);font-size:15px;font-weight:500;">/ License</span>
                     </div>
                 </div>
-                ` : `<input type="hidden" name="gateway" value="cashfree">`}
+            </div>
 
+            <!-- Right Content (Form Area) -->
+            <div style="flex:1;display:flex;flex-direction:column;background:#14141a;position:relative;">
+                <button id="close-modal" style="position:absolute;top:24px;right:24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;z-index:10;">&times;</button>
 
-                <!-- Security Badge -->
-                <div id="security-badge-area" style="display:flex;align-items:center;gap:8px;margin-bottom:18px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:10px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    <span id="security-badge-text" style="color:rgba(34,197,94,0.9);font-size:11px;font-weight:500;">Secured by Cashfree • 256-bit SSL Encryption</span>
-                </div>
+                <form id="checkout-form" style="display:flex;flex-direction:column;height:100%;">
+                    <div style="padding:40px 40px 20px;flex:1;overflow-y:auto;" id="modal-scroll-body">
+                        <h2 id="modal-title" style="color:white;margin:0 0 10px;font-size:20px;font-weight:700;">Complete Checkout</h2>
+                        <span id="modal-product-badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:24px;display:inline-block;">PRO</span>
+                        
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                            <div style="grid-column: span 2;">
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">FULL NAME *</label>
+                                <input type="text" id="rzp-name" required placeholder="John Doe" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#7c3aed'">
+                            </div>
+                            <div>
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">EMAIL ADDRESS *</label>
+                                <input type="email" id="rzp-email" required placeholder="john@example.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
+                            </div>
+                            <div>
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">WHATSAPP NUMBER *</label>
+                                <div style="display:flex;gap:8px;">
+                                    <div id="country-selector-container" style="position:relative;width:110px;">
+                                        <div id="country-selected" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px 10px;border-radius:12px;color:white;font-size:13px;outline:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleCountryDropdown()">
+                                            <span id="selected-flag-text">🇮🇳 +91</span>
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:transform 0.2s;" id="country-arrow"><path d="M6 9l6 6 6-6"/></svg>
+                                        </div>
+                                        <div id="country-dropdown" style="display:none;position:absolute;top:100%;left:0;width:280px;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-top:8px;z-index:100;box-shadow:0 10px 40px rgba(0,0,0,0.5);overflow:hidden;">
+                                            <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                                                <input type="text" id="country-search" placeholder="Search country..." style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:8px 12px;border-radius:8px;color:white;font-size:12px;outline:none;" onkeyup="filterCountries()" onclick="event.stopPropagation()">
+                                            </div>
+                                            <div id="country-list" style="max-height:250px;overflow-y:auto;padding:5px;">
+                                                <!-- Countries will be injected here -->
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="rzp-country-code" value="+91">
+                                    </div>
+                                    <input type="tel" id="rzp-phone" required placeholder="9876543210" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
+                                </div>
+                            </div>
+                        </div>
 
-                <button type="submit" id="rzp-pay-btn" style="width:100%;padding:14px;font-weight:700;font-size:15px;font-family:var(--font-heading);background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:12px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 20px rgba(124,58,237,0.3);letter-spacing:0.3px;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 30px rgba(124,58,237,0.4)';" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(124,58,237,0.3)';">
-                    <span id="rzp-btn-text">Pay ₹1500 — Proceed to Payment</span>
-                    <span id="rzp-btn-loader" style="display:none;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/></svg>
-                    </span>
-                </button>
+                        <div style="margin-bottom:24px;">
+                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">PROMO CODE</label>
+                            <div style="display:flex;gap:10px;">
+                                <input type="text" id="rzp-promo-code" placeholder="ENTER CODE" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:13px;outline:none;text-transform:uppercase;">
+                                <button type="button" id="btn-apply-promo" style="background:rgba(255,255,255,0.05);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);padding:0 24px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(167,139,250,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">APPLY</button>
+                            </div>
+                            <div id="promo-message" style="font-size:11px;margin-top:8px;display:none;"></div>
+                        </div>
 
-                <div style="text-align:center;margin-top:14px;">
-                    <span style="color:rgba(255,255,255,0.3);font-size:11px;">By proceeding, you agree to our terms of service.</span>
-                </div>
-            </form>
+                        <div id="gateway-selection-row" style="margin-bottom:10px;">
+                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:12px;font-weight:700;letter-spacing:0.5px;">CHOOSE GATEWAY</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                                <label id="label-cf" style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;padding:16px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
+                                    <input type="radio" name="gateway" value="cashfree" checked style="display:none;">
+                                    <span style="color:white;font-size:14px;font-weight:700;">CASHFREE</span>
+                                    <span style="color:rgba(255,255,255,0.3);font-size:9px;">UPI & CARDS</span>
+                                </label>
+                                <label id="label-rzp" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);padding:16px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
+                                    <input type="radio" name="gateway" value="razorpay" style="display:none;">
+                                    <span style="color:white;font-size:14px;font-weight:700;">RAZORPAY</span>
+                                    <span style="color:rgba(255,255,255,0.3);font-size:9px;">ALL METHODS</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="rzp-tier" value="pro">
+                        <input type="hidden" id="rzp-nonce" value="">
+                        <input type="hidden" id="rzp-session-ts" value="">
+                    </div>
+
+                    <!-- Sticky Footer Area -->
+                    <div style="padding:24px 40px;background:rgba(20,20,26,0.98);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
+                        <div id="security-badge-area" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;color:#22c55e;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(34,197,94,0.05);padding:12px;border-radius:12px;border:1px solid rgba(34,197,94,0.1);">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span id="security-badge-text">Encrypted with 256-bit SSL Security</span>
+                        </div>
+                        <button type="submit" id="rzp-pay-btn" style="width:100%;padding:18px;background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 12px 40px rgba(124,58,237,0.3);transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <span id="rzp-btn-text">PAY NOW & GET ACCESS</span>
+                            <span id="rzp-btn-loader" style="display:none;align-items:center;justify-content:center;gap:12px;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/></svg>
+                                PROCESSING ORDER...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <style>
+            @media (max-width: 800px) {
+                #checkout-box { max-width: 480px !important; margin: 20px !important; }
+                #modal-main-split { flex-direction: column !important; overflow-y: auto !important; }
+                #modal-sidebar { width: 100% !important; padding: 30px !important; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
+                #modal-scroll-body { overflow-y: visible !important; }
+            }
             @keyframes spin { to { transform: rotate(360deg); } }
-            #checkout-box::-webkit-scrollbar { width: 4px; }
-            #checkout-box::-webkit-scrollbar-track { background: transparent; }
-            #checkout-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+            #modal-scroll-body::-webkit-scrollbar { width: 6px; }
+            #modal-scroll-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+            #country-list::-webkit-scrollbar { width: 4px; }
+            #country-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+            .country-item { padding: 10px 12px; cursor: pointer; color: white; font-size: 13px; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+            .country-item:hover { background: rgba(255,255,255,0.05); }
         </style>
     `;
 
     modalOverlay.appendChild(modalBox);
     document.body.appendChild(modalOverlay);
 
+    // ───────────────────────────── COUNTRY SELECTOR LOGIC ─────────────────────────────
+    const COUNTRIES = [
+        { name: 'India', code: '+91', flag: '🇮🇳' },
+        { name: 'United States', code: '+1', flag: '🇺🇸' },
+        { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
+        { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
+        { name: 'Canada', code: '+1', flag: '🇨🇦' },
+        { name: 'Australia', code: '+61', flag: '🇦🇺' },
+        { name: 'Singapore', code: '+65', flag: '🇸🇬' },
+        { name: 'Germany', code: '+49', flag: '🇩🇪' },
+        { name: 'France', code: '+33', flag: '🇫🇷' },
+        { name: 'Japan', code: '+81', flag: '🇯🇵' },
+        { name: 'Russia', code: '+7', flag: '🇷🇺' },
+        { name: 'China', code: '+86', flag: '🇨🇳' },
+        { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+        { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+        { name: 'Pakistan', code: '+92', flag: '🇵🇰' },
+        { name: 'Bangladesh', code: '+880', flag: '🇧🇩' },
+        { name: 'Sri Lanka', code: '+94', flag: '🇱🇰' },
+        { name: 'Nepal', code: '+977', flag: '🇳🇵' },
+        { name: 'Saudi Arabia', code: '+966', flag: '🇸🇦' },
+        { name: 'Kuwait', code: '+965', flag: '🇰🇼' },
+        { name: 'Qatar', code: '+974', flag: '🇶🇦' },
+        { name: 'Oman', code: '+968', flag: '🇴🇲' },
+        { name: 'Bahrain', code: '+973', flag: '🇧🇭' },
+        { name: 'Italy', code: '+39', flag: '🇮🇹' },
+        { name: 'Spain', code: '+34', flag: '🇪🇸' },
+        { name: 'Netherlands', code: '+31', flag: '🇳🇱' },
+        { name: 'Switzerland', code: '+41', flag: '🇨🇭' },
+        { name: 'Sweden', code: '+46', flag: '🇸🇪' },
+        { name: 'Norway', code: '+47', flag: '🇳🇴' },
+        { name: 'Denmark', code: '+45', flag: '🇩🇰' },
+        { name: 'New Zealand', code: '+64', flag: '🇳🇿' },
+        { name: 'Indonesia', code: '+62', flag: '🇮🇩' },
+        { name: 'Malaysia', code: '+60', flag: '🇲🇾' },
+        { name: 'Thailand', code: '+66', flag: '🇹🇭' },
+        { name: 'Vietnam', code: '+84', flag: '🇻🇳' },
+        { name: 'Philippines', code: '+63', flag: '🇵🇭' },
+        { name: 'South Korea', code: '+82', flag: '🇰🇷' },
+        { name: 'Turkey', code: '+90', flag: '🇹🇷' }
+    ];
+
+    window.toggleCountryDropdown = function() {
+        const dropdown = document.getElementById('country-dropdown');
+        const arrow = document.getElementById('country-arrow');
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+        arrow.style.transform = isVisible ? 'rotate(0)' : 'rotate(180deg)';
+        if (!isVisible) document.getElementById('country-search').focus();
+    };
+
+    window.selectCountry = function(code, flag) {
+        document.getElementById('rzp-country-code').value = code;
+        document.getElementById('selected-flag-text').textContent = `${flag} ${code}`;
+        window.toggleCountryDropdown();
+    };
+
+    window.filterCountries = function() {
+        const term = document.getElementById('country-search').value.toLowerCase();
+        const items = document.querySelectorAll('.country-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(term) ? 'flex' : 'none';
+        });
+    };
+
+    function initCountryList() {
+        const list = document.getElementById('country-list');
+        list.innerHTML = COUNTRIES.map(c => `
+            <div class="country-item" onclick="selectCountry('${c.code}', '${c.flag}')">
+                <span style="font-size:18px;">${c.flag}</span>
+                <span style="flex:1;">${c.name}</span>
+                <span style="color:rgba(255,255,255,0.4);font-size:12px;">${c.code}</span>
+            </div>
+        `).join('');
+    }
+    
+    // Call init after everything is appended or in openModal
+    setTimeout(initCountryList, 100);
+
+    // Close dropdown on outside click
+    window.addEventListener('click', (e) => {
+        const container = document.getElementById('country-selector-container');
+        if (container && !container.contains(e.target)) {
+            const dropdown = document.getElementById('country-dropdown');
+            const arrow = document.getElementById('country-arrow');
+            if (dropdown) dropdown.style.display = 'none';
+            if (arrow) arrow.style.transform = 'rotate(0)';
+        }
+    });
+
     // ───────────────────────────── SUCCESS SCREEN ─────────────────────────────
     const successOverlay = document.createElement('div');
     successOverlay.id = 'payment-success-overlay';
-    successOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);backdrop-filter:blur(12px);z-index:10002;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.4s ease;';
+    successOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);backdrop-filter:blur(15px);z-index:10002;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.4s ease;';
 
     const successBox = document.createElement('div');
     successBox.id = 'payment-success-box';
-    successBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:0;max-width:480px;width:92%;position:relative;transform:translateY(30px) scale(0.95);transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 25px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(34,197,94,0.2);overflow:hidden;';
+    successBox.style.cssText = 'background:#14141a;border:1px solid rgba(255,255,255,0.08);border-radius:28px;padding:0;max-width:480px;width:92%;position:relative;transform:translateY(30px) scale(0.95);transition:all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow:0 30px 120px rgba(0,0,0,0.8);overflow:hidden;';
 
     successBox.innerHTML = `
-        <!-- Header -->
-        <div style="background:linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05));padding:24px 28px 20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;">
-            <button id="close-success" style="position:absolute;top:16px;right:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;line-height:1;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='rgba(255,255,255,0.5)';">&times;</button>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                <h2 style="font-family:var(--font-heading);color:white;margin:0;font-size:22px;font-weight:700;">Checkout</h2>
-                <span id="success-product-badge" style="background:rgba(34,197,94,0.2);color:#4ade80;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">Easy Workflow Pro</span>
-            </div>
-            <p style="color:rgba(255,255,255,0.5);margin:0;font-size:13px;">Complete your purchase to securely receive your lifetime license key.</p>
-        </div>
-
-        <!-- Success Body -->
-        <div style="padding:36px 28px 32px;text-align:center;">
-            <!-- Animated Checkmark -->
-            <div id="success-check-anim" style="width:70px;height:70px;margin:0 auto 24px;position:relative;">
+        <div style="background:linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.05));padding:32px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;position:relative;">
+            <button id="close-success" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.06);border:none;color:white;cursor:pointer;width:32px;height:32px;border-radius:50%;">&times;</button>
+            <div style="width:70px;height:70px;margin:0 auto 20px;">
                 <svg viewBox="0 0 70 70" style="width:100%;height:100%;">
-                    <circle cx="35" cy="35" r="32" fill="none" stroke="rgba(34,197,94,0.2)" stroke-width="3"/>
-                    <circle id="success-circle" cx="35" cy="35" r="32" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="201" stroke-dashoffset="201" stroke-linecap="round" style="transition:stroke-dashoffset 0.6s ease 0.2s;"/>
-                    <polyline id="success-tick" points="22,36 32,46 49,26" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="40" stroke-dashoffset="40" style="transition:stroke-dashoffset 0.4s ease 0.7s;"/>
+                    <circle cx="35" cy="35" r="32" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="201" id="success-circle" stroke-dashoffset="201" style="transition:stroke-dashoffset 0.6s ease;"></circle>
+                    <polyline points="22,36 32,46 49,26" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" id="success-tick" stroke-dasharray="40" stroke-dashoffset="40" style="transition:stroke-dashoffset 0.4s ease 0.6s;"></polyline>
                 </svg>
             </div>
-
-            <h2 style="font-family:var(--font-heading);color:white;margin:0 0 8px;font-size:26px;font-weight:800;">Thank You For Purchasing!</h2>
-            
-            <!-- Info Box -->
-            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:22px 20px;margin-top:24px;text-align:center;">
-                <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0 0 14px;line-height:1.7;">
-                    Please note that this is <strong style="color:white;">not an automatic process</strong>.
-                </p>
-                <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0 0 14px;line-height:1.7;">
-                    Once your payment has been manually confirmed, you will receive a <strong style="color:#22c55e;">100% discounted Gumroad link</strong> directly to your email address.
-                </p>
-                <p style="color:rgba(255,255,255,0.35);font-size:12px;margin:0;font-style:italic;">
-                    Please allow a few hours for the confirmation process.
-                </p>
-            </div>
-
-            <!-- Payment Details -->
-            <div id="success-payment-details" style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Payment ID</span>
-                    <span id="success-payment-id" style="color:rgba(255,255,255,0.7);font-size:12px;font-family:monospace;">—</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Amount Paid</span>
-                    <span id="success-amount" style="color:#22c55e;font-size:12px;font-weight:600;">—</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
-                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Product</span>
-                    <span id="success-product" style="color:rgba(255,255,255,0.7);font-size:12px;">—</span>
-                </div>
-            </div>
-
-            <button id="success-done-btn" style="width:100%;padding:14px;font-weight:700;font-size:15px;font-family:var(--font-heading);background:linear-gradient(135deg, #22c55e, #16a34a);color:white;border:none;border-radius:12px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 20px rgba(34,197,94,0.25);margin-top:24px;letter-spacing:0.3px;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 30px rgba(34,197,94,0.35)';" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(34,197,94,0.25)';">
-                Done
-            </button>
+            <h2 style="color:white;margin:0;font-size:24px;">Payment Successful</h2>
         </div>
+        <div style="padding:32px;text-align:center;">
+            <p style="color:rgba(255,255,255,0.7);font-size:15px;line-height:1.6;margin-bottom:24px;">Thank you! Your license key will be sent to your email shortly.</p>
+            <div style="background:rgba(255,255,255,0.03);padding:20px;border-radius:16px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Payment ID:</span><span id="success-payment-id" style="color:white;font-family:monospace;">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Amount Paid:</span><span id="success-amount" style="color:#22c55e;font-weight:700;">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Product:</span><span id="success-product" style="color:white;">—</span></div>
+            </div>
+            <button id="success-done-btn" style="width:100%;margin-top:28px;padding:16px;background:#22c55e;color:white;border:none;border-radius:14px;font-weight:700;cursor:pointer;">DONE</button>
+        </div>
+        <span id="success-product-badge" style="display:none;"></span>
     `;
 
     successOverlay.appendChild(successBox);
     document.body.appendChild(successOverlay);
 
-    // ───────────────────────── MODAL OPEN / CLOSE ─────────────────────────
+    // ───────────────────────────── MODAL OPEN / CLOSE ─────────────────────────────
     let currentCheckoutTier = 'pro';
+    let currentPromoMultiplier = 1; // 1 = 100% price (0 discount)
+    let currentPromoCode = '';
 
     function openModal(e) {
         if (e) e.preventDefault();
@@ -1017,6 +1208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const region = window.pricingRegion || PRICING.IN;
         const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
 
+        // Reset promo state
+        currentPromoMultiplier = 1;
+        currentPromoCode = '';
+        document.getElementById('rzp-promo-code').value = '';
+        document.getElementById('promo-message').style.display = 'none';
+        document.getElementById('checkout-original-price').style.display = 'none';
+
         // Update modal header
         const titleMap = { basic: 'Checkout', pro: 'Checkout', autocaptions: 'Checkout' };
         const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
@@ -1035,12 +1233,38 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('rzp-session-ts').value = sessionTs;
         document.getElementById('rzp-tier').value = tier;
 
+        // Handle International Gateway Visibility
+        const isUSD = (region.currency === 'USD');
+        const gatewayRow = document.getElementById('gateway-selection-row');
+        const rzpRadio = document.querySelector('input[name="gateway"][value="razorpay"]');
+        const cfRadio = document.querySelector('input[name="gateway"][value="cashfree"]');
+        const labelCF = document.getElementById('label-cf');
+        const labelRZP = document.getElementById('label-rzp');
+        const securityText = document.getElementById('security-badge-text');
+
+        if (isUSD) {
+            if (gatewayRow) gatewayRow.style.display = 'none';
+            if (rzpRadio) rzpRadio.checked = true;
+            if (securityText) securityText.textContent = 'Secured by Razorpay • Instant Settlements';
+            if (labelRZP) { labelRZP.style.background = 'rgba(124,58,237,0.1)'; labelRZP.style.borderColor = '#7c3aed'; }
+            if (labelCF) { labelCF.style.background = 'rgba(255,255,255,0.03)'; labelCF.style.borderColor = 'rgba(255,255,255,0.1)'; }
+        } else {
+            if (gatewayRow) gatewayRow.style.display = 'block';
+            if (cfRadio) cfRadio.checked = true;
+            if (securityText) securityText.textContent = 'Secured by Cashfree • 256-bit SSL Encryption';
+            if (labelCF) { labelCF.style.background = 'rgba(34,197,94,0.1)'; labelCF.style.borderColor = '#22c55e'; }
+            if (labelRZP) { labelRZP.style.background = 'rgba(255,255,255,0.03)'; labelRZP.style.borderColor = 'rgba(255,255,255,0.1)'; }
+        }
+
         // Show modal
         modalOverlay.style.display = 'flex';
         void modalOverlay.offsetWidth;
         modalOverlay.style.opacity = '1';
         modalBox.style.transform = 'translateY(0)';
         document.body.style.overflow = 'hidden';
+
+        // Initialize country list
+        if (typeof initCountryList === 'function') initCountryList();
     }
 
     function closeModal() {
@@ -1108,6 +1332,67 @@ document.addEventListener('DOMContentLoaded', () => {
     if (heroProCta) heroProCta.addEventListener('click', openModal);
     document.querySelectorAll('[data-tier="pro"]').forEach(btn => btn.addEventListener('click', openModal));
     document.querySelectorAll('[data-tier="autocaptions"]').forEach(btn => btn.addEventListener('click', openModal));
+
+    // Promo Logic
+    document.getElementById('btn-apply-promo').addEventListener('click', async () => {
+        const input = document.getElementById('rzp-promo-code');
+        const code = input.value.trim().toUpperCase();
+        const msgEl = document.getElementById('promo-message');
+        const btn = document.getElementById('btn-apply-promo');
+
+        if (!code) return;
+
+        btn.textContent = '...';
+        btn.disabled = true;
+
+        try {
+            if (!window.firestore) throw new Error("Database not connected");
+            const doc = await window.firestore.collection('coupons').doc(code).get();
+
+            if (doc.exists && doc.data().active !== false) {
+                const discount = parseInt(doc.data().discountPercent);
+                currentPromoCode = code;
+                currentPromoMultiplier = (100 - discount) / 100;
+
+                const region = window.pricingRegion || PRICING.IN;
+                const tierConfig = (currentCheckoutTier === 'basic') ? region.basic : (currentCheckoutTier === 'autocaptions' ? region.autocaptions : region.pro);
+
+                // Update UI Prices
+                document.getElementById('checkout-original-price').style.display = 'block';
+                document.getElementById('checkout-original-price').textContent = tierConfig.label;
+
+                // Calculate discounted price
+                const originalAmt = tierConfig.amount;
+                const discountedAmt = Math.round(originalAmt * currentPromoMultiplier);
+                const discountLabel = region.symbol + discountedAmt;
+
+                document.getElementById('checkout-price-display').textContent = discountLabel;
+                document.getElementById('rzp-btn-text').textContent = `Pay ${discountLabel} — Proceed to Payment`;
+
+                msgEl.style.color = '#22c55e';
+                msgEl.textContent = `✓ ${discount}% Discount applied!`;
+                msgEl.style.display = 'block';
+            } else {
+                throw new Error("Invalid or expired code");
+            }
+        } catch (err) {
+            currentPromoMultiplier = 1;
+            currentPromoCode = '';
+
+            const region = window.pricingRegion || PRICING.IN;
+            const tierConfig = (currentCheckoutTier === 'basic') ? region.basic : (currentCheckoutTier === 'autocaptions' ? region.autocaptions : region.pro);
+            document.getElementById('checkout-original-price').style.display = 'none';
+            document.getElementById('checkout-price-display').textContent = tierConfig.label;
+            document.getElementById('rzp-btn-text').textContent = `Pay ${tierConfig.label} — Proceed to Payment`;
+
+            msgEl.style.color = '#ef4444';
+            msgEl.textContent = 'Invalid promo code';
+            msgEl.style.display = 'block';
+        }
+
+        btn.textContent = 'Apply';
+        btn.disabled = false;
+    });
 
     // Close listeners
     document.getElementById('close-modal').addEventListener('click', closeModal);
@@ -1209,47 +1494,62 @@ document.addEventListener('DOMContentLoaded', () => {
         btnText.style.display = 'none';
         btnLoader.style.display = 'inline-block';
 
-        // ── Step 1: Send lead data to Formspree FIRST (captures abandoned carts) ──
+        // ── Step 1: Save lead to Firebase Firestore (replaces Formspree — unlimited writes) ──
         const region = window.pricingRegion || PRICING.IN;
         const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
         const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
 
+        // Store the lead doc ID so we can update it later on payment success
+        let currentLeadDocId = null;
+
         try {
-            const leadData = new FormData();
-            leadData.append('name', nameVal);
-            leadData.append('email', emailVal);
-            leadData.append('phone', phoneVal);
-            leadData.append('purchased_tier', tierConfig.formValue);
-            leadData.append('payment_method', gateway);
-            leadData.append('session_nonce', nonce);
-            leadData.append('timestamp', new Date().toISOString());
-
-            // Step 1: Send lead data to Formspree (FormData is most reliable)
-            try {
-                console.log('[Formspree] Sending lead notification...');
-                const fd = new FormData();
-                fd.append('_subject', `🔍 NEW LEAD: ${badgeMap[tier]}`);
-                fd.append('name', nameVal);
-                fd.append('email', emailVal);
-                fd.append('phone', phoneVal);
-                fd.append('tier', tierConfig.formValue);
-                fd.append('status', 'INTERESTED_BUT_NOT_PAID_YET');
-
-                await fetch('https://formspree.io/f/xykbqznk', {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'Accept': 'application/json' }
+            if (window.firestore) {
+                console.log('[Firebase] Saving lead to Firestore...');
+                const leadRef = await window.firestore.collection('leads').add({
+                    name: nameVal,
+                    email: emailVal,
+                    phone: phoneVal,
+                    tier: badgeMap[tier],
+                    gateway: gateway,
+                    status: 'interested',
+                    amount: currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label,
+                    nonce: nonce,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log('[Formspree] Lead notification sent.');
-            } catch (err) {
-                console.error('[Formspree Lead] Error:', err);
+                currentLeadDocId = leadRef.id;
+                console.log('[Firebase] Lead saved with ID:', currentLeadDocId);
             }
-        } catch (err) { console.error('[Formspree Lead] Exception:', err); }
+        } catch (err) {
+            console.error('[Firebase Lead] Error:', err);
+        }
 
         // ── Step 2: Determine verified amount in paise ──
-        const amountRegistry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
+        let amountInSmallestUnit;
         const currency = region.currency;
-        const amountInSmallestUnit = amountRegistry[tier]?.[currency];
+
+        // NEW: Try to use dynamic pricing from Firestore if available
+        if (window.currentFirestorePricing) {
+            const currKey = (currency || 'INR').toLowerCase();
+            const priceKey = `${tier}_${currKey}`;
+            const dynamicPrice = window.currentFirestorePricing[priceKey];
+            if (dynamicPrice) {
+                amountInSmallestUnit = dynamicPrice * (currency === 'INR' ? 100 : 100); // Already in base units? No, Firestore usually stores in ₹ or $
+                // If weight was stored in ₹/$, convert to paise/cents
+                amountInSmallestUnit = Math.round(dynamicPrice * 100);
+                console.log(`[Checkout] Using Dynamic Price: ${priceKey} = ${amountInSmallestUnit} units`);
+            }
+        }
+
+        // Fallback to hardcoded registry if Firestore fails
+        if (!amountInSmallestUnit) {
+            const amountRegistry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
+            amountInSmallestUnit = amountRegistry[tier]?.[currency];
+            console.log(`[Checkout] Using Fallback Price: ${amountInSmallestUnit} units`);
+        }
+
+        if (amountInSmallestUnit && currentPromoMultiplier < 1) {
+            amountInSmallestUnit = Math.round(amountInSmallestUnit * currentPromoMultiplier);
+        }
 
         if (!amountInSmallestUnit) {
             showToast('Pricing error. Please refresh the page and try again.', 'error');
@@ -1269,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 description: badgeMap[tier] + ' — Lifetime License',
                 image: 'https://easyworkflow.store/logo.png',
                 prefill: { name: nameVal, email: emailVal, contact: phoneVal },
-                notes: { tier, nonce, session_ts: sessionTs, product: badgeMap[tier] },
+                notes: { tier, nonce, session_ts: sessionTs, product: badgeMap[tier], promoCode: currentPromoCode },
                 theme: { color: '#7c3aed', backdrop_color: 'rgba(0,0,0,0.85)' },
                 handler: function (response) {
                     handlePaymentSuccess(response.razorpay_payment_id || 'N/A', 'razorpay');
@@ -1361,6 +1661,36 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show a "Verifying" state
             showToast('Verifying payment with bank... Please wait.', 'success');
 
+            // ── Save payment record to Firestore ──
+            try {
+                if (window.firestore) {
+                    // Save to payments collection
+                    await window.firestore.collection('payments').add({
+                        paymentId: paymentId,
+                        gateway: method,
+                        tier: badgeMap[tier],
+                        name: nameVal,
+                        email: emailVal,
+                        phone: phoneVal,
+                        amount: tierConfig.label,
+                        verified: false,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Update the lead status to 'paid'
+                    if (currentLeadDocId) {
+                        await window.firestore.collection('leads').doc(currentLeadDocId).update({
+                            status: 'paid',
+                            paymentId: paymentId,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    console.log('[Firebase] Payment record saved.');
+                }
+            } catch (fbErr) {
+                console.error('[Firebase Payment] Error:', fbErr);
+            }
+
             try {
                 const VERIFY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                     ? 'http://localhost:3000/verify-payment' // If you add this to server.js
@@ -1382,6 +1712,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const verifyData = await verifyRes.json();
 
                 if (verifyData.verified) {
+                    // Update lead + payment as verified in Firestore
+                    try {
+                        if (window.firestore && currentLeadDocId) {
+                            await window.firestore.collection('leads').doc(currentLeadDocId).update({
+                                status: 'verified',
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    } catch (e) { console.error('[Firebase] Verify update failed:', e); }
+
                     closeModal();
                     checkoutForm.reset();
                     showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
