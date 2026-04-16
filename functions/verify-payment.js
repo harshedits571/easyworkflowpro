@@ -92,7 +92,7 @@ exports.handler = async (event, context) => {
             }
         }
         else if (method === 'razorpay') {
-            const rzpKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SbYS9Uxg3z4s4k'; // Fallback to provided public ID if env not set
+            const rzpKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SeElRgESDAvD5D'; // Fallback to provided public ID if env not set
             const rzpKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
             if (!rzpKeySecret) {
