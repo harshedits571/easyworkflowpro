@@ -172,12 +172,24 @@ function applyPricingToPage(region) {
         badge.textContent = `JUST ${p.basic.label}`;
     });
 
-    // --- CTA section buttons ---
-    document.querySelectorAll('a[href="#pricing"].btn-primary.pro-only').forEach(btn => {
-        btn.textContent = `Get Pro — ${p.pro.label}`;
+    // --- CTA section buttons (Navbar, Hero, Final CTA) ---
+    // Update any "Get Pro" button
+    document.querySelectorAll('.pro-only').forEach(el => {
+        if (el.tagName === 'A' && el.classList.contains('btn-primary')) {
+            // Only update if it doesn't already have specific logic (like in cards)
+            if (!el.closest('.price-card')) {
+                el.textContent = `Get Pro — ${p.pro.label}`;
+            }
+        }
     });
-    document.querySelectorAll('.btn-pay').forEach(btn => {
-        btn.textContent = `Get Basic Script — ${p.basic.label}`;
+
+    // Update any "Get Auto Captions" button
+    document.querySelectorAll('.autocaptions-only').forEach(el => {
+        if (el.tagName === 'A' && el.classList.contains('btn-primary')) {
+            if (!el.closest('.price-card')) {
+                el.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
+            }
+        }
     });
 
     // --- Hero section CTA (has an inner <span>, needs separate targeting) ---
@@ -199,13 +211,25 @@ function applyPricingToPage(region) {
     });
 
     // --- FAQ text updates ---
-    document.querySelectorAll('.faq-answer p').forEach(p_el => {
-        // Replace INR mentions with correct currency
-        if (p.currency === 'USD') {
-            p_el.innerHTML = p_el.innerHTML
-                .replace(/₹100/g, '$2')
-                .replace(/₹1[,.]?500/g, '$18')
-                .replace(/₹1500/g, '$18');
+    document.querySelectorAll('.faq-answer p, .faq-question span').forEach(el => {
+        const region = window.pricingRegion || PRICING.IN;
+        // Update Pro price mentions
+        if (el.innerHTML.includes('₹1500') || el.innerHTML.includes('$24') || el.innerHTML.includes('₹1,500')) {
+            el.innerHTML = el.innerHTML
+                .replace(/₹1[,.]?500/g, region.pro.label)
+                .replace(/\$24/g, region.pro.label);
+        }
+        // Update Basic price mentions
+        if (el.innerHTML.includes('₹100') || el.innerHTML.includes('$2')) {
+            el.innerHTML = el.innerHTML
+                .replace(/₹100/g, region.basic.label)
+                .replace(/\$2/g, region.basic.label);
+        }
+        // Update Auto Captions price mentions
+        if (el.innerHTML.includes('₹800') || el.innerHTML.includes('$10')) {
+            el.innerHTML = el.innerHTML
+                .replace(/₹800/g, region.autocaptions.label)
+                .replace(/\$10/g, region.autocaptions.label);
         }
     });
 
@@ -3260,4 +3284,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initGraphInteractivity();
 });
+
+// ===== LEGAL MODAL LOGIC =====
+window.openLegalModal = function() {
+    const modal = document.getElementById('legalModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+};
+
+window.closeLegalModal = function() {
+    const modal = document.getElementById('legalModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+};
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeLegalModal();
+    }
+});
+
 
