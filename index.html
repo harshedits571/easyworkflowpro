@@ -403,13 +403,17 @@
                 <a href="#pricing" class="btn btn-outline btn-lg">Get Basic</a>
             </div>
             <!-- AUTO CAPTIONS CTAs -->
-            <div class="hero-ctas reveal autocaptions-only">
+            <div class="hero-ctas reveal autocaptions-only" style="flex-direction: column; align-items: center; gap: 16px;">
                 <a href="#pricing" class="btn btn-primary btn-lg" id="hero-autocaptions-cta">
                     <span id="hero-autocaptions-cta-text">Get Auto Captions — ₹800</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
                 </a>
+                <div class="os-warning-box">
+                    <div class="os-warning-icon">⚠️</div>
+                    <span><b>Windows Only</b> • Do not buy for Mac • No refunds</span>
+                </div>
             </div>
             <!-- FREE CTAs -->
             <div class="hero-ctas reveal free-only">
@@ -2439,7 +2443,7 @@
                     <div class="step-number">01</div>
                     <div class="step-line"></div>
                     <h3>Download & Install</h3>
-                    <p>Download the extension, run the ZXP installer. Works on Windows with After Effects
+                    <p>Download the extension, run the ZXP installer. Works on Windows Only with After Effects
                         2020+.</p>
                 </div>
                 <div class="step-card reveal" data-delay="150">
@@ -2632,6 +2636,10 @@
                             Lifetime updates & support
                         </li>
                     </ul>
+                    <div class="os-warning-box" style="margin-bottom: 20px; width: 100%; max-width: 100%;">
+                        <div class="os-warning-icon">⚠️</div>
+                        <span style="font-size: 12px;"><b>Windows Only</b> • Do not buy for Mac (No Refunds)</span>
+                    </div>
                     <a href="#" class="btn btn-primary btn-block btn-glow" id="btn-autocaptions"
                         data-tier="autocaptions">Get Auto Captions — ₹800</a>
                     <span class="price-note">Instant download • Lifetime access</span>
@@ -2878,22 +2886,8 @@
                 <span class="section-tag">FAQ</span>
                 <h2 class="section-title">Questions?<br><span class="gradient-text">We've Got Answers.</span></h2>
             </div>
-            <div class="faq-list reveal pro-only free-only">
-                <div class="faq-item">
-                    <button class="faq-question">
-                        <span>Is there a free version available?</span>
-                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </button>
-                    <div class="faq-answer">
-                        <p>We've phased out the completely free version to focus on making the tools exceptionally
-                            reliable. However, you can grab the Basic tier for just ₹100 (a one-time payment) which
-                            includes all core workflow tools — alignment, anchor control, layer
-                            creation, and basic shape tools forever!</p>
-                    </div>
-                </div>
+            <!-- PRO FAQ -->
+            <div class="faq-list reveal pro-only">
                 <div class="faq-item">
                     <button class="faq-question">
                         <span>Which After Effects versions are supported?</span>
@@ -2904,7 +2898,7 @@
                     </button>
                     <div class="faq-answer">
                         <p>Easy Workflow Pro supports After Effects 2020 (version 17.0) and later on both Windows and
-                            macOS. Note: Auto Captions Pro currently supports Windows Only (macOS coming soon).</p>
+                            macOS. It's fully optimized for M1/M2/M3 Apple Silicon and Intel-based systems.</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -2916,8 +2910,8 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>One-time payment of ₹1500 for the Pro version. You get lifetime access and all future updates
-                            at no additional cost. The Basic version is just ₹100, which is also a one-time payment.</p>
+                        <p>It's a one-time payment for lifetime access. No monthly fees, no hidden costs. When you buy
+                            Pro, you own it forever along with all future v1.x updates.</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -2929,51 +2923,37 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Each Pro license is tied to one device at a time. You can transfer your license to a new
-                            device anytime — the previous device will be automatically logged out. The Basic version
-                            works on unlimited devices.</p>
+                        <p>Each Pro license can be active on <strong>up to 2 devices</strong> simultaneously. If you
+                            switch to a new machine, you can manage your activations via the remote logout feature
+                            inside the panel.</p>
                     </div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>What does the Font Replacer do exactly?</span>
+                        <span>What are the 7 main tools in Pro?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Font Replacer scans all text layers in your composition and lists every font used. You can
-                            then select any font and replace it with another across the entire comp (or just selected
-                            layers). Save fonts to a Favorites list for quick access. It's a massive time-saver on
-                            template-heavy projects.</p>
+                        <p>Pro includes: 1. Advanced Anchor Control, 2. Smart Alignment Grid, 3. One-Click Layer
+                            Creator, 4. Font Replacer, 5. Save Comp Library, 6. Quick Shape Tools, and 7. Project
+                            Organizer with auto-naming.</p>
                     </div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>How does Save Comp work?</span>
+                        <span>What does the Font Replacer do?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Save Comp lets you save any composition to a local library with auto-generated thumbnail
-                            previews. You can organize by client folders, search instantly, adjust grid view size, and
-                            reload saved comps into any project. Think of it as your personal composition library.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-question">
-                        <span>Do I get updates after purchasing?</span>
-                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Yes! All Pro users get lifetime updates. When we add new features or improvements,
-                            you'll receive them at no extra cost.</p>
+                        <p>It scans your entire composition (including nested pre-comps) and lists every font used. You
+                            can then replace any font globally with one click. It also features a "Favorites" list for
+                            your most-used brand fonts.</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -2985,9 +2965,79 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Pro users get priority email support. Basic users can reach out to us via our social
-                            channels.
-                            We typically respond within 24 hours.</p>
+                        <p>Pro users get priority email support. You can reach out directly via the support link in the
+                            panel or email us. We typically respond within 12-24 hours with a personalized fix.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BASIC FAQ -->
+            <div class="faq-list reveal free-only">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What tools are included in the Basic version?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>The Basic tier (₹100) includes core alignment tools, anchor point management, basic layer
+                            creation (Null, Solid, Adjustment Layer), and the primary shape tools. It's designed for
+                            essential workflow speedups.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is Basic also a one-time payment?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! For just ₹100, you get lifetime access to the Basic tools. No subscriptions. It's a
+                            super-affordable way to upgrade your AE workflow.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Can I upgrade from Basic to Pro later?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Absolutely. You can upgrade to the full Pro suite anytime to unlock Font Replacer, Save Comp
+                            Library, and Project Organizer. Just visit the Pro section of the site to purchase the
+                            upgrade.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Does Basic work on Mac and Windows?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes, Easy Workflow Basic is cross-platform. It works perfectly on both Windows and macOS
+                            (Intel & Apple Silicon).</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How do I get support for Basic version?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Basic users can access our community Discord and follow our YouTube tutorials for help. For
+                            technical issues, you can reach out via social media.</p>
                     </div>
                 </div>
             </div>
@@ -2995,15 +3045,30 @@
             <div class="faq-list reveal autocaptions-only">
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>Can I transcribe non-English languages?</span>
+                        <span>Is this for Windows Only?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Yes! Auto Captions Pro supports 10+ major languages including Hindi, Spanish, French, German,
-                            and more with high-precision transcription.</p>
+                        <p><strong>Yes, Auto Captions Pro currently only works on Windows.</strong> Due to the local AI
+                            architecture required for transcription, macOS support is still in development and not yet
+                            available.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Which languages are supported?</span>
+                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Auto Captions Pro supports high-precision transcription for English, Hindi, Spanish, French,
+                            German, Italian, Portuguese, Dutch, and Japanese. More languages are being added in
+                            updates.</p>
                     </div>
                 </div>
                 <div class="faq-item">
@@ -3015,61 +3080,36 @@
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>No, it uses high-performance AI running locally on your hardware. Your data never leaves your
-                            machine, making it completely secure and internet-independent.</p>
+                        <p>No. Once installed, Auto Captions Pro runs 100% offline. All AI processing happens locally on
+                            your CPU/GPU, ensuring maximum privacy and zero data usage.</p>
                     </div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>What AE versions and OS are supported?</span>
+                        <span>What is the transcription accuracy?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Auto Captions Pro supports After Effects 2020 and all later versions. Currently, it is
-                            <strong>Windows Only</strong>. macOS support is currently in deep development.
-                        </p>
+                        <p>We use a highly optimized version of the Whisper AI model, achieving up to 99% accuracy for
+                            clear audio. It can even handle different accents and background noise with remarkable
+                            stability.</p>
                     </div>
                 </div>
                 <div class="faq-item">
                     <button class="faq-question">
-                        <span>Is it a one-time payment or subscription?</span>
+                        <span>Can I customize the caption style?</span>
                         <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Auto Captions Pro is a one-time payment of ₹800. No monthly fees, no credit systems. You get
-                            lifetime access and all future updates included.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-question">
-                        <span>How fast is the transcription?</span>
-                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Transcription speed depends on your CPU/GPU hardware. On a modern workstation, it typically
-                            takes only 1/4th of the audio's duration to generate complete captions.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-question">
-                        <span>Do I get support if I face issues?</span>
-                        <svg class="faq-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Yes, all purchasers get priority email support. We respond to technical queries within 24
-                            hours to ensure your workflow stays uninterrupted.</p>
+                        <p>Yes! You can choose font, size, color, stroke, and background style. Captions are created as
+                            native After Effects text layers, so you can apply any AE effects or animations to them
+                            after generation.</p>
                     </div>
                 </div>
             </div>
@@ -3104,8 +3144,14 @@
                     <a href="#pricing" class="btn btn-outline btn-lg pro-only">Get Basic</a>
                     <a href="#" class="btn btn-primary btn-lg free-only btn-pay" data-tier="basic">Get Basic Script</a>
                     <a href="#pricing" class="btn btn-outline btn-lg free-only">See Pro Version</a>
-                    <a href="#pricing" class="btn btn-primary btn-lg autocaptions-only" id="final-autocap-cta"
-                        data-tier="autocaptions">Get Auto Captions — ₹800</a>
+                    <div class="autocaptions-only" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <div class="os-warning-box" style="margin-bottom: 20px; width: 100%; max-width: 100%;">
+                            <div class="os-warning-icon">⚠️</div>
+                            <span style="font-size: 12px;"><b>Windows Only</b> (No Mac Refunds)</span>
+                        </div>
+                        <a href="#pricing" class="btn btn-primary btn-lg" id="final-autocap-cta"
+                            data-tier="autocaptions">Get Auto Captions — ₹800</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3168,7 +3214,9 @@
                         one panel,
                         infinite time saved.</p>
                     <p class="autocaptions-only">High-precision AI transcription and captioning tool for After Effects.
-                        Automated, offline, and built for speed.</p>
+                        Automated, offline, and built for speed.
+                        <br><span style="color:var(--red); font-size: 11px; font-weight: bold; display: block; margin-top: 5px;">⚠️ WINDOWS ONLY (No Mac Support)</span>
+                    </p>
                     <p class="free-only">Essential workflow tools for After Effects. Speed up alignment, anchoring, and
                         more for just ₹100.</p>
                 </div>
@@ -3248,7 +3296,7 @@
         </p>
         <p style="font-size:13px;color:rgba(255,255,255,0.2);line-height:1.8;margin-bottom:12px;">
             Compatible with <strong style="color:rgba(255,255,255,0.25);">Adobe After Effects 2020, 2021, 2022, 2023,
-                2024, 2025, 2026</strong> on both <strong style="color:rgba(255,255,255,0.25);">Windows and
+                2024, 2025, 2026</strong>. <strong style="color:var(--red);">Auto Captions Pro is Windows Only.</strong> Easy Workflow is available on both <strong style="color:rgba(255,255,255,0.25);">Windows and
                 macOS</strong>. Easy Workflow is trusted by motion graphics artists who want to speed up repetitive
             tasks, reduce clicks, and build a faster creative workflow inside After Effects.
         </p>

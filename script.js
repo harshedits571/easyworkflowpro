@@ -142,7 +142,7 @@ function applyPricingToPage(region) {
 
         if (isAutoCaptions) {
             valueEl.textContent = p.autocaptions.amount;
-            if (btnBlock && btnBlock.id === 'btn-pro') {
+            if (btnBlock && (btnBlock.id === 'btn-pro' || btnBlock.id === 'btn-autocaptions')) {
                 btnBlock.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
             }
         }
@@ -183,22 +183,25 @@ function applyPricingToPage(region) {
         }
     });
 
-    // Update any "Get Auto Captions" button
-    document.querySelectorAll('.autocaptions-only').forEach(el => {
-        if (el.tagName === 'A' && el.classList.contains('btn-primary')) {
-            if (!el.closest('.price-card')) {
-                el.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
-            }
-        }
-    });
-
     // --- Hero section CTA (has an inner <span>, needs separate targeting) ---
     const heroCTAText = document.getElementById('hero-pro-cta-text');
     if (heroCTAText) heroCTAText.textContent = `Get Pro — ${p.pro.label}`;
 
-    // --- Hero free subtitle inline price ---
     const heroBasicInline = document.getElementById('hero-basic-price-inline');
     if (heroBasicInline) heroBasicInline.textContent = p.basic.label;
+
+    // Update any "Get Auto Captions" buttons via data-tier
+    document.querySelectorAll('[data-tier="autocaptions"]').forEach(el => {
+        if (el.id === 'final-autocap-cta') {
+            el.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
+        } else if (el.id === 'hero-autocaptions-cta') {
+            const span = el.querySelector('#hero-autocaptions-cta-text');
+            if (span) span.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
+        } else if (el.classList.contains('btn-primary')) {
+            // pricing card or navbar
+            el.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
+        }
+    });
 
     // Inline text notes
     document.querySelectorAll('.price-note').forEach(note => {
@@ -978,6 +981,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="padding:40px 40px 20px;flex:1;overflow-y:auto;" id="modal-scroll-body">
                         <h2 id="modal-title" style="color:white;margin:0 0 10px;font-size:20px;font-weight:700;">Complete Checkout</h2>
                         <span id="modal-product-badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:24px;display:inline-block;">PRO</span>
+                        <div id="modal-windows-warning" class="os-warning-box" style="display:none; margin-bottom:20px; width:100%; border-radius:12px;">
+                            <div class="os-warning-icon">⚠️</div>
+                            <span style="font-size:12px;"><b>Windows Only</b> • Do not buy for Mac (No Refunds)</span>
+                        </div>
                         
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
                             <div style="grid-column: span 2;">
@@ -1244,6 +1251,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-product-badge').textContent = badgeMap[tier];
         document.getElementById('checkout-tier-name').textContent = badgeMap[tier];
         document.getElementById('checkout-price-display').textContent = tierConfig.label;
+
+        // Show Windows Only warning for Auto Captions
+        const warningEl = document.getElementById('modal-windows-warning');
+        if (warningEl) {
+            warningEl.style.display = (tier === 'autocaptions') ? 'block' : 'none';
+        }
 
         // Update pay button text
         document.getElementById('rzp-btn-text').textContent = `Pay ${tierConfig.label} — Proceed to Payment`;
