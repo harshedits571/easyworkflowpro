@@ -42,7 +42,7 @@ function isPastDeadline() {
 // ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
 // TEST MODE FOR NETLIFY DEPLOYMENT
 // Force using the test key regardless of domain.
-var RZP_KEY_ID = 'rzp_test_SpeZLNxvrt4A09';
+var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
 
 /* WHEN READY FOR LIVE PRODUCTION, REPLACE ABOVE WITH THIS:
 var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
