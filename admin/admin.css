@@ -50,6 +50,57 @@ html, body {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
+/* Machine Tags in Admin Table */
+.machine-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.machine-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Inter', monospace;
+    width: fit-content;
+    transition: var(--transition);
+}
+
+.machine-tag:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.machine-tag span {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.machine-tag button {
+    background: none;
+    border: none;
+    color: var(--accent-red);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0.6;
+    transition: var(--transition);
+}
+
+.machine-tag button:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
 /* ==================== LOGIN SCREEN ==================== */
 .login-screen {
     position: fixed;
@@ -1356,5 +1407,332 @@ html, body {
 
     #login-form {
         padding: 24px;
+    }
+}
+
+/* Machine Tag Styles */
+.machine-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.machine-tag:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.machine-tag span {
+    font-family: 'Space Grotesk', monospace;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.machine-logout-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.machine-logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* ==================== CUSTOM LINKS PAGE ==================== */
+.cl-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.cl-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: var(--transition);
+}
+
+.cl-input:focus {
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+}
+
+textarea.cl-input {
+    resize: none;
+    font-family: var(--font-body);
+}
+
+.cl-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.cl-hint span {
+    color: var(--accent-purple);
+    font-weight: 700;
+}
+
+/* Checkbox Grid */
+.cl-checkbox-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.cl-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    user-select: none;
+}
+
+.cl-checkbox:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: var(--border-hover);
+}
+
+.cl-checkbox:has(input:checked) {
+    background: rgba(124,58,237,0.1);
+    border-color: rgba(124,58,237,0.3);
+    color: var(--accent-purple);
+}
+
+.cl-checkbox:has(input:disabled) {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.cl-checkbox input[type="checkbox"] {
+    accent-color: var(--accent-purple);
+    width: 14px;
+    height: 14px;
+}
+
+/* Pricing Mode Toggle */
+.cl-mode-toggle {
+    display: flex;
+    gap: 0;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cl-mode-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.cl-mode-btn.active {
+    background: rgba(124,58,237,0.15);
+    color: var(--accent-purple);
+}
+
+.cl-mode-btn:hover:not(.active) {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-primary);
+}
+
+/* Discount Slider */
+.cl-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    outline: none;
+}
+
+.cl-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-purple);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent-purple-glow);
+    transition: transform 0.2s;
+}
+
+.cl-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.cl-discount-badge {
+    background: rgba(124,58,237,0.15);
+    color: var(--accent-purple);
+    font-weight: 800;
+    font-size: 16px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    min-width: 60px;
+    text-align: center;
+    font-family: var(--font-heading);
+}
+
+/* Fixed Price Grid */
+.cl-fixed-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cl-fixed-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cl-fixed-row > span {
+    width: 110px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.cl-fixed-pair {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.cl-fixed-pair .price-input-wrapper {
+    flex: 1;
+}
+
+/* Copy Link Button */
+.cl-copy-btn {
+    background: rgba(124,58,237,0.1);
+    border: 1px solid rgba(124,58,237,0.2);
+    color: var(--accent-purple);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: var(--transition);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cl-copy-btn:hover {
+    background: rgba(124,58,237,0.2);
+    border-color: rgba(124,58,237,0.4);
+}
+
+/* Custom Links Table Overrides */
+#cl-table .cl-code-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent-purple);
+    letter-spacing: 0.5px;
+}
+
+.cl-products-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.cl-prod-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cl-redemptions {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.cl-redemptions .current {
+    color: var(--accent-green);
+}
+
+.cl-redemptions .max {
+    color: var(--text-muted);
+}
+
+.cl-note-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Responsive Custom Links */
+@media (max-width: 768px) {
+    .cl-fixed-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .cl-fixed-row > span {
+        width: auto;
+    }
+    .cl-checkbox-grid {
+        flex-direction: column;
     }
 }

@@ -21,17 +21,70 @@ exports.handler = async (event, context) => {
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
     try {
-        const { email, name, tier, licenseLink, message } = JSON.parse(event.body);
+        const { email, name, tier, licenseLink, licenseKey, message } = JSON.parse(event.body);
 
-        if (!email || !licenseLink) {
-            return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: "Missing email or link" }) };
+        if (!email || (!licenseLink && !licenseKey)) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: "Missing email or link/key" }) };
         }
 
-        const mailOptions = {
-            from: `"Easy Workflow Support" <${process.env.GMAIL_USER}>`,
-            to: email,
-            subject: `🔥 Access Granted | Your ${tier ? tier.toUpperCase() : ''} Toolkit is Ready!`,
-            html: `
+        // --- Fetch Dynamic Download Link (if Project Manager) ---
+        let dynamicLink = "https://easyworkflow.store/download";
+        const isProjectManager = tier && tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
+
+        if (isProjectManager && licenseKey) {
+            try {
+                const admin = require('firebase-admin');
+                if (!admin.apps.length) {
+                    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+                        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                        admin.initializeApp({
+                            credential: admin.credential.cert(serviceAccount)
+                        });
+                    }
+                }
+                if (admin.apps.length) {
+                    const db = admin.firestore();
+                    const dlSnap = await db.collection('config').doc('downloads').get();
+                    if (dlSnap.exists) {
+                        const links = dlSnap.data();
+                        if (links.projectmanager) {
+                            dynamicLink = links.projectmanager;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to fetch dynamic download link in send-license:", e.message);
+            }
+        }
+
+        let emailHtml = '';
+        if (licenseKey) {
+            emailHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body { margin: 0; padding: 0; background-color: #050505; font-family: 'Inter', sans-serif; }
+                        .wrapper { background-color: #050505; width: 100%; padding: 40px 0; }
+                        .container { max-width: 600px; margin: 0 auto; background: #0c0c10; border: 1px solid #1a1a24; border-radius: 24px; padding: 40px; text-align: center; color: white; }
+                        .key-box { background: rgba(124, 58, 237, 0.1); border: 1px dashed #7c3aed; padding: 20px; font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #a855f7; margin: 30px 0; border-radius: 12px; }
+                        .main-btn { display: inline-block; background: #ffffff; color: #000000 !important; padding: 15px 30px; border-radius: 14px; text-decoration: none; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="wrapper">
+                        <div class="container">
+                            <h2>Here is your License Key!</h2>
+                            <p>${message || 'Thank you for your purchase. Your premium access is ready.'}</p>
+                            <div class="key-box">${licenseKey}</div>
+                            <a href="${dynamicLink}" class="main-btn">Download Extension</a>
+                        </div>
+                    </div>
+                </body>
+                </html>`;
+        } else {
+            emailHtml = `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -107,7 +160,14 @@ exports.handler = async (event, context) => {
                     </div>
                 </body>
                 </html>
-            `
+            `;
+        }
+
+        const mailOptions = {
+            from: `"Easy Workflow Support" <${process.env.GMAIL_USER}>`,
+            to: email,
+            subject: `🔥 Access Granted | Your ${tier ? tier.toUpperCase() : ''} Toolkit is Ready!`,
+            html: emailHtml
         };
 
         await transporter.sendMail(mailOptions);

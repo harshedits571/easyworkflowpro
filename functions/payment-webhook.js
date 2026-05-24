@@ -32,6 +32,8 @@ exports.handler = async (event, context) => {
 
     if (!email) throw new Error("No customer email found in webhook data.");
 
+    // --- DISABLED AS PER REQUEST (WILL ENABLE LATER) ---
+    /*
     // 1. GENERATE UNIQUE GUMROAD CODE
     const uniqueCode = "EW-PRO-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
@@ -73,8 +75,10 @@ exports.handler = async (event, context) => {
       },
       { headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
     );
+    */
+    // ---------------------------------------------------
 
-    return { statusCode: 200, headers, body: "Automation Complete! Coupon Created and Emailed." };
+    return { statusCode: 200, headers, body: "Automation Disabled Temporarily." };
 
   } catch (error) {
     console.error("❌ Webhook Error:", error.message);

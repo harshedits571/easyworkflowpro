@@ -9,8 +9,10 @@ const PRICING = {
         basic: { amount: 100, label: '₹100', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - ₹100' },
         pro: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
         autocaptions: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
+        projectmanager: { amount: 1500, label: '₹1500', gumroadLink: '#', formValue: 'projectmanager - ₹1500' },
         proAfterDeadline: { amount: 2000, label: '₹2000', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - ₹2000' },
         autocaptionsAfterDeadline: { amount: 800, label: '₹800', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - ₹800' },
+        projectmanagerAfterDeadline: { amount: 1500, label: '₹1500', gumroadLink: '#', formValue: 'projectmanager - ₹1500' },
         showUPI: true,
         badge: '🇮🇳 Prices in INR'
     },
@@ -20,8 +22,10 @@ const PRICING = {
         basic: { amount: 2, label: '$2', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflow', formValue: 'basic - $2' },
         pro: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
         autocaptions: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
+        projectmanager: { amount: 20, label: '$20', gumroadLink: '#', formValue: 'projectmanager - $20' },
         proAfterDeadline: { amount: 24, label: '$24', gumroadLink: 'https://harshedits55.gumroad.com/l/Easyworkflowpro/lo8on3n', formValue: 'pro - $24' },
         autocaptionsAfterDeadline: { amount: 10, label: '$10', gumroadLink: 'https://harshedits55.gumroad.com/l/Autocaptionpro', formValue: 'autocaptions - $10' },
+        projectmanagerAfterDeadline: { amount: 20, label: '$20', gumroadLink: '#', formValue: 'projectmanager - $20' },
         showUPI: false,
         badge: '🌍 Prices in USD'
     }
@@ -36,20 +40,28 @@ function isPastDeadline() {
 }
 
 // ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
+// TEST MODE FOR NETLIFY DEPLOYMENT
+// Force using the test key regardless of domain.
+var RZP_KEY_ID = 'rzp_test_SpeZLNxvrt4A09';
+
+/* WHEN READY FOR LIVE PRODUCTION, REPLACE ABOVE WITH THIS:
 var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
+*/
 var CF_APP_ID = '121259341f82a4cec1053b822723952121';
 var CF_MODE = 'production';
 
 var RZP_AMOUNTS = {
     basic: { INR: 10000, USD: 200 },
     pro: { INR: 200000, USD: 2400 }, // Default ₹2000
-    autocaptions: { INR: 80000, USD: 1000 }
+    autocaptions: { INR: 80000, USD: 1000 },
+    projectmanager: { INR: 150000, USD: 2000 }
 };
 
 var RZP_AMOUNTS_DEADLINE = {
     basic: { INR: 10000, USD: 200 },
     pro: { INR: 200000, USD: 2400 }, // Default ₹2000
-    autocaptions: { INR: 80000, USD: 1000 }
+    autocaptions: { INR: 80000, USD: 1000 },
+    projectmanager: { INR: 150000, USD: 2000 }
 };
 
 // Apply deadline pricing — overwrite pro config if past deadline
@@ -116,10 +128,49 @@ function initCountdownTimer() {
 
     // Re-update label whenever pricing region changes
     window._updateCountdownLabel = updateNewPriceLabel;
+
+    // NEW: Update the human-readable deadline date string
+    window._updateDeadlineDateLabel = function () {
+        const dateLabel = document.querySelector('.countdown-date-label');
+        if (dateLabel && PRICE_DEADLINE) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            dateLabel.textContent = PRICE_DEADLINE.toLocaleDateString('en-US', options);
+        }
+    };
 }
 
 function applyPricingToPage(region) {
-    const p = region;
+    let p = region;
+    if (window.activeCustomLink) {
+        // Deep clone region so we don't modify the global window.pricingRegion permanently
+        p = JSON.parse(JSON.stringify(region));
+        const products = ['basic', 'pro', 'autocaptions', 'projectmanager'];
+        products.forEach(prodKey => {
+            const isAllowed = window.activeCustomLink.products.length === 0 || window.activeCustomLink.products.includes(prodKey);
+            if (isAllowed) {
+                let newAmount = null;
+                if (window.activeCustomLink.pricingMode === 'fixed') {
+                    const currKey = p.currency.toLowerCase();
+                    const fixedKey = `${prodKey}_${currKey}`;
+                    const fixedPrice = window.activeCustomLink.fixedPrices && window.activeCustomLink.fixedPrices[fixedKey];
+                    if (fixedPrice !== undefined && fixedPrice !== null && fixedPrice !== '') {
+                        newAmount = Number(fixedPrice);
+                    }
+                } else if (window.activeCustomLink.pricingMode === 'discount' && window.activeCustomLink.discountPercent > 0) {
+                    newAmount = Math.round(p[prodKey].amount * (100 - window.activeCustomLink.discountPercent) / 100);
+                }
+
+                if (newAmount !== null) {
+                    // Save original amount for strikethrough logic
+                    p[prodKey].originalAmount = p[prodKey].amount;
+                    p[prodKey].amount = newAmount;
+                    p[prodKey].label = p.symbol + newAmount;
+                    p[prodKey].formValue = `${prodKey} - ${p.symbol}${newAmount}`;
+                }
+            }
+        });
+    }
+
     const sym = p.symbol;
     const basicAmt = p.basic.amount;
     const proAmt = p.pro.amount;
@@ -137,23 +188,45 @@ function applyPricingToPage(region) {
         if (!titleEl || !valueEl) return;
 
         const isAutoCaptions = titleEl.textContent.trim().toLowerCase().includes('auto captions');
-        const isProCard = titleEl.textContent.trim().toLowerCase().includes('pro') && !isAutoCaptions;
-
+        const isProjectManager = titleEl.textContent.trim().toLowerCase().includes('project manager');
+        const isProCard = titleEl.textContent.trim().toLowerCase().includes('pro') && !isAutoCaptions && !isProjectManager;
 
         if (isAutoCaptions) {
-            valueEl.textContent = p.autocaptions.amount;
+            if (p.autocaptions.originalAmount !== undefined) {
+                valueEl.innerHTML = `<span class="original-price-strikethrough" style="text-decoration: line-through; opacity: 0.5; font-size: 0.7em; margin-right: 8px;">${p.autocaptions.originalAmount}</span>${p.autocaptions.amount}`;
+            } else {
+                valueEl.textContent = p.autocaptions.amount;
+            }
             if (btnBlock && (btnBlock.id === 'btn-pro' || btnBlock.id === 'btn-autocaptions')) {
                 btnBlock.textContent = `Get Auto Captions — ${p.autocaptions.label}`;
             }
         }
+        else if (isProjectManager) {
+            if (p.projectmanager.originalAmount !== undefined) {
+                valueEl.innerHTML = `<span class="original-price-strikethrough" style="text-decoration: line-through; opacity: 0.5; font-size: 0.7em; margin-right: 8px;">${p.projectmanager.originalAmount}</span>${p.projectmanager.amount}`;
+            } else {
+                valueEl.textContent = p.projectmanager.amount;
+            }
+            if (btnBlock) {
+                btnBlock.textContent = `Get Project Manager — ${p.projectmanager.label}`;
+            }
+        }
         else if (isProCard) {
-            valueEl.textContent = proAmt;
+            if (p.pro.originalAmount !== undefined) {
+                valueEl.innerHTML = `<span class="original-price-strikethrough" style="text-decoration: line-through; opacity: 0.5; font-size: 0.7em; margin-right: 8px;">${p.pro.originalAmount}</span>${proAmt}`;
+            } else {
+                valueEl.textContent = proAmt;
+            }
             // Update inline CTA button text
             if (btnBlock && btnBlock.id === 'btn-pro') {
                 btnBlock.textContent = `Get Pro — ${p.pro.label}`;
             }
         } else {
-            valueEl.textContent = basicAmt;
+            if (p.basic.originalAmount !== undefined) {
+                valueEl.innerHTML = `<span class="original-price-strikethrough" style="text-decoration: line-through; opacity: 0.5; font-size: 0.7em; margin-right: 8px;">${p.basic.originalAmount}</span>${basicAmt}`;
+            } else {
+                valueEl.textContent = basicAmt;
+            }
             // Update note text
             if (noteEl && noteEl.textContent.includes('100') || noteEl && noteEl.textContent.includes('2')) {
                 noteEl.innerHTML = `Just ${p.basic.label} for lifetime access`;
@@ -167,7 +240,7 @@ function applyPricingToPage(region) {
     });
 
     // Price badge on free version card ("JUST ₹100" / "JUST $2")
-    document.querySelectorAll('.price-badge').forEach(badge => {
+    document.querySelectorAll('.free-only .price-badge').forEach(badge => {
         if (badge.textContent.includes('POPULAR')) return; // skip "MOST POPULAR"
         badge.textContent = `JUST ${p.basic.label}`;
     });
@@ -203,6 +276,13 @@ function applyPricingToPage(region) {
         }
     });
 
+    // Update any "Get Project Manager" buttons via data-tier
+    document.querySelectorAll('[data-tier="projectmanager"]').forEach(el => {
+        if (el.classList.contains('btn-primary')) {
+            el.textContent = `Get Project Manager — ${p.projectmanager.label}`;
+        }
+    });
+
     // Inline text notes
     document.querySelectorAll('.price-note').forEach(note => {
         if (note.querySelector('a')) return; // skip notes with links
@@ -215,25 +295,23 @@ function applyPricingToPage(region) {
 
     // --- FAQ text updates ---
     document.querySelectorAll('.faq-answer p, .faq-question span').forEach(el => {
+        if (!el.dataset.originalHtml) {
+            el.dataset.originalHtml = el.innerHTML;
+        }
+
+        let content = el.dataset.originalHtml;
         const region = window.pricingRegion || PRICING.IN;
-        // Update Pro price mentions
-        if (el.innerHTML.includes('₹1500') || el.innerHTML.includes('$24') || el.innerHTML.includes('₹1,500')) {
-            el.innerHTML = el.innerHTML
-                .replace(/₹1[,.]?500/g, region.pro.label)
-                .replace(/\$24/g, region.pro.label);
-        }
-        // Update Basic price mentions
-        if (el.innerHTML.includes('₹100') || el.innerHTML.includes('$2')) {
-            el.innerHTML = el.innerHTML
-                .replace(/₹100/g, region.basic.label)
-                .replace(/\$2/g, region.basic.label);
-        }
-        // Update Auto Captions price mentions
-        if (el.innerHTML.includes('₹800') || el.innerHTML.includes('$10')) {
-            el.innerHTML = el.innerHTML
-                .replace(/₹800/g, region.autocaptions.label)
-                .replace(/\$10/g, region.autocaptions.label);
-        }
+
+        // Replace placeholders or hardcoded strings with current prices
+        content = content
+            .replace(/₹1[,.]?500/g, region.pro.label)
+            .replace(/₹800/g, region.autocaptions.label)
+            .replace(/₹100/g, region.basic.label)
+            .replace(/\$24/g, region.pro.label)
+            .replace(/\$10/g, region.autocaptions.label)
+            .replace(/\$2/g, region.basic.label);
+
+        el.innerHTML = content;
     });
 
     // --- Currency badge in pricing header ---
@@ -317,16 +395,31 @@ detectAndApplyCurrency();
 //    values from Firebase, editable from the Admin Dashboard.
 //    Falls back to hardcoded PRICING if Firestore is unavailable.
 // ═══════════════════════════════════════════════════════════════════
-async function loadFirestorePricing() {
-    try {
-        if (!window.firestore) return; // Firebase not loaded yet
-        const doc = await window.firestore.collection('config').doc('pricing').get();
-        if (!doc.exists) return; // No pricing doc — use hardcoded defaults
+// ═══════════════════════════════════════════════════════════════════
+// 🔥 FIRESTORE DYNAMIC PRICING — Real-time Listeners
+//    Overrides hardcoded prices with values from Firebase.
+// ═══════════════════════════════════════════════════════════════════
+let pricingListener = null;
+let settingsListener = null;
+
+function startFirestoreListeners() {
+    if (!window.firestore) return;
+
+    // --- 1. Pricing Listener ---
+    if (pricingListener) pricingListener(); // Unsubscribe if already exists
+    pricingListener = window.firestore.collection('config').doc('pricing').onSnapshot(doc => {
+        if (!doc.exists) {
+            console.log('[Firebase] Pricing document does not exist. Using defaults.');
+            return;
+        }
 
         const p = doc.data();
-        console.log('[Firebase] Dynamic pricing loaded:', p);
+        console.log('[Firebase] Dynamic pricing updated:', p);
 
-        // Override the hardcoded PRICING object with Firestore values
+        // Crucial: Set this for the checkout form logic to use verified Firestore amounts
+        window.currentFirestorePricing = p;
+
+        // Update the hardcoded PRICING object with Firestore values
         if (p.basic_inr !== undefined) {
             PRICING.IN.basic.amount = p.basic_inr;
             PRICING.IN.basic.label = '₹' + p.basic_inr;
@@ -336,6 +429,7 @@ async function loadFirestorePricing() {
             PRICING.IN.pro.amount = p.pro_inr;
             PRICING.IN.pro.label = '₹' + p.pro_inr;
             PRICING.IN.pro.formValue = 'pro - ₹' + p.pro_inr;
+            // Also update deadline prices to match if they aren't separately defined in Firestore
             PRICING.IN.proAfterDeadline.amount = p.pro_inr;
             PRICING.IN.proAfterDeadline.label = '₹' + p.pro_inr;
             PRICING.IN.proAfterDeadline.formValue = 'pro - ₹' + p.pro_inr;
@@ -369,8 +463,24 @@ async function loadFirestorePricing() {
             PRICING.US.autocaptionsAfterDeadline.label = '$' + p.autocaptions_usd;
             PRICING.US.autocaptionsAfterDeadline.formValue = 'autocaptions - $' + p.autocaptions_usd;
         }
+        if (p.projectmanager_inr !== undefined) {
+            PRICING.IN.projectmanager.amount = p.projectmanager_inr;
+            PRICING.IN.projectmanager.label = '₹' + p.projectmanager_inr;
+            PRICING.IN.projectmanager.formValue = 'projectmanager - ₹' + p.projectmanager_inr;
+            PRICING.IN.projectmanagerAfterDeadline.amount = p.projectmanager_inr;
+            PRICING.IN.projectmanagerAfterDeadline.label = '₹' + p.projectmanager_inr;
+            PRICING.IN.projectmanagerAfterDeadline.formValue = 'projectmanager - ₹' + p.projectmanager_inr;
+        }
+        if (p.projectmanager_usd !== undefined) {
+            PRICING.US.projectmanager.amount = p.projectmanager_usd;
+            PRICING.US.projectmanager.label = '$' + p.projectmanager_usd;
+            PRICING.US.projectmanager.formValue = 'projectmanager - $' + p.projectmanager_usd;
+            PRICING.US.projectmanagerAfterDeadline.amount = p.projectmanager_usd;
+            PRICING.US.projectmanagerAfterDeadline.label = '$' + p.projectmanager_usd;
+            PRICING.US.projectmanagerAfterDeadline.formValue = 'projectmanager - $' + p.projectmanager_usd;
+        }
 
-        // Also update the RZP_AMOUNTS (used for payment validation in paise)
+        // Update RZP_AMOUNTS for payment validation
         if (p.basic_inr !== undefined) {
             RZP_AMOUNTS.basic.INR = p.basic_inr * 100;
             RZP_AMOUNTS_DEADLINE.basic.INR = p.basic_inr * 100;
@@ -395,26 +505,31 @@ async function loadFirestorePricing() {
             RZP_AMOUNTS.autocaptions.USD = p.autocaptions_usd * 100;
             RZP_AMOUNTS_DEADLINE.autocaptions.USD = p.autocaptions_usd * 100;
         }
+        if (p.projectmanager_inr !== undefined) {
+            RZP_AMOUNTS.projectmanager.INR = p.projectmanager_inr * 100;
+            RZP_AMOUNTS_DEADLINE.projectmanager.INR = p.projectmanager_inr * 100;
+        }
+        if (p.projectmanager_usd !== undefined) {
+            RZP_AMOUNTS.projectmanager.USD = p.projectmanager_usd * 100;
+            RZP_AMOUNTS_DEADLINE.projectmanager.USD = p.projectmanager_usd * 100;
+        }
 
-        // Re-apply correct region logic after Firestore load
-        window.pricingRegion = applyDeadlinePricing({ ...PRICING[window.pricingRegion.currency === 'USD' ? 'US' : 'IN'] });
+        // Re-apply region logic and update UI
+        const currentCurrency = (window.pricingRegion && window.pricingRegion.currency === 'USD') ? 'US' : 'IN';
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING[currentCurrency] });
         applyPricingToPage(window.pricingRegion);
         if (window._updateCountdownLabel) window._updateCountdownLabel();
-    } catch (err) {
-        console.warn('[Firebase] Could not load dynamic pricing. Using hardcoded fallback.', err);
-    }
-}
+        if (window._updateDeadlineDateLabel) window._updateDeadlineDateLabel();
+    }, err => {
+        console.warn('[Firebase] Pricing listener error:', err);
+    });
 
-// ═══════════════════════════════════════════════════════════════════
-// 🔥 FIRESTORE DYNAMIC SETTINGS — Overrides banner & countdown text
-// ═══════════════════════════════════════════════════════════════════
-async function loadFirestoreSettings() {
-    try {
-        if (!window.firestore) return;
-        const doc = await window.firestore.collection('config').doc('settings').get();
+    // --- 2. Settings Listener ---
+    if (settingsListener) settingsListener();
+    settingsListener = window.firestore.collection('config').doc('settings').onSnapshot(doc => {
         if (!doc.exists) return;
-
         const data = doc.data();
+
         if (data.deadlineDate) {
             PRICE_DEADLINE = new Date(data.deadlineDate);
         }
@@ -425,9 +540,140 @@ async function loadFirestoreSettings() {
             }
         }
 
-    } catch (err) {
-        console.warn('[Firebase] Could not load dynamic settings.', err);
+        // After settings change, re-apply pricing logic (might change deadline status)
+        const currentCurrency = (window.pricingRegion && window.pricingRegion.currency === 'USD') ? 'US' : 'IN';
+        window.pricingRegion = applyDeadlinePricing({ ...PRICING[currentCurrency] });
+        applyPricingToPage(window.pricingRegion);
+        initCountdownTimer(); // Refresh the timer
+    }, err => {
+        console.warn('[Firebase] Settings listener error:', err);
+    });
+}
+
+// ===== CUSTOM LINKS FUNCTIONS =====
+function getProductNames(products) {
+    if (!products || products.length === 0) return "All Products";
+    const names = {
+        basic: "Easy Workflow Basic",
+        pro: "Easy Workflow Pro",
+        autocaptions: "Auto Captions Pro",
+        projectmanager: "Project Manager Pro"
+    };
+    return products.map(p => names[p] || p).join(" & ");
+}
+
+function showDiscountBanner(link) {
+    let banner = document.getElementById('custom-discount-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'custom-discount-banner';
+        document.body.appendChild(banner);
     }
+
+    let promoText = '';
+    if (link.pricingMode === 'discount') {
+        promoText = `🎁 Special offer applied: <strong>${link.discountPercent}% off</strong> ${getProductNames(link.products)}!`;
+    } else {
+        promoText = `🎁 Special pricing applied: Custom prices for ${getProductNames(link.products)}!`;
+    }
+
+    banner.innerHTML = `
+        <div class="banner-content">
+            <span class="banner-text">${promoText}</span>
+            <button class="banner-close-btn" onclick="removeDiscountBanner()">&times;</button>
+        </div>
+    `;
+
+    document.body.classList.add('has-discount-banner');
+}
+
+window.removeDiscountBanner = function () {
+    const banner = document.getElementById('custom-discount-banner');
+    if (banner) {
+        banner.remove();
+    }
+    document.body.classList.remove('has-discount-banner');
+    window.activeCustomLink = null;
+    sessionStorage.removeItem('active_ref_code');
+    applyPricingToPage(window.pricingRegion);
+
+    const promoContainer = document.getElementById('promo-code-container');
+    if (promoContainer) promoContainer.style.display = 'block';
+
+    showToast("Special offer link cleared. Pricing reset to normal.", "info");
+};
+
+async function checkCustomLink() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        let refCode = urlParams.get('ref');
+
+        if (!refCode) {
+            refCode = sessionStorage.getItem('active_ref_code');
+        }
+
+        if (!refCode) return;
+
+        refCode = refCode.trim().toUpperCase();
+
+        if (!window.firestore) {
+            setTimeout(checkCustomLink, 100);
+            return;
+        }
+
+        console.log(`[Custom Link] Checking code: ${refCode}`);
+        const doc = await window.firestore.collection('custom_links').doc(refCode).get();
+
+        if (doc.exists) {
+            const data = doc.data();
+            data.code = refCode;
+
+            if (data.active === false) {
+                console.warn(`[Custom Link] Link ${refCode} is inactive.`);
+                if (urlParams.get('ref')) showToast("This special offer link is inactive.", "error");
+                cleanUpCustomLink();
+                return;
+            }
+
+            if (data.expiresAt) {
+                const expiryDate = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+                if (new Date() > expiryDate) {
+                    console.warn(`[Custom Link] Link ${refCode} has expired.`);
+                    if (urlParams.get('ref')) showToast("This special offer link has expired.", "error");
+                    cleanUpCustomLink();
+                    return;
+                }
+            }
+
+            if (data.maxRedemptions > 0 && data.currentRedemptions >= data.maxRedemptions) {
+                console.warn(`[Custom Link] Link ${refCode} has reached maximum redemptions.`);
+                if (urlParams.get('ref')) showToast("This special offer link has expired.", "error");
+                cleanUpCustomLink();
+                return;
+            }
+
+            window.activeCustomLink = data;
+            sessionStorage.setItem('active_ref_code', refCode);
+            showDiscountBanner(data);
+            applyPricingToPage(window.pricingRegion);
+            console.log(`[Custom Link] Valid link applied:`, data);
+        } else {
+            console.warn(`[Custom Link] Link ${refCode} not found in Firestore.`);
+            if (urlParams.get('ref')) showToast("Invalid special offer link.", "error");
+            cleanUpCustomLink();
+        }
+    } catch (err) {
+        console.error('[Custom Link] Error checking link:', err);
+    }
+}
+
+function cleanUpCustomLink() {
+    window.activeCustomLink = null;
+    sessionStorage.removeItem('active_ref_code');
+    const banner = document.getElementById('custom-discount-banner');
+    if (banner) banner.remove();
+    document.body.classList.remove('has-discount-banner');
+    applyPricingToPage(window.pricingRegion);
 }
 
 // Re-apply after DOM is fully ready to catch elements rendered after script runs
@@ -436,18 +682,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => applyPricingToPage(window.pricingRegion), 100);
     initCountdownTimer(); // Start the countdown!
 
-    // Load config from Firestore robustly (public read enabled in Firestore rules)
-    const initDbFeatures = async () => {
+    // Initialize Firestore features as soon as the SDK is ready
+    const initDbFeatures = () => {
         if (!window.firestore) {
             setTimeout(initDbFeatures, 100);
             return;
         }
-        await loadFirestorePricing();
-        await loadFirestoreSettings();
-        initCountdownTimer(); // Re-init timer after fetching any new deadline
+        startFirestoreListeners();
+        checkCustomLink();
     };
     initDbFeatures();
-
 
     // ===== LENIS SMOOTH SCROLL =====
     const lenis = new Lenis({
@@ -467,6 +711,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     requestAnimationFrame(raf);
+
+
+
+
 
     // ===== NAVBAR SCROLL =====
     const navbar = document.getElementById('navbar');
@@ -671,24 +919,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.fill();
             });
 
-            // Draw connections
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < 150) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(124, 58, 237, ${0.06 * (1 - dist / 150)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                }
-            }
-
             animationId = requestAnimationFrame(draw);
         }
 
@@ -753,8 +983,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateGlow() {
         currentX += (glowX - currentX) * 0.08;
         currentY += (glowY - currentY) * 0.08;
-        cursorGlow.style.left = currentX + 'px';
-        cursorGlow.style.top = currentY + 'px';
+        // Optimized using translate3d for GPU acceleration (restored from original smooth version)
+        cursorGlow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
         requestAnimationFrame(updateGlow);
     }
     updateGlow();
@@ -781,17 +1011,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== SUBTLE PARALLAX ON GLOW ORBS =====
+    // Parallax disabled for performance optimization
+    /*
     const orbs = document.querySelectorAll('.glow-orb');
-    if (orbs.length > 0) {
-        window.addEventListener('scroll', () => {
-            const scrollY = window.scrollY;
-            orbs.forEach((orb, i) => {
-                const speed = (i + 1) * 0.03;
-                orb.style.transform = `translateY(${scrollY * speed}px)`;
-            });
-        }, { passive: true });
-    }
+    ...
+    */
     // ===== VERSION TOGGLE (FREE / PRO / AUTOCAPTIONS) =====
     const toggleOptions = document.querySelectorAll('.toggle-option');
     const body = document.body;
@@ -842,16 +1066,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 body.classList.add('version-entering');
 
                 // Re-trigger reveal animations for newly visible content
-
-                const classNameMap = { 'free': 'free-only', 'pro': 'pro-only', 'autocaptions': 'autocaptions-only' };
+                const classNameMap = {
+                    'free': 'free-only',
+                    'pro': 'pro-only',
+                    'autocaptions': 'autocaptions-only',
+                    'projectmanager': 'projectmanager-only'
+                };
                 const cName = classNameMap[version];
-                const newVisibleElements = document.querySelectorAll(
-                    `.${cName} .reveal, .${cName}.reveal`
-                );
+                const newVisibleElements = document.querySelectorAll(`.${cName} .reveal, .${cName}.reveal`);
+
                 newVisibleElements.forEach(el => {
-                    el.classList.remove('active');
-                    void el.offsetWidth; // Force reflow
-                    el.classList.add('active');
+                    el.classList.remove('visible');
+                    setTimeout(() => el.classList.add('visible'), 50);
                 });
 
                 // Reset deep-dive tabs - activate the first tab for current version
@@ -859,11 +1085,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (activeTabsNav) {
                     const firstBtn = activeTabsNav.querySelector('.tab-btn');
                     if (firstBtn) {
-                        // Clear all tab buttons active state
                         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                         firstBtn.classList.add('active');
-
-                        // Clear all panels, activate the first one
                         const targetTab = firstBtn.dataset.tab;
                         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
                         const targetPanel = document.getElementById(`tab-${targetTab}`);
@@ -876,40 +1099,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (activeMockupTabsNav) {
                     const firstMockupBtn = activeMockupTabsNav.querySelector('.mockup-tab');
                     if (firstMockupBtn) {
-                        // Clear all mockup tab buttons active state
                         document.querySelectorAll('.mockup-tab').forEach(b => b.classList.remove('active'));
                         firstMockupBtn.classList.add('active');
-
-                        // Clear all mockup panels, activate the first one correctly
                         const targetMockup = firstMockupBtn.dataset.mockupTab;
                         document.querySelectorAll('.mockup-panel').forEach(p => p.classList.remove('active'));
-
-                        const targetPanels = document.querySelectorAll(`.mockup-panel[data-panel="${targetMockup}"]`);
-                        targetPanels.forEach(p => {
-                            if (p.classList.contains('pro-only') && version !== 'pro') return;
-                            if (p.classList.contains('autocaptions-only') && version !== 'autocaptions') return;
-                            if (p.classList.contains('free-only') && version !== 'free') return;
-                            p.classList.add('active');
-                        });
+                        const targetPanel = document.querySelector(`.mockup-panel[data-panel="${targetMockup}"]`);
+                        if (targetPanel) targetPanel.classList.add('active');
                     }
                 }
 
-                // Re-animate stat counters
-                const visibleCounters = document.querySelectorAll(
-                    `.${cName} .stat-number[data-target]`
-                );
-                visibleCounters.forEach(counter => {
-                    counter.textContent = '0';
-                    animateCounter(counter);
-                });
-
-                // End transition animation
+                // Clear entering class after animation
                 setTimeout(() => {
                     body.classList.remove('version-entering');
-                }, 600);
-            }, 500);
+                }, 800);
+            }, 400);
         });
     });
+
+
 
     const GUMROAD_LINKS = {
         basic: 'https://harshedits55.gumroad.com/l/Easyworkflow',
@@ -937,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ───────────────────────────── CHECKOUT MODAL ─────────────────────────────
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'checkout-overlay';
-    modalOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
+    modalOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,7,0.92);z-index:9999;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
 
     const modalBox = document.createElement('div');
     modalBox.id = 'checkout-box';
@@ -950,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="flex:1;">
                     <div style="display:inline-flex;align-items:center;background:rgba(124,58,237,0.2);color:#a78bfa;padding:5px 14px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;">SECURE CHECKOUT</div>
                     <h2 id="checkout-tier-name" style="font-family:var(--font-heading);color:white;margin:0;font-size:26px;font-weight:800;line-height:1.2;">Easy Workflow Pro</h2>
-                    <p style="color:rgba(255,255,255,0.4);font-size:14px;margin-top:10px;line-height:1.5;">Get instant access to the ultimate After Effects toolkit.</p>
+                    <p id="checkout-tier-desc" style="color:rgba(255,255,255,0.4);font-size:14px;margin-top:10px;line-height:1.5;">Get instant access to the ultimate After Effects toolkit.</p>
                     
                     <div style="margin-top:30px;display:flex;flex-direction:column;gap:15px;">
                         <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.7);font-size:13px;">
@@ -981,10 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="padding:40px 40px 20px;flex:1;overflow-y:auto;" id="modal-scroll-body">
                         <h2 id="modal-title" style="color:white;margin:0 0 10px;font-size:20px;font-weight:700;">Complete Checkout</h2>
                         <span id="modal-product-badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:24px;display:inline-block;">PRO</span>
-                        <div id="modal-windows-warning" class="os-warning-box" style="display:none; margin-bottom:20px; width:100%; border-radius:12px;">
-                            <div class="os-warning-icon">⚠️</div>
-                            <span style="font-size:12px;"><b>Windows Only</b> • Do not buy for Mac (No Refunds)</span>
-                        </div>
+
                         
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
                             <div style="grid-column: span 2;">
@@ -1018,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
 
-                        <div style="margin-bottom:24px;">
+                        <div id="promo-code-container" style="margin-bottom:24px;">
                             <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">PROMO CODE</label>
                             <div style="display:flex;gap:10px;">
                                 <input type="text" id="rzp-promo-code" placeholder="ENTER CODE" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:13px;outline:none;text-transform:uppercase;">
@@ -1180,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ───────────────────────────── SUCCESS SCREEN ─────────────────────────────
     const successOverlay = document.createElement('div');
     successOverlay.id = 'payment-success-overlay';
-    successOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);backdrop-filter:blur(15px);z-index:10002;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.4s ease;';
+    successOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,7,0.96);z-index:10002;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.4s ease;';
 
     const successBox = document.createElement('div');
     successBox.id = 'payment-success-box';
@@ -1195,16 +1399,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     <polyline points="22,36 32,46 49,26" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" id="success-tick" stroke-dasharray="40" stroke-dashoffset="40" style="transition:stroke-dashoffset 0.4s ease 0.6s;"></polyline>
                 </svg>
             </div>
-            <h2 style="color:white;margin:0;font-size:24px;">Payment Successful</h2>
+            <h2 style="color:white;margin:0;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Payment Successful</h2>
         </div>
         <div style="padding:32px;text-align:center;">
-            <p style="color:rgba(255,255,255,0.7);font-size:15px;line-height:1.6;margin-bottom:24px;">Thank you! Your license key will be sent to your email shortly.</p>
-            <div style="background:rgba(255,255,255,0.03);padding:20px;border-radius:16px;display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Payment ID:</span><span id="success-payment-id" style="color:white;font-family:monospace;">—</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Amount Paid:</span><span id="success-amount" style="color:#22c55e;font-weight:700;">—</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Product:</span><span id="success-product" style="color:white;">—</span></div>
+            <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.5;margin-bottom:24px;">Your access has been granted. A copy of this license has also been sent to your email.</p>
+            
+            <!-- 🔑 BIG LICENSE KEY SECTION -->
+            <div id="success-license-row" style="display:none;flex-direction:column;align-items:center;margin-bottom:28px;">
+                <span style="color:#a78bfa;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Your Secure License Key</span>
+                <div style="background:rgba(167,139,250,0.1);border:1px dashed rgba(167,139,250,0.4);padding:18px 24px;border-radius:12px;width:100%;box-sizing:border-box;">
+                    <span id="success-license-key" style="color:white;font-family:'JetBrains Mono', monospace;font-size:20px;font-weight:700;letter-spacing:1px;user-select:all;word-break:break-all;">—</span>
+                </div>
+                <p style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:8px;">Copy and paste this key into your extension to unlock.</p>
             </div>
-            <button id="success-done-btn" style="width:100%;margin-top:28px;padding:16px;background:#22c55e;color:white;border:none;border-radius:14px;font-weight:700;cursor:pointer;">DONE</button>
+
+            <!-- Transaction Details -->
+            <div style="background:rgba(255,255,255,0.03);padding:18px;border-radius:14px;display:flex;flex-direction:column;gap:10px;border:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Payment ID</span><span id="success-payment-id" style="color:white;font-family:monospace;">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Amount</span><span id="success-amount" style="color:#22c55e;font-weight:700;">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);"><span>Product</span><span id="success-product" style="color:white;font-weight:500;">—</span></div>
+            </div>
+
+            <div style="margin-top:28px;">
+                <div id="success-download-container" style="display:none; margin-bottom: 12px;">
+                    <a id="success-download-btn" href="#" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:18px;background:#a855f7;color:white;text-align:center;text-decoration:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;transition:transform 0.2s ease;box-shadow:0 10px 25px rgba(168,85,247,0.3);">DOWNLOAD NOW</a>
+                </div>
+                <button id="success-done-btn" style="width:100%;padding:18px;background:#22c55e;color:white;border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;transition:transform 0.2s ease, background 0.2s ease;box-shadow:0 10px 25px rgba(34,197,94,0.3);">DONE</button>
+            </div>
         </div>
         <span id="success-product-badge" style="display:none;"></span>
     `;
@@ -1220,22 +1441,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function openModal(e) {
         if (e) e.preventDefault();
 
+        // [ENFORCE LOGIN] - If not logged in, show login prompt
+        if (!firebase.auth().currentUser) {
+            handleLogin(); // Trigger Google Login
+            return;
+        }
+
         // Determine tier
         let tier = 'pro';
-        if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'basic') {
-            tier = 'basic';
-        } else if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier') === 'autocaptions') {
-            tier = 'autocaptions';
-        } else if (e && e.currentTarget && (e.currentTarget.getAttribute('data-tier') === 'pro' || e.currentTarget.id === 'btn-pro')) {
+        if (e && e.currentTarget && e.currentTarget.getAttribute('data-tier')) {
+            tier = e.currentTarget.getAttribute('data-tier');
+        } else if (e && e.currentTarget && e.currentTarget.id === 'btn-pro') {
             tier = 'pro';
         } else {
             const v = document.body.getAttribute('data-version');
-            tier = v === 'autocaptions' ? 'autocaptions' : (v === 'free' ? 'basic' : 'pro');
+            tier = v === 'autocaptions' ? 'autocaptions' : (v === 'projectmanager' ? 'projectmanager' : (v === 'free' ? 'basic' : 'pro'));
         }
         currentCheckoutTier = tier;
 
         const region = window.pricingRegion || PRICING.IN;
-        const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
+        const tierConfig = region[tier] || region.pro;
 
         // Reset promo state
         currentPromoMultiplier = 1;
@@ -1244,22 +1469,67 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('promo-message').style.display = 'none';
         document.getElementById('checkout-original-price').style.display = 'none';
 
+        // Custom Link Override inside checkout modal
+        let displayLabel = tierConfig.label;
+        let isOverridden = false;
+        let originalLabel = tierConfig.label;
+
+        if (window.activeCustomLink) {
+            const isProductAllowed = window.activeCustomLink.products.length === 0 || window.activeCustomLink.products.includes(tier);
+            if (isProductAllowed) {
+                let overrideAmount = null;
+                if (window.activeCustomLink.pricingMode === 'fixed') {
+                    const currKey = region.currency.toLowerCase();
+                    const fixedKey = `${tier}_${currKey}`;
+                    const fixedPrice = window.activeCustomLink.fixedPrices && window.activeCustomLink.fixedPrices[fixedKey];
+                    if (fixedPrice !== undefined && fixedPrice !== null && fixedPrice !== '') {
+                        overrideAmount = Number(fixedPrice);
+                    }
+                } else if (window.activeCustomLink.pricingMode === 'discount' && window.activeCustomLink.discountPercent > 0) {
+                    overrideAmount = Math.round(tierConfig.amount * (100 - window.activeCustomLink.discountPercent) / 100);
+                }
+
+                if (overrideAmount !== null) {
+                    displayLabel = region.symbol + overrideAmount;
+                    isOverridden = true;
+                }
+            }
+        }
+
+        const promoContainer = document.getElementById('promo-code-container');
+        if (window.activeCustomLink) {
+            if (promoContainer) promoContainer.style.display = 'none';
+        } else {
+            if (promoContainer) promoContainer.style.display = 'block';
+        }
+
         // Update modal header
-        const titleMap = { basic: 'Checkout', pro: 'Checkout', autocaptions: 'Checkout' };
-        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
+        const titleMap = { basic: 'Checkout', pro: 'Checkout', autocaptions: 'Checkout', projectmanager: 'Checkout' };
+        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro', projectmanager: 'Project Manager Pro' };
+        const descMap = {
+            basic: 'Get basic access to the After Effects toolkit.',
+            pro: 'Get instant access to the ultimate After Effects toolkit.',
+            autocaptions: 'Get instant access to the advanced auto captions tool.',
+            projectmanager: 'Get instant access to the ultimate project manager.'
+        };
         document.getElementById('modal-title').textContent = titleMap[tier];
         document.getElementById('modal-product-badge').textContent = badgeMap[tier];
         document.getElementById('checkout-tier-name').textContent = badgeMap[tier];
-        document.getElementById('checkout-price-display').textContent = tierConfig.label;
+        document.getElementById('checkout-tier-desc').textContent = descMap[tier] || descMap.pro;
 
-        // Show Windows Only warning for Auto Captions
-        const warningEl = document.getElementById('modal-windows-warning');
-        if (warningEl) {
-            warningEl.style.display = (tier === 'autocaptions') ? 'block' : 'none';
+        if (isOverridden) {
+            document.getElementById('checkout-original-price').style.display = 'block';
+            document.getElementById('checkout-original-price').textContent = originalLabel;
+            document.getElementById('checkout-price-display').textContent = displayLabel;
+        } else {
+            document.getElementById('checkout-original-price').style.display = 'none';
+            document.getElementById('checkout-price-display').textContent = displayLabel;
         }
 
+
+
         // Update pay button text
-        document.getElementById('rzp-btn-text').textContent = `Pay ${tierConfig.label} — Proceed to Payment`;
+        document.getElementById('rzp-btn-text').textContent = `Pay ${displayLabel} — Proceed to Payment`;
 
         // Generate security nonce and session timestamp
         const nonce = generateNonce();
@@ -1300,6 +1570,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initialize country list
         if (typeof initCountryList === 'function') initCountryList();
+
+        // Pre-fill email from Auth if available
+        const user = firebase.auth().currentUser;
+        if (user && user.email) {
+            const emailInput = document.getElementById('rzp-email');
+            if (emailInput) {
+                emailInput.value = user.email;
+                emailInput.readOnly = true; // Prevent changing email to ensure license matches account
+            }
+        }
     }
 
     function closeModal() {
@@ -1311,12 +1591,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     }
 
-    function showSuccessScreen(paymentId, amount, productName) {
+    function generate16DigitKey() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let key = '';
+        for (let i = 0; i < 16; i++) {
+            if (i > 0 && i % 4 === 0) key += '-';
+            key += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return key; // Format: XXXX-XXXX-XXXX-XXXX
+    }
+
+    function showSuccessScreen(paymentId, amount, productName, licenseKey = null, downloadLink = null) {
         // Update success details
         document.getElementById('success-payment-id').textContent = paymentId || '—';
         document.getElementById('success-amount').textContent = amount || '—';
-        document.getElementById('success-product').textContent = productName || '—';
-        document.getElementById('success-product-badge').textContent = productName || 'Easy Workflow Pro';
+        document.getElementById('success-product').textContent = productName || 'Project Manager Pro';
+        document.getElementById('success-product-badge').textContent = productName || 'Project Manager Pro';
+
+        const successText = document.querySelector('#payment-success-box > div:nth-child(2) > p');
+
+        if (licenseKey) {
+            document.getElementById('success-license-row').style.display = 'flex';
+            document.getElementById('success-license-key').textContent = licenseKey;
+            if (successText) successText.textContent = "Your access has been granted. A copy of this license has also been sent to your email.";
+        } else {
+            document.getElementById('success-license-row').style.display = 'none';
+            if (downloadLink) {
+                 if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
+            } else {
+                 if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
+            }
+        }
+
+        if (downloadLink) {
+            document.getElementById('success-download-container').style.display = 'block';
+            document.getElementById('success-download-btn').href = downloadLink;
+        } else {
+            document.getElementById('success-download-container').style.display = 'none';
+        }
 
         // Trigger Confetti
         if (typeof confetti === 'function') {
@@ -1370,6 +1682,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Promo Logic
     document.getElementById('btn-apply-promo').addEventListener('click', async () => {
+        if (window.activeCustomLink) {
+            showToast("Promo codes cannot be applied when a special offer is active.", "error");
+            return;
+        }
         const input = document.getElementById('rzp-promo-code');
         const code = input.value.trim().toUpperCase();
         const msgEl = document.getElementById('promo-message');
@@ -1531,8 +1847,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Step 1: Save lead to Firebase Firestore (replaces Formspree — unlimited writes) ──
         const region = window.pricingRegion || PRICING.IN;
-        const tierConfig = (tier === 'basic') ? region.basic : (tier === 'autocaptions' ? region.autocaptions : region.pro);
-        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro' };
+        const tierConfig = region[tier] || region.pro;
+        const badgeMap = {
+            basic: 'Easy Workflow Basic',
+            pro: 'Easy Workflow Pro',
+            autocaptions: 'Auto Captions Pro',
+            projectmanager: 'Project Manager Pro'
+        };
 
         // Store the lead doc ID so we can update it later on payment success
         let currentLeadDocId = null;
@@ -1540,6 +1861,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (window.firestore) {
                 console.log('[Firebase] Saving lead to Firestore...');
+                const amountText = window.activeCustomLink
+                    ? (tierConfig.label + ` (Ref: ${window.activeCustomLink.code})`)
+                    : (currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label);
                 const leadRef = await window.firestore.collection('leads').add({
                     name: nameVal,
                     email: emailVal,
@@ -1547,7 +1871,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tier: badgeMap[tier],
                     gateway: gateway,
                     status: 'interested',
-                    amount: currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label,
+                    amount: amountText,
+                    customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : '',
                     nonce: nonce,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -1582,7 +1907,24 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`[Checkout] Using Fallback Price: ${amountInSmallestUnit} units`);
         }
 
-        if (amountInSmallestUnit && currentPromoMultiplier < 1) {
+        if (window.activeCustomLink) {
+            const isProductAllowed = window.activeCustomLink.products.length === 0 || window.activeCustomLink.products.includes(tier);
+            if (isProductAllowed) {
+                if (window.activeCustomLink.pricingMode === 'fixed') {
+                    const currKey = (currency || 'INR').toLowerCase();
+                    const fixedKey = `${tier}_${currKey}`;
+                    const fixedPrice = window.activeCustomLink.fixedPrices && window.activeCustomLink.fixedPrices[fixedKey];
+                    if (fixedPrice !== undefined && fixedPrice !== null && fixedPrice !== '') {
+                        amountInSmallestUnit = Math.round(Number(fixedPrice) * 100);
+                        console.log(`[Checkout] Custom link ${window.activeCustomLink.code} fixed price: ${amountInSmallestUnit} units`);
+                    }
+                } else if (window.activeCustomLink.pricingMode === 'discount' && window.activeCustomLink.discountPercent > 0) {
+                    const multiplier = (100 - window.activeCustomLink.discountPercent) / 100;
+                    amountInSmallestUnit = Math.round(amountInSmallestUnit * multiplier);
+                    console.log(`[Checkout] Custom link ${window.activeCustomLink.code} ${window.activeCustomLink.discountPercent}% discount applied: ${amountInSmallestUnit} units`);
+                }
+            }
+        } else if (amountInSmallestUnit && currentPromoMultiplier < 1) {
             amountInSmallestUnit = Math.round(amountInSmallestUnit * currentPromoMultiplier);
         }
 
@@ -1595,19 +1937,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── STEP 3: EXECUTE SELECTED GATEWAY ──
+        const paidAmountLabel = window.activeCustomLink
+            ? `${region.symbol}${amountInSmallestUnit / 100} (Ref: ${window.activeCustomLink.code})`
+            : (currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label);
+
         if (gateway === 'razorpay') {
             const options = {
                 key: RZP_KEY_ID,
                 amount: amountInSmallestUnit,
                 currency: currency,
-                name: 'Easy Workflow',
-                description: badgeMap[tier] + ' — Lifetime License',
-                image: 'https://easyworkflow.store/logo.png',
+                name: 'easy workflow pro',
+                description: badgeMap[tier] || 'Project Manager Pro',
+                image: tier === 'projectmanager' ? 'https://easyworkflow.store/pm_logo.png' : 'https://easyworkflow.store/logo.png', // Or fallback to logo if none
                 prefill: { name: nameVal, email: emailVal, contact: phoneVal },
-                notes: { tier, nonce, session_ts: sessionTs, product: badgeMap[tier], promoCode: currentPromoCode },
+                notes: {
+                    tier,
+                    nonce,
+                    session_ts: sessionTs,
+                    product: badgeMap[tier],
+                    promoCode: currentPromoCode,
+                    customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : ''
+                },
                 theme: { color: '#7c3aed', backdrop_color: 'rgba(0,0,0,0.85)' },
                 handler: function (response) {
-                    handlePaymentSuccess(response.razorpay_payment_id || 'N/A', 'razorpay');
+                    const dataOverride = {
+                        name: nameVal,
+                        email: emailVal,
+                        phone: phoneVal,
+                        tier: tier,
+                        leadDocId: currentLeadDocId,
+                        amount: paidAmountLabel,
+                        customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null
+                    };
+                    window.handlePaymentSuccess(response.razorpay_payment_id || 'N/A', 'razorpay', dataOverride);
                 }
             };
             const rzp = new Razorpay(options);
@@ -1635,9 +1997,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // BACKEND URL: Auto-switch between local Node server and Netlify production
-            const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                ? 'http://localhost:3000/create-order'
-                : '/api/create-order';
+            const BACKEND_URL = '/api/create-order';
 
             const orderRes = await fetch(BACKEND_URL, {
                 method: 'POST',
@@ -1646,7 +2006,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     amount: amountInSmallestUnit / 100,
                     currency: currency,
                     name: nameVal, email: emailVal, phone: phoneVal, tier: tier,
-                    mode: CF_MODE // Pass mode to backend for explicit verification
+                    mode: CF_MODE, // Pass mode to backend for explicit verification
+                    customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null
                 })
             });
 
@@ -1661,9 +2022,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!payment_session_id) throw new Error('Mission Session ID');
 
+            // --- SAVE TO LOCALSTORAGE FOR REDIRECT RECOVERY ---
+            const checkoutData = {
+                name: nameVal,
+                email: emailVal,
+                phone: phoneVal,
+                tier: tier,
+                leadDocId: currentLeadDocId,
+                amount: paidAmountLabel,
+                customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null,
+                nonce: nonce,
+                ts: Date.now()
+            };
+            localStorage.setItem('last_checkout', JSON.stringify(checkoutData));
+
             const checkoutOptions = {
                 paymentSessionId: payment_session_id,
-                returnUrl: window.location.href + '?order_id={order_id}',
+                returnUrl: window.location.href + '?cf_id={order_id}', // Use cf_id to avoid conflicts
                 redirectTarget: "_modal"
             };
 
@@ -1674,7 +2049,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.error) showToast(result.error.message, 'error');
                 if (result.paymentDetails) {
-                    handlePaymentSuccess(result.paymentDetails.paymentId, 'cashfree');
+                    const dataOverride = {
+                        name: nameVal,
+                        email: emailVal,
+                        phone: phoneVal,
+                        tier: tier,
+                        leadDocId: currentLeadDocId,
+                        amount: paidAmountLabel,
+                        customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null
+                    };
+                    window.handlePaymentSuccess(result.paymentDetails.paymentId, 'cashfree', dataOverride);
                 }
             });
 
@@ -1683,93 +2067,87 @@ document.addEventListener('DOMContentLoaded', () => {
             payBtn.disabled = false;
             btnText.style.display = 'inline';
             btnLoader.style.display = 'none';
-            // Show the exact error if it's a known validation failure
-            const msg = err.message === 'Payment Server Offline' || err.message === 'Failed to fetch'
-                ? 'Unable to connect to ' + gateway + ' payment server.'
-                : err.message;
-            showToast(msg, 'error');
-        }
-
-        async function handlePaymentSuccess(paymentId, method) {
-            paymentSessions.add(nonce);
-
-            // Show a "Verifying" state
-            showToast('Verifying payment with bank... Please wait.', 'success');
-
-            // ── Save payment record to Firestore ──
-            try {
-                if (window.firestore) {
-                    // Save to payments collection
-                    await window.firestore.collection('payments').add({
-                        paymentId: paymentId,
-                        gateway: method,
-                        tier: badgeMap[tier],
-                        name: nameVal,
-                        email: emailVal,
-                        phone: phoneVal,
-                        amount: tierConfig.label,
-                        verified: false,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-
-                    // Update the lead status to 'paid'
-                    if (currentLeadDocId) {
-                        await window.firestore.collection('leads').doc(currentLeadDocId).update({
-                            status: 'paid',
-                            paymentId: paymentId,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                    console.log('[Firebase] Payment record saved.');
-                }
-            } catch (fbErr) {
-                console.error('[Firebase Payment] Error:', fbErr);
-            }
-
-            try {
-                const VERIFY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                    ? 'http://localhost:3000/verify-payment' // If you add this to server.js
-                    : '/api/verify-payment';
-
-                const verifyRes = await fetch(VERIFY_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        paymentId,
-                        method,
-                        tier: badgeMap[tier],
-                        name: nameVal,
-                        email: emailVal,
-                        phone: phoneVal
-                    })
-                });
-
-                const verifyData = await verifyRes.json();
-
-                if (verifyData.verified) {
-                    // Update lead + payment as verified in Firestore
-                    try {
-                        if (window.firestore && currentLeadDocId) {
-                            await window.firestore.collection('leads').doc(currentLeadDocId).update({
-                                status: 'verified',
-                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        }
-                    } catch (e) { console.error('[Firebase] Verify update failed:', e); }
-
-                    closeModal();
-                    checkoutForm.reset();
-                    showSuccessScreen(paymentId, tierConfig.label, badgeMap[tier]);
-                } else {
-                    throw new Error(verifyData.error || 'Payment could not be verified.');
-                }
-            } catch (err) {
-                console.error('[Verification] Failed:', err);
-                showToast('Warning: Payment verification pending. We will contact you if there is an issue.', 'error');
-                // Even if verification fails, we don't show the success screen to avoid bypasses
-            }
+            showToast(err.message, 'error');
         }
     });
+
+    // ────────────────────── PAYMENT SUCCESS HANDLER (Global Access) ──────────────────────
+    window.handlePaymentSuccess = async function (paymentId, method, dataOverride = null) {
+        // Use either passed data (for redirects) or form variables
+        const data = dataOverride || {
+            name: document.getElementById('rzp-name').value,
+            email: document.getElementById('rzp-email').value,
+            phone: (document.getElementById('rzp-country-code').value + document.getElementById('rzp-phone').value).replace(/[^\d+]/g, ''),
+            tier: document.getElementById('rzp-tier').value,
+            leadId: null // will be set below
+        };
+
+        const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro', projectmanager: 'Project Manager Pro' };
+
+        console.log(`[Success] Handling ${method} payment: ${paymentId}`);
+        showToast('Verifying payment... Please wait.', 'success');
+
+        // Note: Lead and Payment updates are securely handled by the backend (verify-payment) now.
+
+        // 2. Verify with Backend (and trigger Auto-Email)
+        try {
+            const VERIFY_URL = '/.netlify/functions/verify-payment';
+
+            const res = await fetch(VERIFY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paymentId, method, tier: badgeMap[data.tier] || data.tier,
+                    name: data.name, email: data.email, phone: data.phone,
+                    amount: data.amount,
+                    leadDocId: data.leadDocId,
+                    customLinkCode: data.customLinkCode || (window.activeCustomLink ? window.activeCustomLink.code : null)
+                })
+            });
+
+            const result = await res.json();
+
+            if (result.verified) {
+
+                // Show Success UI
+                if (typeof closeModal === 'function') closeModal();
+                showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, result.licenseKey, result.downloadLink);
+                localStorage.removeItem('last_checkout'); // Clear on success
+
+                // Prevent immediate re-use of custom link without refresh
+                if (typeof cleanUpCustomLink === 'function') cleanUpCustomLink();
+                if (window.history && window.history.replaceState) {
+                    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                    window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+                }
+            } else {
+                throw new Error((result.error || 'Verification failed') + (result.details ? ' - ' + result.details : ''));
+            }
+        } catch (err) {
+            console.error('[Verify] Error:', err);
+            showToast('Verification Error: ' + err.message, 'error');
+        }
+    };
+
+    // ────────────────────── URL PARAMETER CHECKER (For Redirects) ──────────────────────
+    function checkUrlForPayment() {
+        const params = new URLSearchParams(window.location.search);
+        const cfId = params.get('cf_id') || params.get('order_id');
+        const rzpId = params.get('razorpay_payment_id');
+
+        if (cfId || rzpId) {
+            console.log('[Redirect] Payment ID found in URL:', cfId || rzpId);
+            const saved = localStorage.getItem('last_checkout');
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Ensure it's recent (within 1 hour)
+                if (Date.now() - data.ts < 3600000) {
+                    window.handlePaymentSuccess(cfId || rzpId, cfId ? 'cashfree' : 'razorpay', data);
+                }
+            }
+        }
+    }
+    checkUrlForPayment();
 
 });
 
@@ -2595,40 +2973,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
 
-                // Master Sequencer
-                window.numCountInt = setInterval(tick, 20);
+                // Master Sequencer — Optimized to 60ms (from 20ms) for performance
+                window.numCountInt = setInterval(tick, 60);
 
-                window.numSeqTo = setTimeout(() => {
-                    // Start SYMBOLS phase
+                // Track all timeouts in an array to ensure they can be cleared
+                if (!window.mockupTimeouts) window.mockupTimeouts = [];
+
+                const t1 = setTimeout(() => {
                     phase = 'SYMBOLS';
                     updateTitle('2. Change Symbols');
                     clearInterval(window.numCountInt);
                     window.numCountInt = setInterval(tick, 250);
 
-                    setTimeout(() => {
-                        // Start FORMAT phase
+                    const t2 = setTimeout(() => {
                         phase = 'FORMAT';
                         updateTitle('3. Formats (US / Indian / Insta)');
                         clearInterval(window.numCountInt);
                         window.numCountInt = setInterval(tick, 350);
 
-                        setTimeout(() => {
-                            // Start PREFIX phase
+                        const t3 = setTimeout(() => {
                             phase = 'PREFIX';
                             updateTitle('4. Prefixes & Suffixes');
                             clearInterval(window.numCountInt);
                             window.numCountInt = setInterval(tick, 350);
 
-                            setTimeout(() => {
-                                // Start POSTERIZE phase
+                            const t4 = setTimeout(() => {
                                 phase = 'POSTERIZE';
                                 updateTitle('5. Posterize Time Frame Rate');
                                 clearInterval(window.numCountInt);
-                                window.numCountInt = setInterval(tick, 300); // Slower choppy tick frame rate
+                                window.numCountInt = setInterval(tick, 300);
                             }, 1800);
+                            window.mockupTimeouts.push(t4);
                         }, 1800);
+                        window.mockupTimeouts.push(t3);
                     }, 1800);
+                    window.mockupTimeouts.push(t2);
                 }, 1200);
+                window.mockupTimeouts.push(t1);
             },
             steps: [
                 {
@@ -3101,12 +3482,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const setDefaultState = () => {
         currentActionName = null;
         if (sequenceTimer) clearTimeout(sequenceTimer);
+
+        // CLEAR ALL MOCKUP TIMERS & INTERVALS
         if (window.numCountInt) clearInterval(window.numCountInt);
         if (window.numSeqTo) clearTimeout(window.numSeqTo);
+        if (window.mockupTimeouts) {
+            window.mockupTimeouts.forEach(t => clearTimeout(t));
+            window.mockupTimeouts = [];
+        }
+
         if (window._srtViewerInterval) clearInterval(window._srtViewerInterval);
         if (window._srtFreeInt) clearInterval(window._srtFreeInt);
         if (window._rcInterval) clearInterval(window._rcInterval);
         if (window._rcFreeInt) clearInterval(window._rcFreeInt);
+        if (window.numCountInt) clearInterval(window.numCountInt);
         // Hide the panel — only shows on button hover
         if (timelinePreview) timelinePreview.classList.remove('preview-active');
         scenarioIndex = 0;
@@ -3296,10 +3685,94 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     initGraphInteractivity();
+
+    // ───────────────────────────── FIREBASE AUTH & USER DASHBOARD ─────────────────────────────
+
+    // Auth State Observer
+    firebase.auth().onAuthStateChanged((user) => {
+        const loginBtn = document.getElementById('loginBtn');
+        const userProfile = document.getElementById('userProfile');
+
+        if (user) {
+            // User is signed in
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (userProfile) userProfile.style.display = 'flex';
+
+            // Update UI elements with user data
+            const userPhoto = document.getElementById('userPhoto');
+            const userName = document.getElementById('userName');
+            const dashUserPhoto = document.getElementById('dashUserPhoto');
+            const dashUserName = document.getElementById('dashUserName');
+            const dashUserEmail = document.getElementById('dashUserEmail');
+
+            if (userName) userName.textContent = user.displayName?.split(' ')[0] || 'User';
+            if (userPhoto) userPhoto.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`;
+
+            if (dashUserName) dashUserName.textContent = user.displayName || 'User';
+            if (dashUserEmail) dashUserEmail.textContent = user.email;
+            if (dashUserPhoto) dashUserPhoto.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`;
+
+            // Update gated buttons
+            document.querySelectorAll('.auth-gated').forEach(btn => {
+                const tier = btn.getAttribute('data-tier');
+                if (tier === 'basic') btn.textContent = 'Get Basic Script — ₹100';
+                else if (tier === 'pro') btn.textContent = 'Get Pro — ₹1500';
+                else if (tier === 'autocaptions') btn.textContent = 'Get Auto Captions — ₹800';
+                else if (tier === 'projectmanager') btn.textContent = 'Get Project Manager Pro — ₹1500';
+            });
+
+            console.log('✅ User logged in:', user.email);
+        } else {
+            // User is signed out
+            if (loginBtn) loginBtn.style.display = 'block';
+            if (userProfile) userProfile.style.display = 'none';
+
+            // Update gated buttons
+            document.querySelectorAll('.auth-gated').forEach(btn => {
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> Login to Buy';
+            });
+
+            console.log('ℹ️ User logged out');
+        }
+    });
+
+    // Global Handlers
+    window.handleLogin = async function () {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+            const result = await firebase.auth().signInWithPopup(provider);
+            console.log('Login success:', result.user.email);
+            showToast('Welcome, ' + result.user.displayName, 'success');
+        } catch (error) {
+            console.error('Login failed:', error);
+            showToast('Login failed. Please try again.', 'error');
+        }
+    };
+
+    window.handleLogout = function () {
+        firebase.auth().signOut();
+        showToast('Logged out successfully', 'info');
+    };
+
+    window.toggleUserDropdown = function () {
+        const profile = document.getElementById('userProfile');
+        if (profile) profile.classList.toggle('active');
+    };
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+        const profile = document.getElementById('userProfile');
+        if (profile && !profile.contains(e.target)) {
+            profile.classList.remove('active');
+        }
+    });
+
+
+
 });
 
 // ===== LEGAL MODAL LOGIC =====
-window.openLegalModal = function() {
+window.openLegalModal = function () {
     const modal = document.getElementById('legalModal');
     if (modal) {
         modal.classList.add('active');
@@ -3307,7 +3780,7 @@ window.openLegalModal = function() {
     }
 };
 
-window.closeLegalModal = function() {
+window.closeLegalModal = function () {
     const modal = document.getElementById('legalModal');
     if (modal) {
         modal.classList.remove('active');

@@ -83,9 +83,22 @@
                     <i class="fa-solid fa-ticket"></i>
                     <span>Promo Codes</span>
                 </a>
+                <a href="#" class="nav-item" data-page="customlinks">
+                    <i class="fa-solid fa-link"></i>
+                    <span>Custom Links</span>
+                    <span class="nav-badge" id="customlinks-count-badge">0</span>
+                </a>
                 <a href="#" class="nav-item" data-page="payments">
                     <i class="fa-solid fa-credit-card"></i>
                     <span>Payments</span>
+                </a>
+                <a href="#" class="nav-item" data-page="licenses">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Licenses</span>
+                </a>
+                <a href="#" class="nav-item" data-page="downloads">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Downloads</span>
                 </a>
                 <a href="#" class="nav-item" data-page="settings">
                     <i class="fa-solid fa-gear"></i>
@@ -321,6 +334,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Project Manager Pro -->
+                    <div class="pricing-edit-card">
+                        <div class="pricing-edit-header">
+                            <div class="pricing-edit-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">
+                                <i class="fa-solid fa-folder-tree"></i>
+                            </div>
+                            <div>
+                                <h3>Project Manager Pro</h3>
+                                <p class="pricing-edit-desc">Advanced asset management</p>
+                            </div>
+                        </div>
+                        <div class="pricing-edit-body">
+                            <div class="price-input-group">
+                                <label>Price (INR)</label>
+                                <div class="price-input-wrapper">
+                                    <span class="price-symbol">₹</span>
+                                    <input type="number" id="price-projectmanager-inr" class="price-input" value="1500" min="0">
+                                </div>
+                            </div>
+                            <div class="price-input-group">
+                                <label>Price (USD)</label>
+                                <div class="price-input-wrapper">
+                                    <span class="price-symbol">$</span>
+                                    <input type="number" id="price-projectmanager-usd" class="price-input" value="18" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="pricing-actions">
@@ -423,6 +465,249 @@
                 </div>
             </div>
 
+            <!-- ==================== PAGE: CUSTOM LINKS ==================== -->
+            <div class="page" id="page-customlinks">
+                <!-- Stats Row -->
+                <div class="stats-grid" id="cl-stats-grid">
+                    <div class="stat-card stat-purple">
+                        <div class="stat-card-icon"><i class="fa-solid fa-link"></i></div>
+                        <div class="stat-card-content">
+                            <span class="stat-card-value" id="cl-stat-active">0</span>
+                            <span class="stat-card-label">Active Links</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <div class="stat-card-icon"><i class="fa-solid fa-arrow-pointer"></i></div>
+                        <div class="stat-card-content">
+                            <span class="stat-card-value" id="cl-stat-redemptions">0</span>
+                            <span class="stat-card-label">Total Redemptions</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-blue">
+                        <div class="stat-card-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        <div class="stat-card-content">
+                            <span class="stat-card-value" id="cl-stat-revenue">₹0</span>
+                            <span class="stat-card-label">Link Revenue</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-orange">
+                        <div class="stat-card-icon"><i class="fa-solid fa-percent"></i></div>
+                        <div class="stat-card-content">
+                            <span class="stat-card-value" id="cl-stat-avg-discount">0%</span>
+                            <span class="stat-card-label">Avg Discount</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid-2">
+                    <!-- Create Link Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-plus"></i> Create Custom Link</h3>
+                        </div>
+                        <div class="card-body" id="cl-create-form">
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label class="cl-label">LINK CODE</label>
+                                <input type="text" id="cl-code" class="cl-input" placeholder="e.g. HARSH50" style="text-transform:uppercase;">
+                                <p class="cl-hint">URL will be: easyworkflow.store/?ref=<span id="cl-code-preview">CODE</span></p>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label class="cl-label">TARGET PRODUCTS</label>
+                                <div class="cl-checkbox-grid">
+                                    <label class="cl-checkbox"><input type="checkbox" id="cl-prod-all" checked> <span>All Products</span></label>
+                                    <label class="cl-checkbox"><input type="checkbox" class="cl-prod-item" value="pro" disabled> <span>Pro</span></label>
+                                    <label class="cl-checkbox"><input type="checkbox" class="cl-prod-item" value="autocaptions" disabled> <span>Auto Captions</span></label>
+                                    <label class="cl-checkbox"><input type="checkbox" class="cl-prod-item" value="projectmanager" disabled> <span>Project Manager</span></label>
+                                    <label class="cl-checkbox"><input type="checkbox" class="cl-prod-item" value="basic" disabled> <span>Basic</span></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label class="cl-label">PRICING MODE</label>
+                                <div class="cl-mode-toggle">
+                                    <button type="button" class="cl-mode-btn active" data-mode="discount" id="cl-mode-discount">% Discount</button>
+                                    <button type="button" class="cl-mode-btn" data-mode="fixed" id="cl-mode-fixed">Fixed Price</button>
+                                </div>
+                            </div>
+
+                            <!-- Discount Mode Fields -->
+                            <div id="cl-discount-fields" style="margin-bottom:16px;">
+                                <label class="cl-label">DISCOUNT PERCENTAGE</label>
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <input type="range" id="cl-discount-slider" min="1" max="99" value="50" class="cl-slider">
+                                    <div class="cl-discount-badge" id="cl-discount-value">50%</div>
+                                </div>
+                            </div>
+
+                            <!-- Fixed Price Mode Fields (hidden by default) -->
+                            <div id="cl-fixed-fields" style="display:none;margin-bottom:16px;">
+                                <label class="cl-label">FIXED PRICES (per product)</label>
+                                <div class="cl-fixed-grid">
+                                    <div class="cl-fixed-row">
+                                        <span>Pro</span>
+                                        <div class="cl-fixed-pair">
+                                            <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-fp-pro-inr" class="price-input" placeholder="750"></div>
+                                            <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-fp-pro-usd" class="price-input" placeholder="9"></div>
+                                        </div>
+                                    </div>
+                                    <div class="cl-fixed-row">
+                                        <span>Auto Captions</span>
+                                        <div class="cl-fixed-pair">
+                                            <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-fp-autocaptions-inr" class="price-input" placeholder="400"></div>
+                                            <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-fp-autocaptions-usd" class="price-input" placeholder="5"></div>
+                                        </div>
+                                    </div>
+                                    <div class="cl-fixed-row">
+                                        <span>Project Manager</span>
+                                        <div class="cl-fixed-pair">
+                                            <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-fp-projectmanager-inr" class="price-input" placeholder="750"></div>
+                                            <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-fp-projectmanager-usd" class="price-input" placeholder="9"></div>
+                                        </div>
+                                    </div>
+                                    <div class="cl-fixed-row">
+                                        <span>Basic</span>
+                                        <div class="cl-fixed-pair">
+                                            <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-fp-basic-inr" class="price-input" placeholder="50"></div>
+                                            <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-fp-basic-usd" class="price-input" placeholder="1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                                <div class="form-group">
+                                    <label class="cl-label">MAX REDEMPTIONS</label>
+                                    <input type="number" id="cl-max-redemptions" class="cl-input" placeholder="0 = unlimited" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="cl-label">EXPIRY DATE (optional)</label>
+                                    <input type="datetime-local" id="cl-expiry" class="cl-input">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom:20px;">
+                                <label class="cl-label">INTERNAL NOTE</label>
+                                <textarea id="cl-note" class="cl-input" rows="2" placeholder="e.g. YouTube collab with creator X"></textarea>
+                            </div>
+
+                            <button class="btn-save-pricing" id="cl-create-btn" style="width:100%;justify-content:center;">
+                                <i class="fa-solid fa-link"></i> Create Custom Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Links Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-table-list"></i> All Custom Links</h3>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="data-table" id="cl-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Products</th>
+                                        <th>Discount/Price</th>
+                                        <th>Redemptions</th>
+                                        <th>Revenue</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cl-tbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                            <div id="cl-empty" class="empty-state" style="display:none;">
+                                <i class="fa-solid fa-link-slash"></i>
+                                <p>No custom links created yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: LICENSES ==================== -->
+            <div class="page" id="page-licenses">
+                <div class="page-actions">
+                    <div class="search-bar">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="licenses-search" placeholder="Search by email, key, or product...">
+                    </div>
+                    <div class="filter-group">
+                        <select id="licenses-status-filter">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                    </div>
+                    <button class="btn-create" id="generate-manual-license-btn">
+                        <i class="fa-solid fa-plus"></i> Generate License
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="card-body table-responsive">
+                        <table class="data-table" id="licenses-table">
+                            <thead>
+                                <tr>
+                                    <th>License Key</th>
+                                    <th>Customer Email</th>
+                                    <th>Product</th>
+                                    <th>Active Devices (Slots)</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="licenses-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                        <div id="licenses-empty" class="empty-state" style="display:none;">
+                            <i class="fa-solid fa-key"></i>
+                            <p>No licenses found.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: DOWNLOADS ==================== -->
+            <div class="page" id="page-downloads">
+                <div class="card" style="max-width:600px;margin:0 auto;">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-cloud-arrow-down"></i> Customer Download Links</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 25px;">Paste your Google Drive, Dropbox, or direct download links here. Customers will download directly from these links.</p>
+                        
+                        <form id="downloads-form">
+                            <div class="form-group" style="margin-bottom:20px;">
+                                <label style="display:block;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Project Manager Pro</label>
+                                <input type="url" id="dl-projectmanager" placeholder="https://drive.google.com/..." class="price-input" style="background:#0d0d14;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;width:100%;color:white;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:20px;">
+                                <label style="display:block;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Auto Captions</label>
+                                <input type="url" id="dl-autocaptions" placeholder="https://drive.google.com/..." class="price-input" style="background:#0d0d14;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;width:100%;color:white;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:20px;">
+                                <label style="display:block;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Easy Workflow Pro</label>
+                                <input type="url" id="dl-pro" placeholder="https://drive.google.com/..." class="price-input" style="background:#0d0d14;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;width:100%;color:white;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:24px;">
+                                <label style="display:block;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Easy Workflow Basic</label>
+                                <input type="url" id="dl-basic" placeholder="https://drive.google.com/..." class="price-input" style="background:#0d0d14;border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:6px;width:100%;color:white;">
+                            </div>
+                            
+                            <button type="submit" class="btn-save-pricing" id="save-downloads-btn" style="width:100%;justify-content:center;">
+                                <i class="fa-solid fa-floppy-disk"></i> <span>Save Links</span>
+                                <i class="fa-solid fa-spinner fa-spin" style="display:none; margin-left: 8px;"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- ==================== PAGE: SETTINGS ==================== -->
             <div class="page" id="page-settings">
                 <div class="card" style="max-width:600px;margin:0 auto;">
@@ -486,6 +771,150 @@
 
             <div class="modal-footer" id="lead-modal-footer">
                 <!-- Action buttons populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+
+    <!-- Edit Custom Link Modal -->
+    <div id="cl-edit-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header">
+                <h3 id="cl-edit-modal-title"><i class="fa-solid fa-pen-to-square" style="margin-right:8px;color:var(--accent-purple);"></i> Edit Custom Link</h3>
+                <button class="modal-close" id="cl-edit-modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px; max-height:70vh; overflow-y:auto;">
+                <!-- Link Code (read-only) -->
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">LINK CODE</label>
+                    <input type="text" id="cl-edit-code" class="cl-input" readonly style="opacity:0.6; cursor:not-allowed; text-transform:uppercase;">
+                </div>
+
+                <!-- Target Products -->
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">TARGET PRODUCTS</label>
+                    <div class="cl-checkbox-grid">
+                        <label class="cl-checkbox"><input type="checkbox" id="cl-edit-prod-all"> <span>All Products</span></label>
+                        <label class="cl-checkbox"><input type="checkbox" class="cl-edit-prod-item" value="pro"> <span>Pro</span></label>
+                        <label class="cl-checkbox"><input type="checkbox" class="cl-edit-prod-item" value="autocaptions"> <span>Auto Captions</span></label>
+                        <label class="cl-checkbox"><input type="checkbox" class="cl-edit-prod-item" value="projectmanager"> <span>Project Manager</span></label>
+                        <label class="cl-checkbox"><input type="checkbox" class="cl-edit-prod-item" value="basic"> <span>Basic</span></label>
+                    </div>
+                </div>
+
+                <!-- Pricing Mode -->
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">PRICING MODE</label>
+                    <div class="cl-mode-toggle">
+                        <button type="button" class="cl-mode-btn active" id="cl-edit-mode-discount">% Discount</button>
+                        <button type="button" class="cl-mode-btn" id="cl-edit-mode-fixed">Fixed Price</button>
+                    </div>
+                </div>
+
+                <!-- Discount Fields -->
+                <div id="cl-edit-discount-fields" style="margin-bottom:16px;">
+                    <label class="cl-label">DISCOUNT PERCENTAGE</label>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <input type="range" id="cl-edit-discount-slider" min="1" max="99" value="50" class="cl-slider">
+                        <div class="cl-discount-badge" id="cl-edit-discount-value">50%</div>
+                    </div>
+                </div>
+
+                <!-- Fixed Price Fields -->
+                <div id="cl-edit-fixed-fields" style="display:none;margin-bottom:16px;">
+                    <label class="cl-label">FIXED PRICES (per product)</label>
+                    <div class="cl-fixed-grid">
+                        <div class="cl-fixed-row">
+                            <span>Pro</span>
+                            <div class="cl-fixed-pair">
+                                <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-edit-fp-pro-inr" class="price-input" placeholder="750"></div>
+                                <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-edit-fp-pro-usd" class="price-input" placeholder="9"></div>
+                            </div>
+                        </div>
+                        <div class="cl-fixed-row">
+                            <span>Auto Captions</span>
+                            <div class="cl-fixed-pair">
+                                <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-edit-fp-autocaptions-inr" class="price-input" placeholder="400"></div>
+                                <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-edit-fp-autocaptions-usd" class="price-input" placeholder="5"></div>
+                            </div>
+                        </div>
+                        <div class="cl-fixed-row">
+                            <span>Project Manager</span>
+                            <div class="cl-fixed-pair">
+                                <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-edit-fp-projectmanager-inr" class="price-input" placeholder="750"></div>
+                                <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-edit-fp-projectmanager-usd" class="price-input" placeholder="9"></div>
+                            </div>
+                        </div>
+                        <div class="cl-fixed-row">
+                            <span>Basic</span>
+                            <div class="cl-fixed-pair">
+                                <div class="price-input-wrapper"><span class="price-symbol">₹</span><input type="number" id="cl-edit-fp-basic-inr" class="price-input" placeholder="50"></div>
+                                <div class="price-input-wrapper"><span class="price-symbol">$</span><input type="number" id="cl-edit-fp-basic-usd" class="price-input" placeholder="1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Max Redemptions & Expiry -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    <div class="form-group">
+                        <label class="cl-label">MAX REDEMPTIONS</label>
+                        <input type="number" id="cl-edit-max-redemptions" class="cl-input" placeholder="0 = unlimited" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="cl-label">EXPIRY DATE (optional)</label>
+                        <input type="datetime-local" id="cl-edit-expiry" class="cl-input">
+                    </div>
+                </div>
+
+                <!-- Internal Note -->
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label class="cl-label">INTERNAL NOTE</label>
+                    <textarea id="cl-edit-note" class="cl-input" rows="2" placeholder="e.g. YouTube collab with creator X"></textarea>
+                </div>
+
+                <button class="btn-save-pricing" id="cl-edit-save-btn" style="width:100%;justify-content:center;">
+                    <i class="fa-solid fa-check"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Generate Manual License Modal -->
+    <div id="manual-license-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:500px;">
+            <div class="modal-header">
+                <h3 style="color:var(--accent-blue);"><i class="fa-solid fa-key" style="margin-right:8px;"></i> Generate Manual License</h3>
+                <button class="modal-close" id="manual-license-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px; line-height:1.5;">
+                    Generate a secure 16-digit license key and automatically email it to the user.
+                </p>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">CUSTOMER EMAIL</label>
+                    <input type="email" id="ml-email" class="cl-input" placeholder="customer@example.com" required>
+                </div>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">CUSTOMER NAME (Optional)</label>
+                    <input type="text" id="ml-name" class="cl-input" placeholder="John Doe">
+                </div>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="cl-label">PRODUCT TIER</label>
+                    <select id="ml-tier" class="cl-input">
+                        <option value="projectmanager">Project Manager Pro</option>
+                        <option value="autocaptions">Auto Captions Pro</option>
+                        <option value="pro">Easy Workflow Pro</option>
+                        <option value="basic">Easy Workflow Basic</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:24px;">
+                    <label class="cl-label">CUSTOM MESSAGE (Optional)</label>
+                    <textarea id="ml-message" class="cl-input" rows="3" placeholder="I've generated this key manually for you..."></textarea>
+                </div>
+                <button class="btn-save-pricing" id="ml-submit-btn" style="width:100%;justify-content:center;">
+                    <i class="fa-solid fa-paper-plane"></i> Generate & Send Key
+                </button>
             </div>
         </div>
     </div>

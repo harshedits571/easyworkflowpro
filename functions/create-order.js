@@ -69,6 +69,60 @@ async function getFirestoreCoupon(projectId, promoCode) {
   return null;
 }
 
+// Helper to fetch Custom Link from Firestore via REST API
+async function getFirestoreCustomLink(projectId, linkCode) {
+  if (!projectId || !linkCode) return null;
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/custom_links/${linkCode}`;
+    const res = await axios.get(url, { timeout: 3000 });
+    
+    if (res.data && res.data.fields) {
+      const f = res.data.fields;
+      // Check if link is active
+      if (f.active && f.active.booleanValue === false) return null;
+      
+      const link = {
+        code: linkCode,
+        active: true,
+        pricingMode: f.pricingMode ? f.pricingMode.stringValue : 'discount',
+        discountPercent: f.discountPercent ? parseInt(f.discountPercent.integerValue || '0') : 0,
+        maxRedemptions: f.maxRedemptions ? parseInt(f.maxRedemptions.integerValue || '0') : 0,
+        currentRedemptions: f.currentRedemptions ? parseInt(f.currentRedemptions.integerValue || '0') : 0,
+        products: [],
+        fixedPrices: {}
+      };
+      
+      // Parse products array
+      if (f.products && f.products.arrayValue && f.products.arrayValue.values) {
+        link.products = f.products.arrayValue.values.map(v => v.stringValue);
+      }
+      
+      // Parse fixedPrices map
+      if (f.fixedPrices && f.fixedPrices.mapValue && f.fixedPrices.mapValue.fields) {
+        const fp = f.fixedPrices.mapValue.fields;
+        for (const [key, val] of Object.entries(fp)) {
+          if (val.integerValue !== undefined) link.fixedPrices[key] = parseInt(val.integerValue);
+          else if (val.doubleValue !== undefined) link.fixedPrices[key] = val.doubleValue;
+        }
+      }
+      
+      // Check expiry
+      if (f.expiresAt && f.expiresAt.timestampValue) {
+        const expiryDate = new Date(f.expiresAt.timestampValue);
+        if (new Date() > expiryDate) return null; // Expired
+      }
+      
+      // Check max redemptions
+      if (link.maxRedemptions > 0 && link.currentRedemptions >= link.maxRedemptions) return null;
+      
+      return link;
+    }
+  } catch (err) {
+    console.warn(`[Firestore] Could not fetch custom link ${linkCode}:`, err.message);
+  }
+  return null;
+}
+
 exports.handler = async (event, context) => {
   // 1. CORS Headers (Security)
   const headers = {
@@ -88,7 +142,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { tier, currency, name, email, phone, mode, promoCode } = JSON.parse(event.body);
+    const { tier, currency, name, email, phone, mode, promoCode, customLinkCode } = JSON.parse(event.body);
 
     const appId = process.env.CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
@@ -121,9 +175,37 @@ exports.handler = async (event, context) => {
       console.log(`[Pricing] Using fallback price: ${tier}/${currency} = ${verifiedAmount}`);
     }
 
-    // Apply Promo Code if valid
+    // Apply Custom Link pricing (takes priority over promo codes)
     let appliedDiscount = 0;
-    if (promoCode && projectId) {
+    let appliedCustomLink = null;
+    if (customLinkCode && projectId) {
+        const customLink = await getFirestoreCustomLink(projectId, customLinkCode);
+        if (customLink) {
+            // Validate product targeting
+            const isProductAllowed = customLink.products.length === 0 || customLink.products.includes(tier);
+            if (isProductAllowed) {
+                appliedCustomLink = customLink;
+                if (customLink.pricingMode === 'fixed') {
+                    const currKey = (currency || 'INR').toLowerCase();
+                    const fixedKey = `${tier}_${currKey}`;
+                    if (customLink.fixedPrices[fixedKey] !== undefined) {
+                        const originalAmt = verifiedAmount;
+                        verifiedAmount = customLink.fixedPrices[fixedKey];
+                        console.log(`[Pricing] Custom link ${customLinkCode} fixed price: ${fixedKey} = ${verifiedAmount} (was ${originalAmt})`);
+                    }
+                } else if (customLink.pricingMode === 'discount' && customLink.discountPercent > 0) {
+                    appliedDiscount = customLink.discountPercent;
+                    const multiplier = (100 - customLink.discountPercent) / 100;
+                    const originalAmt = verifiedAmount;
+                    verifiedAmount = Math.round(verifiedAmount * multiplier);
+                    console.log(`[Pricing] Custom link ${customLinkCode}: ${customLink.discountPercent}% off (${originalAmt} -> ${verifiedAmount})`);
+                }
+            }
+        }
+    }
+
+    // Apply Promo Code if valid (only if no custom link was applied)
+    if (!appliedCustomLink && promoCode && projectId) {
         const discountPercent = await getFirestoreCoupon(projectId, promoCode);
         if (discountPercent && discountPercent > 0 && discountPercent <= 100) {
             appliedDiscount = discountPercent;

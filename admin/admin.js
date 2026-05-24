@@ -14,7 +14,9 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════
-// 🔑 FIREBASE CONFIGURATION — REPLACE WITH YOUR OWN
+// 🔑 FIREBASE CONFIGURATION — (These keys are PUBLIC and safe to share)
+// Note: In Firebase, the apiKey is NOT a secret. It just tells Google 
+// which project to connect to. Real security is handled by your Firestore Rules.
 // ═══════════════════════════════════════════════════════════════════
 const firebaseConfig = {
     apiKey: "AIzaSyDE0F8ZF1yGWuju-tBUmzCAvN8_LinhW9Y",
@@ -47,6 +49,7 @@ const hamburgerAdmin = document.getElementById('hamburger-admin');
 const pageTitle = document.getElementById('page-title');
 
 // All data stores
+const USD_TO_INR = 92; // Fixed exchange rate for dashboard reporting
 let allLeads = [];
 let allPayments = [];
 let allCoupons = [];
@@ -76,42 +79,78 @@ function showToast(msg, type = 'info') {
 // ═══════════════════════════════════════════════════════════════════
 // AUTHENTICATION
 // ═══════════════════════════════════════════════════════════════════
-auth.onAuthStateChanged(user => {
-    if (user) {
-        loginScreen.style.display = 'none';
-        dashboard.style.display = 'flex';
-        document.getElementById('admin-name').textContent = user.displayName || 'Admin';
-        document.getElementById('admin-email').textContent = user.email;
-        initDashboard();
-    } else {
-        loginScreen.style.display = 'flex';
-        dashboard.style.display = 'none';
-        // Cleanup listeners
-        if (unsubLeads) unsubLeads();
-        if (unsubPayments) unsubPayments();
+// AUTHENTICATION & SECURITY
+// ═══════════════════════════════════════════════════════════════════
+window.addEventListener('error', function (e) {
+    alert('Global JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+
+// IMPORTANT: Add your exact admin Firebase UIDs here. Only these accounts can log in.
+const ALLOWED_ADMIN_UIDS = [
+    'htqWVNfy8GYaCwvcMnerPKFjUFu2' // Replace this with your actual UID
+];
+
+auth.onAuthStateChanged(async (user) => {
+    try {
+        if (user) {
+            // SECURITY CHECK: Is this user in the allowed UID list?
+            if (!ALLOWED_ADMIN_UIDS.includes(user.uid)) {
+                // We do NOT call auth.signOut() here, because if they have the main website 
+                // open in another tab, it will log them out there too! We just block the UI.
+                loginScreen.style.display = 'flex';
+                dashboard.style.display = 'none';
+                loginError.textContent = 'Access Denied: Your account UID is not authorized.';
+                loginError.style.display = 'block';
+                return;
+            }
+
+            loginScreen.style.display = 'none';
+            dashboard.style.display = 'flex';
+            document.getElementById('admin-name').textContent = user.displayName || 'Admin';
+            document.getElementById('admin-email').textContent = user.email;
+            initDashboard();
+        } else {
+            loginScreen.style.display = 'flex';
+            dashboard.style.display = 'none';
+            // Cleanup listeners
+            if (unsubLeads) unsubLeads();
+            if (unsubPayments) unsubPayments();
+        }
+    } catch (err) {
+        alert('Error during login init: ' + err.message);
+        console.error(err);
     }
 });
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    loginBtn.disabled = true;
-    loginBtnText.style.display = 'none';
-    loginBtnLoader.style.display = 'inline-block';
-    loginError.style.display = 'none';
-
     try {
-        await auth.signInWithEmailAndPassword(email, password);
-    } catch (err) {
-        let msg = 'Invalid email or password.';
-        if (err.code === 'auth/user-not-found') msg = 'No account found with this email.';
-        if (err.code === 'auth/wrong-password') msg = 'Incorrect password.';
-        if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
-        loginError.textContent = msg;
-        loginError.style.display = 'block';
-    } finally {
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
+
+        loginBtn.disabled = true;
+        loginBtnText.style.display = 'none';
+        loginBtnLoader.style.display = 'inline-block';
+        loginError.style.display = 'none';
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (err) {
+            let msg = 'Invalid email or password.';
+            if (err.code === 'auth/user-not-found') msg = 'No account found with this email.';
+            if (err.code === 'auth/wrong-password') msg = 'Incorrect password.';
+            if (err.code === 'auth/invalid-credential') msg = 'Invalid email or password.';
+            if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
+            loginError.textContent = msg;
+            loginError.style.display = 'block';
+        } finally {
+            loginBtn.disabled = false;
+            loginBtnText.style.display = 'inline';
+            loginBtnLoader.style.display = 'none';
+        }
+    } catch (fatalErr) {
+        alert("Form submission error: " + fatalErr.message);
+        console.error(fatalErr);
         loginBtn.disabled = false;
         loginBtnText.style.display = 'inline';
         loginBtnLoader.style.display = 'none';
@@ -145,7 +184,9 @@ navItems.forEach(item => {
             pricing: 'Pricing',
             payments: 'Payments',
             coupons: 'Promo Codes',
-            settings: 'Site Settings'
+            customlinks: 'Custom Links',
+            settings: 'Site Settings',
+            licenses: 'Licenses'
         };
         pageTitle.textContent = titleMap[targetPage] || targetPage;
 
@@ -162,19 +203,25 @@ sidebarClose.addEventListener('click', () => sidebar.classList.remove('open'));
 // DASHBOARD INITIALIZATION — Real-time Firestore Listeners
 // ═══════════════════════════════════════════════════════════════════
 function initDashboard() {
-    loadPricing();
-    loadSettings();
+    startConfigListeners();
     listenToLeads();
     listenToPayments();
     listenToCoupons();
+    listenToLicenses();
+    listenToCustomLinks();
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PRICING MANAGEMENT
+// CONFIG MANAGEMENT — Real-time Listeners
 // ═══════════════════════════════════════════════════════════════════
-async function loadPricing() {
-    try {
-        const doc = await db.collection('config').doc('pricing').get();
+let pricingUnsub = null;
+let settingsUnsub = null;
+let downloadsUnsub = null;
+
+function startConfigListeners() {
+    // 1. Pricing Listener
+    if (pricingUnsub) pricingUnsub();
+    pricingUnsub = db.collection('config').doc('pricing').onSnapshot(doc => {
         if (doc.exists) {
             const data = doc.data();
             document.getElementById('price-basic-inr').value = data.basic_inr || 100;
@@ -183,10 +230,38 @@ async function loadPricing() {
             document.getElementById('price-pro-usd').value = data.pro_usd || 18;
             document.getElementById('price-autocaptions-inr').value = data.autocaptions_inr || 800;
             document.getElementById('price-autocaptions-usd').value = data.autocaptions_usd || 10;
+            if (document.getElementById('price-projectmanager-inr')) document.getElementById('price-projectmanager-inr').value = data.projectmanager_inr || 1500;
+            if (document.getElementById('price-projectmanager-usd')) document.getElementById('price-projectmanager-usd').value = data.projectmanager_usd || 18;
         }
-    } catch (err) {
-        console.error('Failed to load pricing:', err);
-    }
+    }, err => console.error('Pricing sync error:', err));
+
+    // 2. Settings Listener
+    if (settingsUnsub) settingsUnsub();
+    settingsUnsub = db.collection('config').doc('settings').onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.deadlineDate) {
+                let d = new Date(data.deadlineDate);
+                let formatted = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                document.getElementById('site-deadline-date').value = formatted;
+            }
+            if (data.bannerText !== undefined) {
+                document.getElementById('site-banner-text').value = data.bannerText;
+            }
+        }
+    }, err => console.error('Settings sync error:', err));
+
+    // 3. Downloads Listener
+    if (downloadsUnsub) downloadsUnsub();
+    downloadsUnsub = db.collection('config').doc('downloads').onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (document.getElementById('dl-projectmanager')) document.getElementById('dl-projectmanager').value = data.projectmanager || '';
+            if (document.getElementById('dl-autocaptions')) document.getElementById('dl-autocaptions').value = data.autocaptions || '';
+            if (document.getElementById('dl-pro')) document.getElementById('dl-pro').value = data.pro || '';
+            if (document.getElementById('dl-basic')) document.getElementById('dl-basic').value = data.basic || '';
+        }
+    }, err => console.error('Downloads sync error:', err));
 }
 
 document.getElementById('save-pricing-btn').addEventListener('click', async () => {
@@ -202,6 +277,8 @@ document.getElementById('save-pricing-btn').addEventListener('click', async () =
         pro_usd: parseInt(document.getElementById('price-pro-usd').value) || 18,
         autocaptions_inr: parseInt(document.getElementById('price-autocaptions-inr').value) || 800,
         autocaptions_usd: parseInt(document.getElementById('price-autocaptions-usd').value) || 10,
+        projectmanager_inr: parseInt(document.getElementById('price-projectmanager-inr') ? document.getElementById('price-projectmanager-inr').value : 1500) || 1500,
+        projectmanager_usd: parseInt(document.getElementById('price-projectmanager-usd') ? document.getElementById('price-projectmanager-usd').value : 18) || 18,
         updated_at: firebase.firestore.FieldValue.serverTimestamp()
     };
 
@@ -216,6 +293,34 @@ document.getElementById('save-pricing-btn').addEventListener('click', async () =
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save All Prices';
+    }
+});
+
+document.getElementById('downloads-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-downloads-btn');
+    const spinner = btn.querySelector('.fa-spinner');
+    
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    
+    const downloads = {
+        projectmanager: document.getElementById('dl-projectmanager').value.trim(),
+        autocaptions: document.getElementById('dl-autocaptions').value.trim(),
+        pro: document.getElementById('dl-pro').value.trim(),
+        basic: document.getElementById('dl-basic').value.trim(),
+        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    try {
+        await db.collection('config').doc('downloads').set(downloads, { merge: true });
+        showToast('Download links saved successfully!', 'success');
+    } catch (err) {
+        console.error('Failed to save downloads:', err);
+        showToast('Failed to save download links: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
     }
 });
 
@@ -412,20 +517,20 @@ window.viewLead = function (leadId) {
 // License Email Composer Logic
 let currentEditingLeadId = null;
 
-window.openLicenseComposer = function(leadId) {
+window.openLicenseComposer = function (leadId) {
     currentEditingLeadId = leadId;
     const composer = document.getElementById('license-composer');
     const lead = allLeads.find(l => l.id === leadId);
-    
+
     // Auto-fill some defaults if possible
     document.getElementById('manual-license-link').value = '';
     document.getElementById('manual-license-message').value = `Hey ${lead.name || 'Creator'}, thank you for your purchase! Here is your access link to download the files.`;
-    
+
     composer.style.display = 'block';
     composer.scrollIntoView({ behavior: 'smooth' });
 };
 
-window.closeLicenseComposer = function() {
+window.closeLicenseComposer = function () {
     const composer = document.getElementById('license-composer');
     if (composer) composer.style.display = 'none';
 };
@@ -450,9 +555,7 @@ document.getElementById('send-license-btn').addEventListener('click', async () =
     sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
 
     try {
-        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:3000/send-license'
-            : '/api/send-license';
+        const BACKEND_URL = '/.netlify/functions/send-license';
 
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
@@ -500,13 +603,43 @@ function closeLeadModal() {
 // Update lead status
 window.updateLeadStatus = async function (leadId, newStatus) {
     try {
-        await db.collection('leads').doc(leadId).update({
+        const leadRef = db.collection('leads').doc(leadId);
+        const leadDoc = await leadRef.get();
+        const leadData = leadDoc.data();
+
+        // 1. Update the lead status
+        await leadRef.update({
             status: newStatus,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        showToast(`Status updated to "${newStatus}"`, 'success');
+
+        // 2. If marking as paid/verified, ensure it shows up in the Payments section
+        if (newStatus === 'paid' || newStatus === 'verified') {
+            // Check if payment already exists to avoid duplicates
+            const paymentSnap = await db.collection('payments').where('email', '==', leadData.email).limit(1).get();
+
+            if (paymentSnap.empty) {
+                await db.collection('payments').add({
+                    paymentId: leadData.paymentId || 'MANUAL-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    name: leadData.name || 'Unknown',
+                    email: leadData.email || '—',
+                    amount: leadData.amount || '₹0',
+                    tier: leadData.tier || '—',
+                    gateway: leadData.gateway || 'Manual',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    verified: newStatus === 'verified'
+                });
+                showToast(`Status updated & payment record created!`, 'success');
+            } else {
+                showToast(`Status updated to "${newStatus}"`, 'success');
+            }
+        } else {
+            showToast(`Status updated to "${newStatus}"`, 'success');
+        }
+
         closeLeadModal();
     } catch (err) {
+        console.error('Update Status Error:', err);
         showToast('Failed to update: ' + err.message, 'error');
     }
 };
@@ -530,12 +663,12 @@ window.openWhatsApp = function (phone, name, status, product) {
     }
     let cleanPhone = phone.replace(/[^0-9+]/g, '');
     if (cleanPhone.startsWith('+')) cleanPhone = cleanPhone.substring(1);
-    
+
     let msg = `Hi ${name || ''}, thank you for your interest in Easy Workflow! `;
     if (status === 'interested') {
         msg = `Hi ${name || ''}, noticed you were trying to grab the ${product || 'Easy Workflow Pro'} but couldn't complete the payment. Did you face any issues with the gateway? Let me know if I can help!`;
     }
-    
+
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 };
 
@@ -579,6 +712,22 @@ document.getElementById('export-leads-btn').addEventListener('click', () => {
     URL.revokeObjectURL(url);
     showToast('CSV exported!', 'success');
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS — Currency & Parsing
+// ═══════════════════════════════════════════════════════════════════
+function parseAmountToInr(amountStr) {
+    if (!amountStr) return 0;
+    const isUsd = amountStr.includes('$');
+    const numMatch = amountStr.match(/[\d,.]+/);
+    if (!numMatch) return 0;
+
+    let value = parseFloat(numMatch[0].replace(/,/g, ''));
+    if (isUsd) {
+        value = value * USD_TO_INR;
+    }
+    return value;
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // PAYMENTS — Real-time Listener 
@@ -652,15 +801,11 @@ function updateOverviewStats() {
     const paid = allLeads.filter(l => l.status === 'paid' || l.status === 'verified').length;
     const pending = allLeads.filter(l => l.status === 'interested').length;
 
-    // Calculate revenue from paid leads
+    // Calculate revenue from paid leads (auto-converting USD to INR)
     let revenue = 0;
     allLeads.forEach(l => {
         if (l.status === 'paid' || l.status === 'verified') {
-            const amountStr = l.amount || '';
-            const numMatch = amountStr.match(/[\d,.]+/);
-            if (numMatch) {
-                revenue += parseFloat(numMatch[0].replace(/,/g, ''));
-            }
+            revenue += parseAmountToInr(l.amount);
         }
     });
 
@@ -668,11 +813,11 @@ function updateOverviewStats() {
     animateValue('stat-paid', paid);
     animateValue('stat-pending', pending);
     document.getElementById('stat-revenue').textContent = `₹${revenue.toLocaleString()}`;
-    
+
     // Update Conversion Rate
     const conversionRate = totalLeads > 0 ? Math.round((paid / totalLeads) * 100) : 0;
     const statPaidEl = document.getElementById('stat-paid');
-    if(statPaidEl) statPaidEl.textContent = `${conversionRate}%`;
+    if (statPaidEl) statPaidEl.textContent = `${conversionRate}%`;
 
     // Render Chart.js
     renderAnalyticsChart();
@@ -681,37 +826,35 @@ function updateOverviewStats() {
 function renderAnalyticsChart() {
     const ctx = document.getElementById('analyticsChart');
     if (!ctx) return;
-    
+
     // Group leads by recent 7 days
     const days = 7;
     const labels = [];
     const revenueData = [];
     const leadsData = [];
-    
+
     const today = new Date();
-    today.setHours(0,0,0,0);
-    
+    today.setHours(0, 0, 0, 0);
+
     for (let i = days - 1; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
         labels.push(d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }));
-        
+
         let dayRevenue = 0;
         let dayLeads = 0;
-        
+
         allLeads.forEach(l => {
             if (!l.timestamp) return;
             const lDate = l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
             if (lDate.getDate() === d.getDate() && lDate.getMonth() === d.getMonth() && lDate.getFullYear() === d.getFullYear()) {
                 dayLeads++;
                 if (l.status === 'paid' || l.status === 'verified') {
-                    const amountStr = l.amount || '';
-                    const numMatch = amountStr.match(/[\d,.]+/);
-                    if (numMatch) dayRevenue += parseFloat(numMatch[0].replace(/,/g, ''));
+                    dayRevenue += parseAmountToInr(l.amount);
                 }
             }
         });
-        
+
         revenueData.push(dayRevenue);
         leadsData.push(dayLeads);
     }
@@ -873,25 +1016,7 @@ function escapeAttr(str) {
 // ═══════════════════════════════════════════════════════════════════
 // SITE SETTINGS (Countdown & Banner)
 // ═══════════════════════════════════════════════════════════════════
-async function loadSettings() {
-    try {
-        const doc = await db.collection('config').doc('settings').get();
-        if (doc.exists) {
-            const data = doc.data();
-            if (data.deadlineDate) {
-                // Formatting for datetime-local
-                let d = new Date(data.deadlineDate);
-                let formatted = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-                document.getElementById('site-deadline-date').value = formatted;
-            }
-            if (data.bannerText !== undefined) {
-                document.getElementById('site-banner-text').value = data.bannerText;
-            }
-        }
-    } catch (err) {
-        console.error('Failed to load settings:', err);
-    }
-}
+// loadSettings refactored into startConfigListeners() acima
 
 document.getElementById('save-settings-btn').addEventListener('click', async () => {
     const btn = document.getElementById('save-settings-btn');
@@ -900,7 +1025,7 @@ document.getElementById('save-settings-btn').addEventListener('click', async () 
 
     const rawDate = document.getElementById('site-deadline-date').value;
     const bannerText = document.getElementById('site-banner-text').value.trim();
-    
+
     let isoDateStr = '';
     if (rawDate) {
         isoDateStr = new Date(rawDate).toISOString();
@@ -948,7 +1073,7 @@ function renderCoupons() {
     tbody.innerHTML = allCoupons.map(coupon => {
         const isActive = coupon.active !== false;
         const statusBadge = isActive ? '<span class="status-badge status-verified">Active</span>' : '<span class="status-badge" style="background:#333;color:#999;border:1px solid #444;">Disabled</span>';
-        
+
         return `
             <tr style="opacity: ${isActive ? '1' : '0.5'}">
                 <td style="font-family:monospace;font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(coupon.id)}</td>
@@ -972,10 +1097,10 @@ function renderCoupons() {
 document.getElementById('create-coupon-btn').addEventListener('click', async () => {
     const codeInput = document.getElementById('new-coupon-code');
     const discountInput = document.getElementById('new-coupon-discount');
-    
+
     const code = codeInput.value.trim().toUpperCase();
     const discount = parseInt(discountInput.value);
-    
+
     if (!code || isNaN(discount) || discount < 1 || discount > 100) {
         showToast('Please enter a valid code and a discount between 1-100', 'error');
         return;
@@ -995,18 +1120,727 @@ document.getElementById('create-coupon-btn').addEventListener('click', async () 
     }
 });
 
-window.toggleCoupon = async function(id, currentActive) {
+window.toggleCoupon = async function (id, currentActive) {
     try {
         await db.collection('coupons').doc(id).update({ active: !currentActive });
     } catch (err) { showToast('Error toggling code: ' + err.message, 'error'); }
 }
 
-window.deleteCoupon = async function(id) {
+window.deleteCoupon = async function (id) {
     if (!confirm(`Delete promo code ${id}?`)) return;
     try {
         await db.collection('coupons').doc(id).delete();
     } catch (err) { showToast('Error deleting code: ' + err.message, 'error'); }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// LICENSES — Real-time Listener & Manager
+// ═══════════════════════════════════════════════════════════════════
+let allLicenses = [];
+
+function listenToLicenses() {
+    db.collection('licenses')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot(snapshot => {
+            allLicenses = [];
+            snapshot.forEach(doc => {
+                allLicenses.push({ id: doc.id, ...doc.data() });
+            });
+            renderLicenses();
+        }, err => {
+            console.error('Licenses listener error:', err);
+        });
+}
+
+function renderLicenses(filterStatus = 'all', search = '') {
+    const tbody = document.getElementById('licenses-tbody');
+    const emptyState = document.getElementById('licenses-empty');
+    if (!tbody) return;
+
+    const searchLower = search.toLowerCase();
+
+    let filtered = allLicenses.filter(license => {
+        if (filterStatus !== 'all' && license.status !== filterStatus) return false;
+        if (search) {
+            const haystack = `${license.email || ''} ${license.licenseKey || ''} ${license.tier || ''}`.toLowerCase();
+            if (!haystack.includes(searchLower)) return false;
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'flex';
+        return;
+    }
+    if (emptyState) emptyState.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(license => {
+        const statusClass = license.status === 'active' ? 'paid' : (license.status === 'blocked' ? 'delete' : 'interested');
+        const statusLabel = (license.status || 'unknown').toUpperCase();
+        const date = license.createdAt ? formatDate(license.createdAt) : '—';
+
+        const machines = license.machineIds || (license.machineId ? [license.machineId] : []);
+        const machineDisplay = machines.length > 0
+            ? `<div class="machine-list">${machines.map(id => `
+                <div class="machine-tag">
+                    <span>${escapeHtml(id)}</span>
+                    <button onclick="logoutMachine('${license.id}', '${escapeAttr(id)}')" title="Logout Machine">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+            `).join('')}</div>`
+            : '<span style="color:var(--text-muted);">Unbound</span>';
+
+        return `
+            <tr>
+                <td><span style="font-family:monospace;font-weight:bold;color:#f59e0b;">${escapeHtml(license.licenseKey || '—')}</span></td>
+                <td>${escapeHtml(license.email || '—')}</td>
+                <td>${escapeHtml(license.tier || '—')}</td>
+                <td>${machineDisplay}</td>
+                <td><span class="status-badge status-${statusClass}" style="background:${license.status === 'blocked' ? '#ef4444' : ''}">${statusLabel}</span></td>
+                <td>${date}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="table-btn" title="${license.status === 'blocked' ? 'Unblock License' : 'Block License'}" onclick="toggleLicenseStatus('${license.id}', '${license.status}')" style="color:${license.status === 'blocked' ? '#22c55e' : '#ef4444'}">
+                            <i class="fa-solid ${license.status === 'blocked' ? 'fa-unlock' : 'fa-lock'}"></i>
+                        </button>
+                        <button class="table-btn delete" title="Revoke & Delete" onclick="deleteLicense('${license.id}')">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.logoutMachine = async function (licenseId, machineId) {
+    if (!confirm(`Are you sure you want to remotely deactivate machine [${machineId}]?`)) return;
+
+    try {
+        const licenseRef = db.collection('licenses').doc(licenseId);
+        const doc = await licenseRef.get();
+        if (doc.exists) {
+            const data = doc.data();
+            let machines = data.machineIds || (data.machineId ? [data.machineId] : []);
+
+            // Filter out the specific machine
+            machines = machines.filter(id => id.toUpperCase() !== machineId.toUpperCase());
+
+            await licenseRef.update({
+                machineIds: machines,
+                machineId: firebase.firestore.FieldValue.delete() // Clean legacy field
+            });
+
+            showToast(`Machine ${machineId} deactivated!`, 'success');
+        }
+    } catch (err) {
+        showToast('Error deactivating machine: ' + err.message, 'error');
+    }
+}
+
+
+document.getElementById('licenses-search')?.addEventListener('input', applyLicenseFilters);
+document.getElementById('licenses-status-filter')?.addEventListener('change', applyLicenseFilters);
+
+function applyLicenseFilters() {
+    const search = document.getElementById('licenses-search').value;
+    const status = document.getElementById('licenses-status-filter').value;
+    renderLicenses(status, search);
+}
+
+window.toggleLicenseStatus = async function (id, currentStatus) {
+    const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
+    if (!confirm(`Are you sure you want to ${newStatus === 'blocked' ? 'block' : 'unblock'} this license?`)) return;
+    try {
+        await db.collection('licenses').doc(id).update({ status: newStatus });
+        showToast(`License marked as ${newStatus}`, 'success');
+    } catch (err) {
+        showToast('Error updating license: ' + err.message, 'error');
+    }
+}
+
+window.deleteLicense = async function (id) {
+    if (!confirm(`WARNING: This will permanently revoke and delete the license. The user will lose access immediately. Proceed?`)) return;
+    try {
+        await db.collection('licenses').doc(id).delete();
+        showToast('License successfully revoked & deleted.', 'success');
+    } catch (err) {
+        showToast('Error deleting license: ' + err.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CUSTOM LINKS SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+let allCustomLinks = [];
+let unsubCustomLinks = null;
+
+// UI setup for custom links
+function setupCustomLinksUI() {
+    const clProdAll = document.getElementById('cl-prod-all');
+    const clProdItems = document.querySelectorAll('.cl-prod-item');
+    if (clProdAll) {
+        clProdAll.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            clProdItems.forEach(item => {
+                item.disabled = checked;
+                if (checked) item.checked = false;
+            });
+        });
+    }
+
+    const modeDiscountBtn = document.getElementById('cl-mode-discount');
+    const modeFixedBtn = document.getElementById('cl-mode-fixed');
+    const discountFields = document.getElementById('cl-discount-fields');
+    const fixedFields = document.getElementById('cl-fixed-fields');
+
+    if (modeDiscountBtn && modeFixedBtn) {
+        modeDiscountBtn.addEventListener('click', () => {
+            window.selectedPricingMode = 'discount';
+            modeDiscountBtn.classList.add('active');
+            modeFixedBtn.classList.remove('active');
+            if (discountFields) discountFields.style.display = 'block';
+            if (fixedFields) fixedFields.style.display = 'none';
+        });
+        modeFixedBtn.addEventListener('click', () => {
+            window.selectedPricingMode = 'fixed';
+            modeFixedBtn.classList.add('active');
+            modeDiscountBtn.classList.remove('active');
+            if (discountFields) discountFields.style.display = 'none';
+            if (fixedFields) fixedFields.style.display = 'block';
+        });
+    }
+
+    const discountSlider = document.getElementById('cl-discount-slider');
+    const discountValue = document.getElementById('cl-discount-value');
+    if (discountSlider && discountValue) {
+        discountSlider.addEventListener('input', (e) => {
+            discountValue.textContent = e.target.value + '%';
+        });
+    }
+
+    const clCodeInput = document.getElementById('cl-code');
+    const clCodePreview = document.getElementById('cl-code-preview');
+    if (clCodeInput && clCodePreview) {
+        clCodeInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            clCodeInput.value = val;
+            clCodePreview.textContent = val || 'CODE';
+        });
+    }
+}
+
+// Initial UI execution
+setupCustomLinksUI();
+window.selectedPricingMode = 'discount';
+
+window.listenToCustomLinks = function () {
+    if (unsubCustomLinks) unsubCustomLinks();
+    unsubCustomLinks = db.collection('custom_links')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot(snapshot => {
+            allCustomLinks = [];
+            snapshot.forEach(doc => {
+                allCustomLinks.push({ id: doc.id, ...doc.data() });
+            });
+            renderCustomLinks();
+            updateCustomLinksStats();
+        }, err => {
+            console.error('Custom links listener error:', err);
+        });
+};
+
+function renderCustomLinks() {
+    const tbody = document.getElementById('cl-tbody');
+    const emptyState = document.getElementById('cl-empty');
+    if (!tbody) return;
+
+    if (allCustomLinks.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'flex';
+        return;
+    }
+    if (emptyState) emptyState.style.display = 'none';
+
+    tbody.innerHTML = allCustomLinks.map(link => {
+        const isActive = link.active !== false;
+        const productsList = link.products && link.products.length > 0
+            ? link.products.map(p => `<span class="cl-prod-badge">${p}</span>`).join('')
+            : '<span class="cl-prod-badge" style="background:rgba(124,58,237,0.1);color:var(--accent-purple);">All</span>';
+
+        let pricingDisplay = '';
+        if (link.pricingMode === 'fixed') {
+            const prices = [];
+            if (link.fixedPrices) {
+                for (const [prod, price] of Object.entries(link.fixedPrices)) {
+                    if (prod.endsWith('_inr') && price) {
+                        const baseProd = prod.replace('_inr', '');
+                        const usdPrice = link.fixedPrices[`${baseProd}_usd`] || 0;
+                        prices.push(`${baseProd.toUpperCase()}: ₹${price} / $${usdPrice}`);
+                    }
+                }
+            }
+            pricingDisplay = `<div style="font-size:11px;line-height:1.4;">${prices.join('<br>')}</div>`;
+        } else {
+            pricingDisplay = `<span style="color:var(--accent-green);font-weight:700;">${link.discountPercent}% OFF</span>`;
+        }
+
+        const maxRed = link.maxRedemptions || 0;
+        const currRed = link.currentRedemptions || 0;
+        const redemptionsDisplay = `
+            <div class="cl-redemptions">
+                <span class="current">${currRed}</span>
+                <span class="max">/ ${maxRed > 0 ? maxRed : '∞'}</span>
+            </div>
+        `;
+
+        const revINR = link.totalSalesINR || 0;
+        const revUSD = link.totalSalesUSD || 0;
+        const revenueDisplay = `
+            <div style="font-size:12px;font-weight:600;">
+                <div>₹${revINR.toLocaleString()}</div>
+                <div style="color:var(--text-muted);font-size:10px;">$${revUSD.toLocaleString()}</div>
+            </div>
+        `;
+
+        const statusBadge = isActive
+            ? '<span class="status-badge status-verified">Active</span>'
+            : '<span class="status-badge" style="background:#333;color:#999;border:1px solid #444;">Disabled</span>';
+
+        const noteDisplay = link.note
+            ? `<div class="cl-note-text" title="${escapeAttr(link.note)}">${escapeHtml(link.note)}</div>`
+            : '<span style="color:var(--text-muted);font-style:italic;">—</span>';
+
+        return `
+            <tr style="opacity: ${isActive ? '1' : '0.5'}">
+                <td class="cl-code-cell">${escapeHtml(link.id)}</td>
+                <td>
+                    <div class="cl-products-badges">${productsList}</div>
+                    ${noteDisplay}
+                </td>
+                <td>${pricingDisplay}</td>
+                <td>${redemptionsDisplay}</td>
+                <td>${revenueDisplay}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="cl-copy-btn" onclick="copyCustomLinkUrl('${escapeAttr(link.id)}')">
+                            <i class="fa-solid fa-copy"></i> Copy
+                        </button>
+                        <button class="table-btn" title="Edit Link" onclick="openEditCustomLink('${escapeAttr(link.id)}')" style="color:var(--accent-purple);">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button class="table-btn" title="Toggle Active" onclick="toggleCustomLink('${escapeAttr(link.id)}', ${isActive})">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                        <button class="table-btn delete" title="Delete" onclick="deleteCustomLink('${escapeAttr(link.id)}')">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Update count badge
+    const badge = document.getElementById('customlinks-count-badge');
+    if (badge) {
+        badge.textContent = allCustomLinks.length;
+    }
+}
+
+function updateCustomLinksStats() {
+    let activeCount = 0;
+    let totalRedemptions = 0;
+    let totalRevenueINR = 0;
+    let totalRevenueUSD = 0;
+    let totalDiscountSum = 0;
+    let discountLinkCount = 0;
+
+    allCustomLinks.forEach(link => {
+        if (link.active !== false) {
+            activeCount++;
+        }
+        totalRedemptions += (link.currentRedemptions || 0);
+        totalRevenueINR += (link.totalSalesINR || 0);
+        totalRevenueUSD += (link.totalSalesUSD || 0);
+
+        if (link.pricingMode !== 'fixed') {
+            totalDiscountSum += (link.discountPercent || 0);
+            discountLinkCount++;
+        }
+    });
+
+    const avgDiscount = discountLinkCount > 0 ? Math.round(totalDiscountSum / discountLinkCount) : 0;
+
+    const activeEl = document.getElementById('cl-stat-active');
+    const redemptionsEl = document.getElementById('cl-stat-redemptions');
+    const revenueEl = document.getElementById('cl-stat-revenue');
+    const avgDiscountEl = document.getElementById('cl-stat-avg-discount');
+
+    if (activeEl) activeEl.textContent = activeCount;
+    if (redemptionsEl) redemptionsEl.textContent = totalRedemptions;
+    if (avgDiscountEl) avgDiscountEl.textContent = `${avgDiscount}%`;
+
+    const totalRevInrCombined = totalRevenueINR + (totalRevenueUSD * USD_TO_INR);
+    if (revenueEl) revenueEl.textContent = `₹${Math.round(totalRevInrCombined).toLocaleString()}`;
+}
+
+// Create custom link handler
+document.getElementById('cl-create-btn')?.addEventListener('click', async () => {
+    const codeInput = document.getElementById('cl-code');
+    const noteInput = document.getElementById('cl-note');
+    const maxRedemptionsInput = document.getElementById('cl-max-redemptions');
+    const expiryInput = document.getElementById('cl-expiry');
+
+    const code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    const note = noteInput.value.trim();
+    const maxRedemptions = parseInt(maxRedemptionsInput.value) || 0;
+    const expiryDateStr = expiryInput.value;
+
+    if (!code) {
+        showToast('Please enter a valid link code', 'error');
+        return;
+    }
+
+    const products = [];
+    const isAllProducts = document.getElementById('cl-prod-all').checked;
+    if (!isAllProducts) {
+        document.querySelectorAll('.cl-prod-item:checked').forEach(item => {
+            products.push(item.value);
+        });
+        if (products.length === 0) {
+            showToast('Please select at least one product or check "All Products"', 'error');
+            return;
+        }
+    }
+
+    const linkData = {
+        active: true,
+        pricingMode: window.selectedPricingMode || 'discount',
+        products: products,
+        maxRedemptions: maxRedemptions,
+        currentRedemptions: 0,
+        totalSalesINR: 0,
+        totalSalesUSD: 0,
+        note: note,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        expiresAt: expiryDateStr ? new Date(expiryDateStr) : null
+    };
+
+    if (window.selectedPricingMode === 'discount') {
+        const slider = document.getElementById('cl-discount-slider');
+        linkData.discountPercent = parseInt(slider.value) || 50;
+        linkData.fixedPrices = {};
+    } else {
+        linkData.discountPercent = 0;
+        linkData.fixedPrices = {
+            pro_inr: parseInt(document.getElementById('cl-fp-pro-inr').value) || 0,
+            pro_usd: parseInt(document.getElementById('cl-fp-pro-usd').value) || 0,
+            autocaptions_inr: parseInt(document.getElementById('cl-fp-autocaptions-inr').value) || 0,
+            autocaptions_usd: parseInt(document.getElementById('cl-fp-autocaptions-usd').value) || 0,
+            projectmanager_inr: parseInt(document.getElementById('cl-fp-projectmanager-inr').value) || 0,
+            projectmanager_usd: parseInt(document.getElementById('cl-fp-projectmanager-usd').value) || 0,
+            basic_inr: parseInt(document.getElementById('cl-fp-basic-inr').value) || 0,
+            basic_usd: parseInt(document.getElementById('cl-fp-basic-usd').value) || 0,
+        };
+    }
+
+    const btn = document.getElementById('cl-create-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+
+    try {
+        // Check if code already exists
+        const docRef = db.collection('custom_links').doc(code);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+            throw new Error(`Custom link with code "${code}" already exists!`);
+        }
+
+        await docRef.set(linkData);
+        showToast(`Custom link /?ref=${code} created successfully!`, 'success');
+
+        // Reset form
+        codeInput.value = '';
+        noteInput.value = '';
+        maxRedemptionsInput.value = '0';
+        expiryInput.value = '';
+        document.getElementById('cl-code-preview').textContent = 'CODE';
+        document.getElementById('cl-prod-all').checked = true;
+        document.getElementById('cl-prod-all').dispatchEvent(new Event('change'));
+
+        // Reset prices
+        document.getElementById('cl-fp-pro-inr').value = '';
+        document.getElementById('cl-fp-pro-usd').value = '';
+        document.getElementById('cl-fp-autocaptions-inr').value = '';
+        document.getElementById('cl-fp-autocaptions-usd').value = '';
+        document.getElementById('cl-fp-projectmanager-inr').value = '';
+        document.getElementById('cl-fp-projectmanager-usd').value = '';
+        document.getElementById('cl-fp-basic-inr').value = '';
+        document.getElementById('cl-fp-basic-usd').value = '';
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-link"></i> Create Custom Link';
+    }
+});
+
+window.toggleCustomLink = async function (id, currentActive) {
+    try {
+        await db.collection('custom_links').doc(id).update({ active: !currentActive });
+        showToast(`Link ${id} ${currentActive ? 'disabled' : 'enabled'}`, 'success');
+    } catch (err) {
+        showToast('Error toggling link: ' + err.message, 'error');
+    }
+};
+
+window.deleteCustomLink = async function (id) {
+    if (!confirm(`Delete custom link ${id}?`)) return;
+    try {
+        await db.collection('custom_links').doc(id).delete();
+        showToast(`Link ${id} deleted`, 'success');
+    } catch (err) {
+        showToast('Error deleting link: ' + err.message, 'error');
+    }
+};
+
+window.copyCustomLinkUrl = function (code) {
+    const url = `${window.location.origin}/?ref=${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Link URL copied!', 'success');
+    }).catch(err => {
+        showToast('Error copying link', 'error');
+    });
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// EDIT CUSTOM LINK — Modal Logic
+// ═══════════════════════════════════════════════════════════════════
+let editingLinkId = null;
+let editPricingMode = 'discount';
+
+// Setup edit modal UI interactions
+(function setupEditModalUI() {
+    const modal = document.getElementById('cl-edit-modal');
+    const closeBtn = document.getElementById('cl-edit-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+    }
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+    }
+
+    // Pricing mode toggle for edit modal
+    const editModeDiscount = document.getElementById('cl-edit-mode-discount');
+    const editModeFixed = document.getElementById('cl-edit-mode-fixed');
+    const editDiscountFields = document.getElementById('cl-edit-discount-fields');
+    const editFixedFields = document.getElementById('cl-edit-fixed-fields');
+
+    if (editModeDiscount && editModeFixed) {
+        editModeDiscount.addEventListener('click', () => {
+            editPricingMode = 'discount';
+            editModeDiscount.classList.add('active');
+            editModeFixed.classList.remove('active');
+            if (editDiscountFields) editDiscountFields.style.display = 'block';
+            if (editFixedFields) editFixedFields.style.display = 'none';
+        });
+        editModeFixed.addEventListener('click', () => {
+            editPricingMode = 'fixed';
+            editModeFixed.classList.add('active');
+            editModeDiscount.classList.remove('active');
+            if (editDiscountFields) editDiscountFields.style.display = 'none';
+            if (editFixedFields) editFixedFields.style.display = 'block';
+        });
+    }
+
+    // Discount slider value display
+    const editSlider = document.getElementById('cl-edit-discount-slider');
+    const editSliderVal = document.getElementById('cl-edit-discount-value');
+    if (editSlider && editSliderVal) {
+        editSlider.addEventListener('input', (e) => {
+            editSliderVal.textContent = e.target.value + '%';
+        });
+    }
+
+    // "All Products" toggle logic for edit modal
+    const editProdAll = document.getElementById('cl-edit-prod-all');
+    const editProdItems = document.querySelectorAll('.cl-edit-prod-item');
+    if (editProdAll) {
+        editProdAll.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            editProdItems.forEach(item => {
+                item.disabled = checked;
+                if (checked) item.checked = false;
+            });
+        });
+    }
+
+    // Save button
+    const saveBtn = document.getElementById('cl-edit-save-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveEditCustomLink);
+    }
+})();
+
+window.openEditCustomLink = function (linkId) {
+    const link = allCustomLinks.find(l => l.id === linkId);
+    if (!link) {
+        showToast('Link not found', 'error');
+        return;
+    }
+
+    editingLinkId = linkId;
+
+    // Fill code (read-only)
+    document.getElementById('cl-edit-code').value = linkId;
+
+    // Fill products
+    const prodAll = document.getElementById('cl-edit-prod-all');
+    const prodItems = document.querySelectorAll('.cl-edit-prod-item');
+    const hasProducts = link.products && link.products.length > 0;
+
+    prodAll.checked = !hasProducts;
+    prodItems.forEach(item => {
+        item.disabled = !hasProducts;
+        item.checked = hasProducts && link.products.includes(item.value);
+    });
+
+    // Fill pricing mode
+    editPricingMode = link.pricingMode || 'discount';
+    const editModeDiscount = document.getElementById('cl-edit-mode-discount');
+    const editModeFixed = document.getElementById('cl-edit-mode-fixed');
+    const editDiscountFields = document.getElementById('cl-edit-discount-fields');
+    const editFixedFields = document.getElementById('cl-edit-fixed-fields');
+
+    if (editPricingMode === 'fixed') {
+        editModeFixed.classList.add('active');
+        editModeDiscount.classList.remove('active');
+        editDiscountFields.style.display = 'none';
+        editFixedFields.style.display = 'block';
+    } else {
+        editModeDiscount.classList.add('active');
+        editModeFixed.classList.remove('active');
+        editDiscountFields.style.display = 'block';
+        editFixedFields.style.display = 'none';
+    }
+
+    // Fill discount slider
+    const slider = document.getElementById('cl-edit-discount-slider');
+    const sliderVal = document.getElementById('cl-edit-discount-value');
+    slider.value = link.discountPercent || 50;
+    sliderVal.textContent = (link.discountPercent || 50) + '%';
+
+    // Fill fixed prices
+    const fp = link.fixedPrices || {};
+    document.getElementById('cl-edit-fp-pro-inr').value = fp.pro_inr || '';
+    document.getElementById('cl-edit-fp-pro-usd').value = fp.pro_usd || '';
+    document.getElementById('cl-edit-fp-autocaptions-inr').value = fp.autocaptions_inr || '';
+    document.getElementById('cl-edit-fp-autocaptions-usd').value = fp.autocaptions_usd || '';
+    document.getElementById('cl-edit-fp-projectmanager-inr').value = fp.projectmanager_inr || '';
+    document.getElementById('cl-edit-fp-projectmanager-usd').value = fp.projectmanager_usd || '';
+    document.getElementById('cl-edit-fp-basic-inr').value = fp.basic_inr || '';
+    document.getElementById('cl-edit-fp-basic-usd').value = fp.basic_usd || '';
+
+    // Fill max redemptions
+    document.getElementById('cl-edit-max-redemptions').value = link.maxRedemptions || 0;
+
+    // Fill expiry
+    const expiryInput = document.getElementById('cl-edit-expiry');
+    if (link.expiresAt) {
+        // Convert Firestore timestamp to datetime-local format
+        let expiryDate;
+        if (link.expiresAt.toDate) {
+            expiryDate = link.expiresAt.toDate();
+        } else if (link.expiresAt.seconds) {
+            expiryDate = new Date(link.expiresAt.seconds * 1000);
+        } else {
+            expiryDate = new Date(link.expiresAt);
+        }
+        // Format as YYYY-MM-DDTHH:MM
+        const pad = n => n.toString().padStart(2, '0');
+        expiryInput.value = `${expiryDate.getFullYear()}-${pad(expiryDate.getMonth() + 1)}-${pad(expiryDate.getDate())}T${pad(expiryDate.getHours())}:${pad(expiryDate.getMinutes())}`;
+    } else {
+        expiryInput.value = '';
+    }
+
+    // Fill note
+    document.getElementById('cl-edit-note').value = link.note || '';
+
+    // Update modal title
+    document.getElementById('cl-edit-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square" style="margin-right:8px;color:var(--accent-purple);"></i> Edit: ${linkId}`;
+
+    // Show modal
+    document.getElementById('cl-edit-modal').style.display = 'flex';
+};
+
+async function saveEditCustomLink() {
+    if (!editingLinkId) return;
+
+    const btn = document.getElementById('cl-edit-save-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    try {
+        // Gather products
+        const products = [];
+        const isAllProducts = document.getElementById('cl-edit-prod-all').checked;
+        if (!isAllProducts) {
+            document.querySelectorAll('.cl-edit-prod-item:checked').forEach(item => {
+                products.push(item.value);
+            });
+        }
+
+        // Build update object
+        const updateData = {
+            pricingMode: editPricingMode,
+            products: products,
+            maxRedemptions: parseInt(document.getElementById('cl-edit-max-redemptions').value) || 0,
+            note: document.getElementById('cl-edit-note').value.trim()
+        };
+
+        // Expiry
+        const expiryStr = document.getElementById('cl-edit-expiry').value;
+        updateData.expiresAt = expiryStr ? new Date(expiryStr) : null;
+
+        // Pricing
+        if (editPricingMode === 'discount') {
+            updateData.discountPercent = parseInt(document.getElementById('cl-edit-discount-slider').value) || 50;
+            updateData.fixedPrices = {};
+        } else {
+            updateData.discountPercent = 0;
+            updateData.fixedPrices = {
+                pro_inr: parseInt(document.getElementById('cl-edit-fp-pro-inr').value) || 0,
+                pro_usd: parseInt(document.getElementById('cl-edit-fp-pro-usd').value) || 0,
+                autocaptions_inr: parseInt(document.getElementById('cl-edit-fp-autocaptions-inr').value) || 0,
+                autocaptions_usd: parseInt(document.getElementById('cl-edit-fp-autocaptions-usd').value) || 0,
+                projectmanager_inr: parseInt(document.getElementById('cl-edit-fp-projectmanager-inr').value) || 0,
+                projectmanager_usd: parseInt(document.getElementById('cl-edit-fp-projectmanager-usd').value) || 0,
+                basic_inr: parseInt(document.getElementById('cl-edit-fp-basic-inr').value) || 0,
+                basic_usd: parseInt(document.getElementById('cl-edit-fp-basic-usd').value) || 0,
+            };
+        }
+
+        await db.collection('custom_links').doc(editingLinkId).update(updateData);
+        showToast(`Custom link ${editingLinkId} updated successfully!`, 'success');
+
+        // Close modal
+        document.getElementById('cl-edit-modal').style.display = 'none';
+        editingLinkId = null;
+
+    } catch (err) {
+        showToast('Error saving changes: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Save Changes';
+    }
+}
+
 
 /*
  * ┌──────────────────────────────────────────────────────────────────┐
@@ -1018,31 +1852,144 @@ window.deleteCoupon = async function(id) {
  * │  service cloud.firestore {                                        │
  * │    match /databases/{database}/documents {                        │
  * │                                                                   │
- * │      // Pricing & Config — anyone can read, only admin can write   │
+ * │      // Config & Pricing — Anyone can read. Only admin can write. │
  * │      match /config/{doc} {                                        │
  * │        allow read: if true;                                       │
- * │        allow write: if request.auth != null;                     │
+ * │        allow write: if request.auth != null;                      │
  * │      }                                                            │
  * │                                                                   │
- * │      // Coupons — anyone can read, only admin can write           │
+ * │      // Coupons — Anyone can read to validate. Only admin writes. │
  * │      match /coupons/{code} {                                      │
  * │        allow read: if true;                                       │
- * │        allow write: if request.auth != null;                     │
+ * │        allow write: if request.auth != null;                      │
  * │      }                                                            │
  * │                                                                   │
- * │      // Leads — anyone can create, only admin can read/edit      │
+ * │      // Leads & Payments — Anyone can create on success. Admin manages. │
  * │      match /leads/{lead} {                                        │
  * │        allow create: if true;                                     │
- * │        allow read, update, delete: if request.auth != null;      │
+ * │        allow read, update, delete: if request.auth != null;       │
  * │      }                                                            │
- * │                                                                   │
- * │      // Payments — anyone can create, only admin can read        │
  * │      match /payments/{payment} {                                  │
  * │        allow create: if true;                                     │
- * │        allow read, update, delete: if request.auth != null;      │
+ * │        allow read, update, delete: if request.auth != null;       │
+ * │      }                                                            │
+ * │                                                                   │
+ * │      // 🔑 LICENSES — Secure Setup                                │
+ * │      match /licenses/{licenseKey} {                               │
+ * │        // Allows the Extension to "get" a specific key to verify it.│
+ * │        // But prevents anyone from "listing" (seeing all) keys.   │
+ * │        allow get: if true;                                        │
+ * │        allow list, create, update, delete: if request.auth != null;│
+ * │      }                                                            │
+ * │                                                                   │
+ * │      match /license_by_email/{email} {                            │
+ * │        allow read: if true;                                       │
+ * │        allow write: if request.auth != null;                      │
  * │      }                                                            │
  * │    }                                                              │
  * │  }                                                                │
  * │                                                                   │
  * └──────────────────────────────────────────────────────────────────┘
  */
+
+// ═══════════════════════════════════════════════════════════════════
+// GENERATE MANUAL LICENSE
+// ═══════════════════════════════════════════════════════════════════
+const mlBtn = document.getElementById('generate-manual-license-btn');
+const mlModal = document.getElementById('manual-license-modal');
+const mlClose = document.getElementById('manual-license-close');
+const mlSubmit = document.getElementById('ml-submit-btn');
+
+if (mlBtn && mlModal) {
+    mlBtn.addEventListener('click', () => {
+        document.getElementById('ml-email').value = '';
+        document.getElementById('ml-name').value = '';
+        document.getElementById('ml-message').value = '';
+        mlModal.style.display = 'flex';
+    });
+
+    mlClose.addEventListener('click', () => {
+        mlModal.style.display = 'none';
+    });
+
+    mlModal.addEventListener('click', (e) => {
+        if (e.target === mlModal) mlModal.style.display = 'none';
+    });
+
+    mlSubmit.addEventListener('click', async () => {
+        const email = document.getElementById('ml-email').value.trim();
+        const name = document.getElementById('ml-name').value.trim();
+        const tier = document.getElementById('ml-tier').value;
+        const message = document.getElementById('ml-message').value.trim();
+
+        if (!email) {
+            showToast('Email is required', 'error');
+            return;
+        }
+
+        mlSubmit.disabled = true;
+        mlSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+
+        try {
+            // 1. Generate 16-digit key
+            function generateKey() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let res = '';
+                for (let i = 0; i < 16; i++) {
+                    res += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                // Add dashes (e.g. ABCD-1234-EFGH-5678)
+                return res.match(/.{1,4}/g).join('-');
+            }
+            const newKey = generateKey();
+            const cleanEmail = email.toLowerCase().trim();
+
+            // 2. Save to /licenses/
+            await db.collection('licenses').doc(newKey).set({
+                licenseKey: newKey,
+                email: cleanEmail,
+                tier: tier,
+                paymentId: 'manual_admin_gen',
+                status: 'active',
+                deviceFingerprint: null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 3. Save to /license_by_email/
+            await db.collection('license_by_email').doc(cleanEmail).set({
+                licenseKeys: firebase.firestore.FieldValue.arrayUnion(newKey),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            // 4. Send Email via Backend
+            const BACKEND_URL = '/.netlify/functions/send-license';
+
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: cleanEmail,
+                    name: name || 'Creator',
+                    tier: tier,
+                    licenseKey: newKey,
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showToast('License generated and emailed successfully!', 'success');
+                mlModal.style.display = 'none';
+            } else {
+                throw new Error(data.error || 'Email failed to send');
+            }
+
+        } catch (err) {
+            console.error(err);
+            showToast('Error generating license: ' + err.message, 'error');
+        } finally {
+            mlSubmit.disabled = false;
+            mlSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Generate & Send Key';
+        }
+    });
+}
