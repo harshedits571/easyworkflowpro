@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
 
+let firebaseInitError = null;
 // Initialize Firebase Admin securely using environment variable
 if (!admin.apps.length) {
     try {
@@ -13,9 +14,11 @@ if (!admin.apps.length) {
             });
             console.log("Firebase Admin Initialized successfully.");
         } else {
-            console.warn("FIREBASE_SERVICE_ACCOUNT env var is missing.");
+            firebaseInitError = "FIREBASE_SERVICE_ACCOUNT env var is missing.";
+            console.warn(firebaseInitError);
         }
     } catch (e) {
+        firebaseInitError = "JSON parse error: " + e.message;
         console.warn("Firebase Admin init failed. Check FIREBASE_SERVICE_ACCOUNT JSON format.", e.message);
     }
 }
@@ -229,7 +232,7 @@ exports.handler = async (event, context) => {
         const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId } = JSON.parse(event.body);
 
         if (!paymentId || !method) {
-            return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing payment information" }) };
+            return { statusCode: 400, headers, body: JSON.stringify({ error: `Missing payment information: paymentId='${paymentId}', method='${method}'` }) };
         }
 
         let isVerified = false;
@@ -311,7 +314,7 @@ exports.handler = async (event, context) => {
             if (tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager')) {
                 if (!admin.apps.length) {
                     console.error("CRITICAL: Firebase Admin not initialized. Cannot securely store license.");
-                    return { statusCode: 500, headers, body: JSON.stringify({ error: "Backend database connection error. Contact support." }) };
+                    return { statusCode: 500, headers, body: JSON.stringify({ error: `Backend database connection error. Contact support. (${firebaseInitError})` }) };
                 } else {
                     const db = admin.firestore();
                     const cleanEmail = email.toLowerCase().trim();
