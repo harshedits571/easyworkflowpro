@@ -1617,9 +1617,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             document.getElementById('success-license-row').style.display = 'none';
             if (downloadLink) {
-                 if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
+                if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
             } else {
-                 if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
+                if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
             }
         }
 
@@ -2018,9 +2018,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 throw new Error(errData.details || errData.error || 'Payment Server Offline');
             }
-            const { payment_session_id } = await orderRes.json();
+            const { payment_session_id, order_id } = await orderRes.json();
 
-            if (!payment_session_id) throw new Error('Mission Session ID');
+            if (!payment_session_id || !order_id) throw new Error('Missing Session ID or Order ID');
 
             // --- SAVE TO LOCALSTORAGE FOR REDIRECT RECOVERY ---
             const checkoutData = {
@@ -2058,7 +2058,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         amount: paidAmountLabel,
                         customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null
                     };
-                    window.handlePaymentSuccess(result.paymentDetails.paymentId, 'cashfree', dataOverride);
+                    window.handlePaymentSuccess(order_id, 'cashfree', dataOverride);
                 }
             });
 
@@ -2118,7 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof cleanUpCustomLink === 'function') cleanUpCustomLink();
                 if (window.history && window.history.replaceState) {
                     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                    window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+                    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
                 }
             } else {
                 throw new Error((result.error || 'Verification failed') + (result.details ? ' - ' + result.details : ''));

@@ -230,9 +230,10 @@ exports.handler = async (event, context) => {
       ? "https://api.cashfree.com/pg/orders" 
       : "https://sandbox.cashfree.com/pg/orders";
 
+    const orderId = "order_" + Date.now();
     // Call Cashfree API
     const response = await axios.post(baseUrl, {
-      order_id: "order_" + Date.now(),
+      order_id: orderId,
       order_amount: verifiedAmount,
       order_currency: currency || "INR",
       customer_details: {
@@ -253,7 +254,10 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ payment_session_id: response.data.payment_session_id }),
+      body: JSON.stringify({ 
+          payment_session_id: response.data.payment_session_id,
+          order_id: orderId
+      }),
     };
 
   } catch (error) {

@@ -245,8 +245,8 @@ exports.handler = async (event, context) => {
             const secretKey = process.env.CASHFREE_SECRET_KEY;
             const isProduction = !secretKey.includes('test');
             const baseUrl = isProduction
-                ? `https://api.cashfree.com/pg/payments/${paymentId}`
-                : `https://sandbox.cashfree.com/pg/payments/${paymentId}`;
+                ? `https://api.cashfree.com/pg/orders/${paymentId}`
+                : `https://sandbox.cashfree.com/pg/orders/${paymentId}`;
 
             const cfRes = await axios.get(baseUrl, {
                 headers: {
@@ -257,10 +257,10 @@ exports.handler = async (event, context) => {
             });
 
             if (cfRes.data) {
-                if (cfRes.data.payment_status === 'SUCCESS') {
+                if (cfRes.data.order_status === 'PAID') {
                     isVerified = true;
-                    amountPaid = `${cfRes.data.payment_currency} ${cfRes.data.payment_amount}`;
-                } else if (cfRes.data.payment_status === 'PENDING') {
+                    amountPaid = `${cfRes.data.order_currency} ${cfRes.data.order_amount}`;
+                } else if (cfRes.data.order_status === 'ACTIVE') {
                     isPending = true;
                 }
             }
@@ -309,9 +309,25 @@ exports.handler = async (event, context) => {
         if (isVerified) {
             console.log(`[Verified] Payment ${paymentId} for ${tier} by ${name} (${email})`);
             let generatedLicense = null;
-            let finalDownloadLink = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager') 
-                ? "https://easyworkflow.store/download/project-manager-pro" 
-                : (tier.toLowerCase().replace(/\s+/g, '').includes('basic') ? "https://easyworkflow.store/download/basic" : null);
+            
+            // ── FETCH DYNAMIC DOWNLOAD LINK FOR FRONTEND & EMAIL ──
+            const isPM = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
+            const isBas = tier.toLowerCase().replace(/\s+/g, '').includes('basic');
+            let finalDownloadLink = isPM ? "https://easyworkflow.store/download/project-manager-pro" : (isBas ? "https://easyworkflow.store/download/basic" : null);
+
+            if ((isPM || isBas) && admin.apps.length) {
+                try {
+                    const db = admin.firestore();
+                    const dlSnap = await db.collection('config').doc('downloads').get();
+                    if (dlSnap.exists) {
+                        const links = dlSnap.data();
+                        if (isPM && links.projectmanager) finalDownloadLink = links.projectmanager;
+                        else if (isBas && links.basic) finalDownloadLink = links.basic;
+                    }
+                } catch (e) {
+                    console.warn("Failed to fetch dynamic download link for frontend:", e.message);
+                }
+            }
 
             // Secure License Generation & Database Storage for Project Manager
             if (tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager')) {
