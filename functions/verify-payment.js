@@ -309,6 +309,9 @@ exports.handler = async (event, context) => {
         if (isVerified) {
             console.log(`[Verified] Payment ${paymentId} for ${tier} by ${name} (${email})`);
             let generatedLicense = null;
+            let finalDownloadLink = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager') 
+                ? "https://easyworkflow.store/download/project-manager-pro" 
+                : (tier.toLowerCase().replace(/\s+/g, '').includes('basic') ? "https://easyworkflow.store/download/basic" : null);
 
             // Secure License Generation & Database Storage for Project Manager
             if (tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager')) {
@@ -438,7 +441,7 @@ exports.handler = async (event, context) => {
                     verified: true,
                     message: "Payment confirmed by server.",
                     licenseKey: generatedLicense, // Returns key to frontend if needed
-                    downloadLink: downloadLink
+                    downloadLink: finalDownloadLink
                 })
             };
         } else if (isPending) {
