@@ -487,6 +487,7 @@ html, body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 /* TOP BAR */
@@ -551,6 +552,7 @@ html, body {
     display: none;
     padding: 28px;
     flex: 1;
+    min-width: 0;
     animation: pageIn 0.3s ease;
 }
 
@@ -832,7 +834,9 @@ html, body {
 /* DATA TABLE */
 .table-responsive {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 0;
+    width: 100%;
 }
 
 .data-table {
@@ -865,6 +869,7 @@ html, body {
     border-bottom: 1px solid var(--border);
     color: var(--text-secondary);
     vertical-align: middle;
+    white-space: nowrap;
 }
 
 .data-table tbody tr {

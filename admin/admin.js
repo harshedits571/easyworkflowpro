@@ -493,6 +493,9 @@ window.viewLead = function (leadId) {
             <button class="modal-action-btn success" onclick="updateLeadStatus('${lead.id}', 'paid')">
                 <i class="fa-solid fa-check"></i> Mark as Paid
             </button>
+            <button class="modal-action-btn primary" style="background:var(--accent-orange);border-color:var(--accent-orange);" onclick="openFollowUpComposer('${lead.id}')">
+                <i class="fa-solid fa-envelope"></i> Send Follow-Up
+            </button>
         `;
     }
     if (lead.status === 'paid') {
@@ -512,6 +515,7 @@ window.viewLead = function (leadId) {
     modal.style.display = 'flex';
     // Reset composer state
     closeLicenseComposer();
+    closeFollowUpComposer();
 };
 
 // License Email Composer Logic
@@ -555,7 +559,9 @@ document.getElementById('send-license-btn').addEventListener('click', async () =
     sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
 
     try {
-        const BACKEND_URL = '/.netlify/functions/send-license';
+        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000/send-license'
+            : '/api/send-license';
 
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
@@ -587,6 +593,80 @@ document.getElementById('send-license-btn').addEventListener('click', async () =
     } finally {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send License Now';
+    }
+});
+
+// Follow Up Email Composer Logic
+window.openFollowUpComposer = function (leadId) {
+    currentEditingLeadId = leadId;
+    const composer = document.getElementById('followup-composer');
+    const lead = allLeads.find(l => l.id === leadId);
+
+    const productName = lead.tier || 'Easy Workflow Pro';
+    const customerName = lead.name || 'Customer';
+
+    const defaultMessage = `Dear ${customerName},\n\nHello, I hope you are doing well.\n\nI am writing to confirm if you requested access to ${productName}.\nPlease let me know so that we can proceed accordingly.\n\nBest regards,\nHarsh Edits`;
+
+    document.getElementById('manual-followup-message').value = defaultMessage;
+
+    composer.style.display = 'block';
+    composer.scrollIntoView({ behavior: 'smooth' });
+};
+
+window.closeFollowUpComposer = function () {
+    const composer = document.getElementById('followup-composer');
+    if (composer) composer.style.display = 'none';
+};
+
+document.getElementById('cancel-followup-btn').addEventListener('click', closeFollowUpComposer);
+
+document.getElementById('send-followup-btn').addEventListener('click', async () => {
+    const leadId = currentEditingLeadId;
+    const lead = allLeads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const message = document.getElementById('manual-followup-message').value.trim();
+    const sendBtn = document.getElementById('send-followup-btn');
+
+    if (!message) {
+        showToast('Message cannot be empty.', 'error');
+        return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+
+    try {
+        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000/send-license'
+            : '/api/send-license';
+
+        const response = await fetch(BACKEND_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: lead.email,
+                name: lead.name,
+                tier: lead.tier,
+                message: message,
+                isFollowUp: true
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Follow-up email sent successfully!', 'success');
+            closeFollowUpComposer();
+        } else {
+            throw new Error(data.error || 'Failed to send email.');
+        }
+    } catch (err) {
+        console.error('Send Follow-Up Error:', err);
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Follow-Up';
     }
 });
 
@@ -1962,7 +2042,9 @@ if (mlBtn && mlModal) {
             }, { merge: true });
 
             // 4. Send Email via Backend
-            const BACKEND_URL = '/.netlify/functions/send-license';
+            const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/send-license'
+                : '/api/send-license';
 
             const response = await fetch(BACKEND_URL, {
                 method: 'POST',

@@ -769,6 +769,25 @@
                 </div>
             </div>
 
+            <!-- Send Follow Up Email Section -->
+            <div id="followup-composer" style="display:none; padding: 20px; border-top: 1px solid var(--border); background: rgba(245, 158, 11, 0.03);">
+                <h4 style="font-family: var(--font-heading); font-size: 14px; margin-bottom: 12px; color: var(--accent-orange); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-envelope"></i> Send Follow-Up Email
+                </h4>
+                <div class="form-group" style="margin-top:12px;">
+                    <label style="display:block; margin-bottom:6px; font-size:11px; color:var(--text-muted);">MESSAGE PREVIEW</label>
+                    <textarea id="manual-followup-message" rows="8" style="width:100%; padding:10px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:white; font-size:13px; font-family:var(--font-body); resize:vertical;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="modal-action-btn primary" id="send-followup-btn" style="flex:1; justify-content:center; background: var(--accent-orange); border-color: var(--accent-orange);">
+                        <i class="fa-solid fa-paper-plane"></i> Send Follow-Up
+                    </button>
+                    <button class="modal-action-btn" id="cancel-followup-btn" style="background:transparent; border:1px solid var(--border);">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
             <div class="modal-footer" id="lead-modal-footer">
                 <!-- Action buttons populated by JS -->
             </div>
