@@ -1226,13 +1226,13 @@ function listenToLicenses() {
             snapshot.forEach(doc => {
                 allLicenses.push({ id: doc.id, ...doc.data() });
             });
-            renderLicenses();
+            applyLicenseFilters();
         }, err => {
             console.error('Licenses listener error:', err);
         });
 }
 
-function renderLicenses(filterStatus = 'all', search = '') {
+function renderLicenses(filterStatus = 'all', filterTier = 'all', search = '') {
     const tbody = document.getElementById('licenses-tbody');
     const emptyState = document.getElementById('licenses-empty');
     if (!tbody) return;
@@ -1241,6 +1241,7 @@ function renderLicenses(filterStatus = 'all', search = '') {
 
     let filtered = allLicenses.filter(license => {
         if (filterStatus !== 'all' && license.status !== filterStatus) return false;
+        if (filterTier !== 'all' && license.tier !== filterTier) return false;
         if (search) {
             const haystack = `${license.email || ''} ${license.licenseKey || ''} ${license.tier || ''}`.toLowerCase();
             if (!haystack.includes(searchLower)) return false;
@@ -1313,6 +1314,14 @@ window.logoutMachine = async function (licenseId, machineId) {
                 machineId: firebase.firestore.FieldValue.delete() // Clean legacy field
             });
 
+            // Support Easy Workflow: Delete from Realtime DB to trigger startup logout!
+            if (data.email) {
+                const safeEmail = data.email.toLowerCase().replace(/[@.]/g, '_');
+                fetch("https://easyworkflowpro-default-rtdb.firebaseio.com/users/" + safeEmail + "/" + machineId + ".json", {
+                    method: "DELETE"
+                }).catch(e => console.error("RTDB cleanup error:", e));
+            }
+
             showToast(`Machine ${machineId} deactivated!`, 'success');
         }
     } catch (err) {
@@ -1323,11 +1332,13 @@ window.logoutMachine = async function (licenseId, machineId) {
 
 document.getElementById('licenses-search')?.addEventListener('input', applyLicenseFilters);
 document.getElementById('licenses-status-filter')?.addEventListener('change', applyLicenseFilters);
+document.getElementById('licenses-tier-filter')?.addEventListener('change', applyLicenseFilters);
 
 function applyLicenseFilters() {
     const search = document.getElementById('licenses-search').value;
     const status = document.getElementById('licenses-status-filter').value;
-    renderLicenses(status, search);
+    const tier = document.getElementById('licenses-tier-filter')?.value || 'all';
+    renderLicenses(status, tier, search);
 }
 
 window.toggleLicenseStatus = async function (id, currentStatus) {

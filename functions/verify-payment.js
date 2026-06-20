@@ -3,7 +3,6 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
 
-let firebaseInitError = null;
 // Initialize Firebase Admin securely using environment variable
 if (!admin.apps.length) {
     try {
@@ -14,11 +13,9 @@ if (!admin.apps.length) {
             });
             console.log("Firebase Admin Initialized successfully.");
         } else {
-            firebaseInitError = "FIREBASE_SERVICE_ACCOUNT env var is missing.";
-            console.warn(firebaseInitError);
+            console.warn("FIREBASE_SERVICE_ACCOUNT env var is missing.");
         }
     } catch (e) {
-        firebaseInitError = "JSON parse error: " + e.message;
         console.warn("Firebase Admin init failed. Check FIREBASE_SERVICE_ACCOUNT JSON format.", e.message);
     }
 }
@@ -232,7 +229,7 @@ exports.handler = async (event, context) => {
         const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId } = JSON.parse(event.body);
 
         if (!paymentId || !method) {
-            return { statusCode: 400, headers, body: JSON.stringify({ error: `Missing payment information: paymentId='${paymentId}', method='${method}'` }) };
+            return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing payment information" }) };
         }
 
         let isVerified = false;
@@ -266,8 +263,9 @@ exports.handler = async (event, context) => {
             }
         }
         else if (method === 'razorpay') {
-            const rzpKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SeElRgESDAvD5D';
-            const rzpKeySecret = process.env.RAZORPAY_KEY_SECRET;
+            const isLocal = event.headers && event.headers.host && (event.headers.host.includes('localhost') || event.headers.host.includes('127.0.0.1'));
+            const rzpKeyId = isLocal ? 'rzp_test_SpeZLNxvrt4A09' : (process.env.RAZORPAY_KEY_ID || 'rzp_live_SeElRgESDAvD5D');
+            const rzpKeySecret = isLocal ? 'aCfcchvGcS6GzLdvkw3Hi05I' : process.env.RAZORPAY_KEY_SECRET;
 
             if (!rzpKeySecret) {
                 console.error("Razorpay Secret Missing - Server misconfigured. Denying payment verification to prevent bypass.");
@@ -300,7 +298,13 @@ exports.handler = async (event, context) => {
                         }
                     }
                 } catch (err) {
-                    throw err;
+                    if (isLocal) {
+                        console.warn("Local testing: Razorpay API offline or failed. Simulating successful verification for test key.");
+                        isVerified = true;
+                        amountPaid = "TEST 0.00";
+                    } else {
+                        throw err;
+                    }
                 }
             }
         }
@@ -313,9 +317,10 @@ exports.handler = async (event, context) => {
             // ── FETCH DYNAMIC DOWNLOAD LINK FOR FRONTEND & EMAIL ──
             const isPM = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
             const isBas = tier.toLowerCase().replace(/\s+/g, '').includes('basic');
-            let finalDownloadLink = isPM ? "https://easyworkflow.store/download/project-manager-pro" : (isBas ? "https://easyworkflow.store/download/basic" : null);
+            const isPro = tier.toLowerCase().replace(/\s+/g, '').includes('pro');
+            let finalDownloadLink = isPM ? "https://easyworkflow.store/download/project-manager-pro" : (isBas ? "https://easyworkflow.store/download/basic" : (isPro ? "https://easyworkflow.store/download/easy-workflow-pro" : null));
 
-            if ((isPM || isBas) && admin.apps.length) {
+            if ((isPM || isBas || isPro) && admin.apps.length) {
                 try {
                     const db = admin.firestore();
                     const dlSnap = await db.collection('config').doc('downloads').get();
@@ -323,17 +328,25 @@ exports.handler = async (event, context) => {
                         const links = dlSnap.data();
                         if (isPM && links.projectmanager) finalDownloadLink = links.projectmanager;
                         else if (isBas && links.basic) finalDownloadLink = links.basic;
+                        else if (isPro && links.pro) finalDownloadLink = links.pro;
                     }
                 } catch (e) {
                     console.warn("Failed to fetch dynamic download link for frontend:", e.message);
                 }
             }
 
-            // Secure License Generation & Database Storage for Project Manager
-            if (tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager')) {
+            // Secure License Generation & Database Storage for Project Manager and Easy Workflow Pro
+            if (isPM || isPro) {
+                const isLocal = event.headers && event.headers.host && (event.headers.host.includes('localhost') || event.headers.host.includes('127.0.0.1'));
+
                 if (!admin.apps.length) {
-                    console.error("CRITICAL: Firebase Admin not initialized. Cannot securely store license.");
-                    return { statusCode: 500, headers, body: JSON.stringify({ error: `Backend database connection error. Contact support. (${firebaseInitError})` }) };
+                    if (isLocal) {
+                        console.warn("Local testing: Firebase Admin not initialized. Mocking license generation.");
+                        generatedLicense = "TEST-" + generate16DigitKey().substring(5);
+                    } else {
+                        console.error("CRITICAL: Firebase Admin not initialized. Cannot securely store license.");
+                        return { statusCode: 500, headers, body: JSON.stringify({ error: "Backend database connection error. Contact support." }) };
+                    }
                 } else {
                     const db = admin.firestore();
                     const cleanEmail = email.toLowerCase().trim();
@@ -399,7 +412,8 @@ exports.handler = async (event, context) => {
                     if (leadDocId) {
                         const isPMTier = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
                         const isBasicTier = tier.toLowerCase().replace(/\s+/g, '').includes('basic');
-                        const newStatus = (isPMTier || isBasicTier) ? 'verified' : 'paid';
+                        const isProTier = tier.toLowerCase().replace(/\s+/g, '').includes('pro');
+                        const newStatus = (isPMTier || isBasicTier || isProTier) ? 'verified' : 'paid';
                         const updateObj = {
                             status: newStatus,
                             paymentId: paymentId,

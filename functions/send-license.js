@@ -21,17 +21,21 @@ exports.handler = async (event, context) => {
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
     try {
-        const { email, name, tier, licenseLink, licenseKey, message } = JSON.parse(event.body);
+        const { email, name, tier, licenseLink, licenseKey, message, isFollowUp } = JSON.parse(event.body);
 
-        if (!email || (!licenseLink && !licenseKey)) {
-            return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: "Missing email or link/key" }) };
+        if (!email) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: "Missing email" }) };
+        }
+        if (!isFollowUp && (!licenseLink && !licenseKey)) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: "Missing link/key" }) };
         }
 
-        // --- Fetch Dynamic Download Link (if Project Manager) ---
+        // --- Fetch Dynamic Download Link (if Project Manager or Pro) ---
         let dynamicLink = "https://easyworkflow.store/download";
         const isProjectManager = tier && tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
+        const isPro = tier && tier.toLowerCase().replace(/\s+/g, '').includes('pro') && !isProjectManager;
 
-        if (isProjectManager && licenseKey) {
+        if ((isProjectManager || isPro) && licenseKey) {
             try {
                 const admin = require('firebase-admin');
                 if (!admin.apps.length) {
@@ -47,8 +51,10 @@ exports.handler = async (event, context) => {
                     const dlSnap = await db.collection('config').doc('downloads').get();
                     if (dlSnap.exists) {
                         const links = dlSnap.data();
-                        if (links.projectmanager) {
+                        if (isProjectManager && links.projectmanager) {
                             dynamicLink = links.projectmanager;
+                        } else if (isPro && links.pro) {
+                            dynamicLink = links.pro;
                         }
                     }
                 }
@@ -58,7 +64,17 @@ exports.handler = async (event, context) => {
         }
 
         let emailHtml = '';
-        if (licenseKey) {
+        let emailSubject = '';
+
+        if (isFollowUp) {
+            emailSubject = `${tier ? tier : 'Easy Workflow'} - Follow up regarding your request`;
+            emailHtml = `
+                <div style="font-family: sans-serif; color: #111; line-height: 1.6; font-size: 15px; padding: 20px;">
+                    ${message ? message.replace(/\n/g, '<br>') : 'Hello,'}
+                </div>
+            `;
+        } else if (licenseKey) {
+            emailSubject = `🔥 Access Granted | Your ${tier ? tier.toUpperCase() : ''} Toolkit is Ready!`;
             emailHtml = `
                 <!DOCTYPE html>
                 <html>
@@ -84,6 +100,7 @@ exports.handler = async (event, context) => {
                 </body>
                 </html>`;
         } else {
+            emailSubject = `🔥 Access Granted | Your ${tier ? tier.toUpperCase() : ''} Toolkit is Ready!`;
             emailHtml = `
                 <!DOCTYPE html>
                 <html>
@@ -166,7 +183,7 @@ exports.handler = async (event, context) => {
         const mailOptions = {
             from: `"Easy Workflow Support" <${process.env.GMAIL_USER}>`,
             to: email,
-            subject: `🔥 Access Granted | Your ${tier ? tier.toUpperCase() : ''} Toolkit is Ready!`,
+            subject: emailSubject,
             html: emailHtml
         };
 
