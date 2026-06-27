@@ -312,7 +312,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <!-- Cashfree SDK v3 -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <style>
@@ -343,13 +343,15 @@
                     <span class="pro-only">🚀</span>
                     <span class="free-only">⚡</span>
                     <span class="autocaptions-only">🎙️</span>
-                    <span class="projectmanager-only"><span style="display:inline-block; width:14px; height:18px; background-color:#f97316; border-radius:2px; vertical-align:middle; margin-bottom:4px;"></span></span>
+                    <span class="projectmanager-only"><span
+                            style="display:inline-block; width:14px; height:18px; background-color:#f97316; border-radius:2px; vertical-align:middle; margin-bottom:4px;"></span></span>
                 </span>
                 <span class="logo-text">
                     <span class="pro-only">Easy Workflow <span class="logo-pro">Pro</span></span>
                     <span class="free-only">Easy Workflow</span>
                     <span class="autocaptions-only">Auto captions <span class="logo-pro">pro</span></span>
-                    <span class="projectmanager-only" style="color: #f97316;">Project Manager <span class="logo-pro">Pro</span></span>
+                    <span class="projectmanager-only" style="color: #f97316;">Project Manager <span
+                            class="logo-pro">Pro</span></span>
                 </span>
             </a>
             <ul class="nav-links" id="navLinks">
@@ -502,7 +504,7 @@
             <!-- PRO Stats -->
             <div class="hero-stats reveal pro-only">
                 <div class="stat">
-                    <span class="stat-number" data-target="50">0</span>+
+                    <span class="stat-number" data-target="200">0</span>+
                     <span class="stat-label">Downloads</span>
                 </div>
                 <div class="stat-divider"></div>
@@ -592,6 +594,12 @@
                         <span class="mockup-tab" data-mockup-tab="savecomp">💾 Save Comp</span>
                         <span class="mockup-tab" data-mockup-tab="shape">🔷 Shape</span>
                         <span class="mockup-tab" data-mockup-tab="analyse">📊 Analyse</span>
+                        <span class="mockup-tab" data-mockup-tab="gradient"><i class="fa-solid fa-palette"></i>
+                            Gradient</span>
+                        <span class="mockup-tab" data-mockup-tab="carousel"><i class="fa-solid fa-share-nodes"></i>
+                            Carousel</span>
+                        <span class="mockup-tab" data-mockup-tab="expression"><i class="fa-solid fa-code"></i>
+                            Expressions</span>
                         <span class="mockup-tab" data-mockup-tab="about">ℹ About</span>
                     </div>
                     <!-- AUTO CAPTIONS Mockup Tabs -->
@@ -604,7 +612,9 @@
                     </div>
                     <!-- PROJECT MANAGER Mockup Tabs -->
                     <div class="mockup-tabs projectmanager-only">
-                        <span class="mockup-tab active" data-mockup-tab="projectmanager"><span style="display:inline-block; width:12px; height:16px; background-color:#f97316; border-radius:2px; vertical-align:middle; margin-right:4px; margin-bottom:2px;"></span> Project Manager Pro</span>
+                        <span class="mockup-tab active" data-mockup-tab="projectmanager"><span
+                                style="display:inline-block; width:12px; height:16px; background-color:#f97316; border-radius:2px; vertical-align:middle; margin-right:4px; margin-bottom:2px;"></span>
+                            Project Manager Pro</span>
                     </div>
                     <!-- ========== TAB: EASY WORKFLOW PRO (exact replica) ========== -->
                     <div class="mockup-panel active" data-panel="workflow">
@@ -1523,6 +1533,313 @@
                         </div>
                     </div>
 
+                    <!-- ========== TAB: EXPRESSION ========== -->
+                    <div class="mockup-panel" data-panel="expression">
+                        <div
+                            style="padding:15px; background:#0b0b0b; height:100%; box-sizing:border-box; overflow-y:auto; display:flex; flex-direction:column; gap:15px; font-family:var(--font-body); border-radius:8px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                <div
+                                    style="color:#aaa; font-weight:800; font-size:11px; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-desktop" style="color:#60a5fa; font-size:14px;"></i> CUSTOM
+                                    EXPRESSIONS
+                                </div>
+                                <div style="color:#666; font-size:12px; cursor:pointer;"><i
+                                        class="fa-solid fa-circle-question"></i></div>
+                            </div>
+
+                            <input type="text" placeholder="Expression Name..."
+                                style="background:#111; border:1px solid #222; padding:12px; color:white; border-radius:4px; font-size:12px; width:100%; box-sizing:border-box; outline:none;">
+                            <textarea placeholder="Enter your expression here..."
+                                style="background:#111; border:1px solid #222; padding:12px; color:white; border-radius:4px; font-size:12px; width:100%; height:90px; box-sizing:border-box; font-family:monospace; resize:none; outline:none;"></textarea>
+
+                            <div style="display:flex; gap:10px;">
+                                <div
+                                    style="flex:1; background:#10b981; color:black; text-align:center; padding:10px; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer; letter-spacing:0.5px;">
+                                    <i class="fa-solid fa-lock" style="margin-right:4px;"></i> SAVE
+                                </div>
+                                <div
+                                    style="flex:1; background:#8b5cf6; color:white; text-align:center; padding:10px; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer; letter-spacing:0.5px;">
+                                    <i class="fa-solid fa-bolt" style="margin-right:4px;"></i> APPLY
+                                </div>
+                            </div>
+
+                            <div
+                                style="background:#0f172a; border:1px solid #1e3a8a; color:#3b82f6; text-align:center; padding:10px; border-radius:6px; font-size:10px; font-weight:800; cursor:pointer; letter-spacing:0.5px;">
+                                <i class="fa-solid fa-satellite-dish" style="margin-right:4px;"></i> SCAN LAYER
+                                EXPRESSIONS
+                            </div>
+
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                                <div style="color:#888; font-weight:800; font-size:11px; letter-spacing:1px;">SAVED
+                                    EXPRESSIONS</div>
+                                <div style="color:#3b82f6; font-size:11px; cursor:pointer; font-weight:600;"><i
+                                        class="fa-solid fa-rotate-right"></i> Refresh</div>
+                            </div>
+
+                            <div
+                                style="background:#111; border:1px solid #1a1a1a; border-radius:6px; padding:40px 10px; text-align:center; color:#555; font-size:11px; font-style:italic;">
+                                No saved expressions yet.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== TAB: GRADIENT ========== -->
+                    <div class="mockup-panel" data-panel="gradient">
+                        <div
+                            style="padding:15px; background:#0b0b0b; height:100%; box-sizing:border-box; overflow-y:auto; display:flex; flex-direction:column; gap:15px; font-family:var(--font-body); border-radius:8px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1f1f1f; padding-bottom:12px;">
+                                <div
+                                    style="color:#aaa; font-weight:800; font-size:11px; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-palette" style="color:#8b5cf6; font-size:14px;"></i> GRADIENT
+                                    BACKGROUNDS
+                                </div>
+                                <div
+                                    style="display:flex; align-items:center; gap:6px; color:#a855f7; font-size:10px; font-weight:800; letter-spacing:0.5px;">
+                                    <div style="width:14px; height:14px; background:white; border-radius:2px;"></div>
+                                    ANIMATE FLOW
+                                </div>
+                            </div>
+                            <div
+                                style="display:flex; justify-content:flex-end; gap:15px; font-size:11px; color:#aaa; border-bottom:1px solid #1f1f1f; padding-bottom:12px;">
+                                <label style="display:flex; align-items:center; gap:6px; color:white; cursor:pointer;">
+                                    <div
+                                        style="width:12px; height:12px; border-radius:50%; border:2px solid #0ea5e9; box-sizing:border-box; display:flex; justify-content:center; align-items:center;">
+                                        <div style="width:6px; height:6px; background:#0ea5e9; border-radius:50%;">
+                                        </div>
+                                    </div> Linear
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                    <div
+                                        style="width:12px; height:12px; border-radius:50%; background:#fff; box-sizing:border-box;">
+                                    </div> Radial
+                                </label>
+                            </div>
+                            <div
+                                style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; padding-bottom:10px;">
+                                <!-- SWATCHES -->
+                                <div
+                                    style="background:linear-gradient(135deg, #7117EA, #EA6060); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">SUNSET
+                                        VIBES</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#7117EA &rarr; #EA6060
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #FF007F, #00F2FE); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div
+                                        style="color:white; font-size:8px; font-weight:800; margin-bottom:2px; white-space:nowrap; overflow:hidden;">
+                                        CYBERPUNK NE...</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#FF007F &rarr; #00F2FE
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #8E2DE2, #4A00E0); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">ROYAL
+                                        PURPLE</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#8E2DE2 &rarr; #4A00E0
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #A8FF78, #78FFD6); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">NORDIC
+                                        AURORA</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px; color:#333;">#A8FF78 &rarr;
+                                        #78FFD6</div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #00C6FF, #0072FF); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">OCEAN
+                                        BREEZE</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#00C6FF &rarr; #0072FF
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #FF9A9E, #FECFEF); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">PEACH
+                                        PARADISE</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px; color:#333;">#FF9A9E &rarr;
+                                        #FECFEF</div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #FF416C, #FF4B2B); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">CRIMSON
+                                        GLOW</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#FF416C &rarr; #FF4B2B
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #141E30, #243B55); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">SPACE
+                                        DUST</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#141E30 &rarr; #243B55
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #F12711, #F5AF19); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">WARM
+                                        FLAME</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#F12711 &rarr; #F5AF19
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #00B4DB, #0083B0); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">MINTY
+                                        FRESH</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#00B4DB &rarr; #0083B0
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #11998E, #38EF7D); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">MAGIC
+                                        EMERALD</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#11998E &rarr; #38EF7D
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:linear-gradient(135deg, #FF00CC, #3333FF); border-radius:6px; aspect-ratio:1.2; padding:6px; display:flex; flex-direction:column; justify-content:flex-end;">
+                                    <div style="color:white; font-size:8px; font-weight:800; margin-bottom:2px;">COSMIC
+                                        PURPLE</div>
+                                    <div style="color:rgba(255,255,255,0.7); font-size:6px;">#FF00CC &rarr; #3333FF
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== TAB: CAROUSEL ========== -->
+                    <div class="mockup-panel" data-panel="carousel">
+                        <div
+                            style="padding:15px; background:#0b0b0b; height:100%; box-sizing:border-box; overflow-y:auto; display:flex; flex-direction:column; gap:15px; font-family:var(--font-body); border-radius:8px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; border-bottom:1px solid #1f1f1f; padding-bottom:12px;">
+                                <div
+                                    style="color:#aaa; font-weight:800; font-size:12px; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-share-nodes"
+                                        style="color:#a855f7; font-size:14px; transform:rotate(-90deg);"></i> CAROUSEL &
+                                    ORBIT
+                                </div>
+                                <div
+                                    style="border:1px solid #333; padding:4px 10px; border-radius:12px; font-size:9px; color:#aaa; cursor:pointer; font-weight:700;">
+                                    <i class="fa-solid fa-circle-question" style="margin-right:2px;"></i> How to Use
+                                </div>
+                            </div>
+
+                            <div
+                                style="background:#130b1a; border:1px solid #2e1a47; border-radius:6px; padding:12px 15px; display:flex; justify-content:space-between; align-items:center;">
+                                <div style="color:white; font-weight:900; font-size:14px; letter-spacing:0.5px;">COPIES
+                                </div>
+                                <div
+                                    style="background:#000; border:1px solid #222; border-radius:4px; padding:6px 0; width:65%; text-align:center; color:white; font-size:14px; font-weight:bold;">
+                                    5</div>
+                            </div>
+
+                            <div style="background:#111; border:1px solid #1f1f1f; border-radius:8px; padding:15px;">
+                                <div
+                                    style="color:#888; font-size:11px; margin-bottom:12px; display:flex; align-items:center; gap:6px; font-weight:700;">
+                                    <i class="fa-solid fa-sliders"></i> Rig Effects
+                                </div>
+                                <div style="display:flex; gap:8px; margin-bottom:15px;">
+                                    <div
+                                        style="flex:1; background:#0a0a0a; border:1px solid #222; color:white; padding:8px 12px; border-radius:4px; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
+                                        Custom... <i class="fa-solid fa-chevron-down"
+                                            style="font-size:10px; color:#555;"></i>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; border:1px solid #222; padding:8px 12px; border-radius:4px; color:#555;">
+                                        <i class="fa-solid fa-lock"></i>
+                                    </div>
+                                    <div
+                                        style="border:1px solid #8b5cf6; color:#a855f7; padding:8px 12px; border-radius:4px; font-size:11px; display:flex; align-items:center; gap:6px; font-weight:700;">
+                                        <i class="fa-solid fa-magnifying-glass"></i> Detect
+                                    </div>
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                    <!-- toggles -->
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-water" style="margin-right:6px; color:#666;"></i>
+                                            Depth Fade</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-wind" style="margin-right:6px; color:#666;"></i>
+                                            Float</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-rocket" style="margin-right:6px; color:#666;"></i>
+                                            Fly-In</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-globe" style="margin-right:6px; color:#666;"></i> 3D
+                                            Sphere</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-camera" style="margin-right:6px; color:#666;"></i>
+                                            Look At Cam</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-cube" style="margin-right:6px; color:#666;"></i>
+                                            Fake 3D</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-layer-group"
+                                                style="margin-right:6px; color:#666;"></i> Cover Flow</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-dna" style="margin-right:6px; color:#666;"></i> DNA
+                                            Helix</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-basketball"
+                                                style="margin-right:6px; color:#666;"></i> Physics</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600;">
+                                        <span><i class="fa-solid fa-fill-drip"
+                                                style="margin-right:6px; color:#666;"></i> Atmo Tint</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                    <div
+                                        style="background:#0a0a0a; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#999; font-weight:600; grid-column:span 2;">
+                                        <span><i class="fa-solid fa-meteor" style="margin-right:6px; color:#666;"></i>
+                                            Cinematic Motion Blur</span><span
+                                            style="background:#1a1a1a; color:#555; padding:3px 6px; border-radius:4px; font-size:9px; font-weight:800;">OFF</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:10px; margin-top:5px;">
+                                <div
+                                    style="background:#a855f7; color:white; text-align:center; padding:12px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer; letter-spacing:0.5px; box-shadow:0 0 15px rgba(168,85,247,0.3);">
+                                    <i class="fa-solid fa-rotate" style="margin-right:6px;"></i> CREATE CAROUSEL (3D)
+                                </div>
+                                <div
+                                    style="background:#3b82f6; color:white; text-align:center; padding:12px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer; letter-spacing:0.5px;">
+                                    <i class="fa-solid fa-snowflake" style="margin-right:6px;"></i> CREATE ORBIT (2D)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ========== TAB: ABOUT (exact replica) ========== -->
                     <div class="mockup-panel" data-panel="about">
                         <div class="ew-section" style="text-align:center;padding:16px;align-items:center">
@@ -1960,6 +2277,41 @@
                     <h3>Comp Saver</h3>
                     <p>Save compositions with thumbnails. Search, filter by client, organize your project library.</p>
                 </div>
+                <div class="feature-card reveal" data-delay="800">
+                    <div class="feature-icon" style="--icon-color: #8a2be2;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Expression Carousel</h3>
+                    <p>Quickly browse and apply a library of powerful After Effects expressions in a visual carousel.
+                    </p>
+                </div>
+                <div class="feature-card reveal" data-delay="900">
+                    <div class="feature-icon" style="--icon-color: #ff1493;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="2" x2="12" y2="22"></line>
+                        </svg>
+                    </div>
+                    <h3>Gradient Generator</h3>
+                    <p>Easily generate, manage, and apply complex gradients to your layers.</p>
+                </div>
+                <div class="feature-card reveal" data-delay="1000">
+                    <div class="feature-icon" style="--icon-color: #3b82f6;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 12A10 10 0 1 1 2 12a10 10 0 0 1 20 0z"></path>
+                            <path d="M12 2a10 10 0 0 1 10 10"></path>
+                        </svg>
+                    </div>
+                    <h3>Carousel & Orbit</h3>
+                    <p>Easily create stunning 3D carousels or 2D orbits with toggles for depth fade, look at cam, and
+                        physics.</p>
+                </div>
             </div>
             <!-- AUTO CAPTIONS Features Grid -->
             <div class="features-grid autocaptions-only">
@@ -2216,6 +2568,10 @@
                     <button class="tab-btn" data-tab="shape">🔷 Shape</button>
                     <button class="tab-btn" data-tab="disablefx">✂ Disable FX</button>
                     <button class="tab-btn" data-tab="savecomp">💾 Save Comp</button>
+                    <button class="tab-btn" data-tab="gradient"><i class="fa-solid fa-palette"></i> Gradient</button>
+                    <button class="tab-btn" data-tab="carousel"><i class="fa-solid fa-share-nodes"></i>
+                        Carousel</button>
+                    <button class="tab-btn" data-tab="expression"><i class="fa-solid fa-code"></i> Expressions</button>
                 </div>
                 <!-- AUTO CAPTIONS Tabs Nav -->
                 <div class="tabs-nav autocaptions-only">
@@ -2735,6 +3091,79 @@
                             </ul>
                         </div>
                     </div>
+                    <!-- EXPRESSION TAB -->
+                    <div class="tab-panel pro-only" id="tab-expression">
+                        <div class="tab-info">
+                            <h3>{ } Expression Carousel</h3>
+                            <p>Quickly browse and apply a library of powerful After Effects expressions in a visual
+                                carousel without writing any code.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🎡</span>
+                                    <div>
+                                        <strong>VISUAL CAROUSEL</strong>
+                                        <span>Preview expressions before applying them</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">⚡</span>
+                                    <div>
+                                        <strong>ONE-CLICK APPLY</strong>
+                                        <span>Apply complex physics and mathematical expressions instantly</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- GRADIENT TAB -->
+                    <div class="tab-panel pro-only" id="tab-gradient">
+                        <div class="tab-info">
+                            <h3>🌈 Gradient Generator</h3>
+                            <p>Easily generate, manage, and apply complex gradients to your layers to create stunning
+                                visuals.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🎨</span>
+                                    <div>
+                                        <strong>CUSTOM PRESETS</strong>
+                                        <span>Save and load your favorite gradient configurations</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">✨</span>
+                                    <div>
+                                        <strong>DYNAMIC BLENDING</strong>
+                                        <span>Smooth color transitions mapped directly to your layers</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- CAROUSEL TAB -->
+                    <div class="tab-panel pro-only" id="tab-carousel">
+                        <div class="tab-info">
+                            <h3><i class="fa-solid fa-share-nodes"></i> Carousel & Orbit</h3>
+                            <p>Easily create stunning 3D carousels or 2D orbits with one click. Manage depth fade,
+                                fly-in animations, physics, and more.</p>
+                            <ul class="tab-features">
+                                <li>
+                                    <span class="tf-icon">🌀</span>
+                                    <div>
+                                        <strong>12+ RIG EFFECTS</strong>
+                                        <span>Toggles for Cinematic Motion Blur, Fake 3D, Look At Cam, Depth Fade</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="tf-icon">⚙️</span>
+                                    <div>
+                                        <strong>INSTANT RIGGING</strong>
+                                        <span>Just enter the number of copies and click Create. Easy Workflow handles
+                                            the rest.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                     <!-- FREE: SRT TOOLS TAB -->
                     <div class="tab-panel free-only" id="tab-free-srt">
                         <div class="tab-info">
@@ -3148,6 +3577,22 @@
                     <h3>Manage & Export</h3>
                     <p>Right-click any item for advanced proxy controls, footage replacement, precomposition, reveal in
                         Explorer, and more — all without leaving the panel.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TUTORIAL VIDEO -->
+    <section class="tutorial-section ew-only" id="tutorial">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-tag">TUTORIAL</span>
+                <h2 class="section-title">Easy Workflow<br><span class="gradient-text">In Action</span></h2>
+                <p class="section-subtitle">Watch this tutorial video to see the easy workflow and learn how to get the most out of our extension.</p>
+            </div>
+            <div class="video-wrapper reveal">
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/A3wzet1kKZU" title="Easy Workflow Tutorial Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 </div>
             </div>
         </div>
