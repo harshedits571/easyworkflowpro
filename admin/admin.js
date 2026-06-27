@@ -1317,7 +1317,7 @@ window.logoutMachine = async function (licenseId, machineId) {
             // Support Easy Workflow: Delete from Realtime DB to trigger startup logout!
             if (data.email) {
                 const safeEmail = data.email.toLowerCase().replace(/[@.]/g, '_');
-                fetch("https://easyworkflowpro-default-rtdb.firebaseio.com/users/" + safeEmail + "/" + machineId + ".json", {
+                fetch("https://easy-workflow-pro-default-rtdb.firebaseio.com/users/" + safeEmail + "/" + machineId + ".json", {
                     method: "DELETE"
                 }).catch(e => console.error("RTDB cleanup error:", e));
             }
