@@ -576,14 +576,21 @@
         function renderProductCard(tier, container) {
             const t = tier.toLowerCase();
             
-            // Smarter License Lookup
-            // Aggregate ALL license keys that match this tier name (including fuzzy matches)
+            // Helper to get product category for accurate grouping
+            const getCat = (name) => {
+                const n = (name || '').toLowerCase();
+                if (n.includes('projectmanager') || n.includes('project') || n.includes('pm')) return 'projectmanager';
+                if (n.includes('autocaptions') || n.includes('caption')) return 'autocaptions';
+                if (n.includes('basic')) return 'basic';
+                if (n.includes('pro')) return 'pro';
+                return n;
+            };
+
+            // Aggregate ONLY license keys that match the exact product category
+            const category = getCat(t);
             let licenseKeys = [];
             Object.keys(allLicenses).forEach(lt => {
-                if (lt.includes(t) || t.includes(lt) || 
-                    (t.includes('project') && lt.includes('project')) ||
-                    (t.includes('caption') && lt.includes('caption')) ||
-                    (t.includes('pro') && lt.includes('pro') && !t.includes('manager') && !lt.includes('manager'))) {
+                if (getCat(lt) === category) {
                     licenseKeys = licenseKeys.concat(allLicenses[lt]);
                 }
             });
