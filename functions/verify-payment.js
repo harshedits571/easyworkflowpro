@@ -238,27 +238,43 @@ exports.handler = async (event, context) => {
 
         // 1. VERIFY WITH GATEWAY
         if (method === 'cashfree') {
-            const appId = process.env.CASHFREE_APP_ID;
-            const secretKey = process.env.CASHFREE_SECRET_KEY;
-            const isProduction = !secretKey.includes('test');
-            const baseUrl = isProduction
-                ? `https://api.cashfree.com/pg/orders/${paymentId}`
-                : `https://sandbox.cashfree.com/pg/orders/${paymentId}`;
+            const appId = process.env.CASHFREE_APP_ID || '';
+            const secretKey = process.env.CASHFREE_SECRET_KEY || '';
+            const isLocal = event.headers && event.headers.host && (event.headers.host.includes('localhost') || event.headers.host.includes('127.0.0.1'));
 
-            const cfRes = await axios.get(baseUrl, {
-                headers: {
-                    'x-client-id': appId,
-                    'x-client-secret': secretKey,
-                    'x-api-version': '2023-08-01'
-                }
-            });
-
-            if (cfRes.data) {
-                if (cfRes.data.order_status === 'PAID') {
+            if (!appId || !secretKey) {
+                if (isLocal) {
+                    console.warn("Local testing: Cashfree credentials missing. Simulating successful verification.");
                     isVerified = true;
-                    amountPaid = `${cfRes.data.order_currency} ${cfRes.data.order_amount}`;
-                } else if (cfRes.data.order_status === 'ACTIVE') {
-                    isPending = true;
+                    amountPaid = "TEST 100.00";
+                } else {
+                    console.error("Cashfree credentials missing in environment variables.");
+                }
+            } else {
+                const isProduction = secretKey ? !secretKey.includes('test') : (process.env.NODE_ENV === 'production');
+                const baseUrl = isProduction
+                    ? `https://api.cashfree.com/pg/orders/${paymentId}`
+                    : `https://sandbox.cashfree.com/pg/orders/${paymentId}`;
+
+                try {
+                    const cfRes = await axios.get(baseUrl, {
+                        headers: {
+                            'x-client-id': appId,
+                            'x-client-secret': secretKey,
+                            'x-api-version': '2023-08-01'
+                        }
+                    });
+
+                    if (cfRes.data) {
+                        if (cfRes.data.order_status === 'PAID') {
+                            isVerified = true;
+                            amountPaid = `${cfRes.data.order_currency} ${cfRes.data.order_amount}`;
+                        } else if (cfRes.data.order_status === 'ACTIVE') {
+                            isPending = true;
+                        }
+                    }
+                } catch (cfErr) {
+                    console.error("[Cashfree Verify Error]:", cfErr.response ? cfErr.response.data : cfErr.message);
                 }
             }
         }

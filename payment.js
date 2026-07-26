@@ -2141,7 +2141,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            const result = await res.json();
+            const responseText = await res.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonErr) {
+                console.error('[Verify] Non-JSON response:', responseText);
+                throw new Error('Server verification response invalid. Payment recorded, please refresh.');
+            }
 
             if (result.verified) {
 
