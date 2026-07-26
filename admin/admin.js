@@ -480,6 +480,10 @@ window.viewLead = function (leadId) {
             <span class="modal-detail-value">${lead.timestamp ? formatDate(lead.timestamp, true) : '—'}</span>
         </div>
         <div class="modal-detail-row">
+            <span class="modal-detail-label">License Key</span>
+            <span class="modal-detail-value" style="font-family:monospace;font-size:13px;font-weight:bold;color:#f59e0b;">${escapeHtml(lead.licenseKey || 'Not Saved to DB')}</span>
+        </div>
+        <div class="modal-detail-row">
             <span class="modal-detail-label">Session Nonce</span>
             <span class="modal-detail-value" style="font-family:monospace;font-size:10px;max-width:180px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(lead.nonce || '—')}</span>
         </div>
@@ -508,6 +512,13 @@ window.viewLead = function (leadId) {
             </button>
         `;
     }
+    if (lead.status === 'paid' || lead.status === 'verified') {
+        actions += `
+            <button class="modal-action-btn success" style="background:#22c55e;color:#000;font-weight:700;" onclick="saveLeadLicenseToDatabase('${lead.id}')">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Save License to DB
+            </button>
+        `;
+    }
     if (lead.status === 'paid') {
         actions += `
             <button class="modal-action-btn success" onclick="updateLeadStatus('${lead.id}', 'verified')">
@@ -526,6 +537,65 @@ window.viewLead = function (leadId) {
     // Reset composer state
     closeLicenseComposer();
     closeFollowUpComposer();
+};
+
+window.saveLeadLicenseToDatabase = async function (leadId) {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const email = (lead.email || '').toLowerCase().trim();
+    if (!email) {
+        showToast('Customer email is missing!', 'error');
+        return;
+    }
+
+    // Use lead's existing license key or generate new 16-digit key
+    let licenseKey = lead.licenseKey;
+    if (!licenseKey || licenseKey === '—') {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let res = '';
+        for (let i = 0; i < 16; i++) {
+            if (i > 0 && i % 4 === 0) res += '-';
+            res += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        licenseKey = res;
+    }
+
+    const tier = (lead.tier || 'Easy Workflow Pro').toLowerCase().replace(/\s+/g, '');
+
+    try {
+        // 1. Save to /licenses/{licenseKey}
+        await db.collection('licenses').doc(licenseKey).set({
+            licenseKey: licenseKey,
+            email: email,
+            tier: tier,
+            name: lead.name || 'Customer',
+            paymentId: lead.paymentId || 'admin_saved',
+            status: 'active',
+            machineId: null,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. Save to /license_by_email/{email}
+        await db.collection('license_by_email').doc(email).set({
+            licenseKeys: firebase.firestore.FieldValue.arrayUnion(licenseKey),
+            tier: tier,
+            status: 'active',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // 3. Update lead with the saved license key
+        await db.collection('leads').doc(leadId).update({
+            licenseKey: licenseKey,
+            status: 'verified',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast(`License ${licenseKey} saved to Firestore & Licenses tab!`, 'success');
+        closeLeadModal();
+    } catch (err) {
+        showToast('Error saving license: ' + err.message, 'error');
+    }
 };
 
 // License Email Composer Logic

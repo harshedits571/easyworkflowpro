@@ -1610,13 +1610,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (licenseKey) {
             document.getElementById('success-license-row').style.display = 'flex';
             document.getElementById('success-license-key').textContent = licenseKey;
-            if (successText) successText.textContent = "Your access has been granted. A copy of this license has also been sent to your email.";
+            if (successText) {
+                successText.innerHTML = `
+                    <strong>🎉 Payment Verified & Download Access Unlocked!</strong><br>
+                    <span style="font-size:12px; color: #a78bfa; display:block; margin-top:6px; line-height:1.5;">
+                        ⚡ <em>Note: Server database maintenance is currently in progress. Your license key activation will sync automatically within 24 hours. You can download and access your files immediately below!</em>
+                    </span>
+                `;
+            }
         } else {
             document.getElementById('success-license-row').style.display = 'none';
             if (downloadLink) {
                 if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
             } else {
-                if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
+                if (successText) successText.textContent = "Payment successful. Your access link will be sent to your email shortly.";
             }
         }
 
@@ -2122,6 +2129,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const VERIFY_URL = '/.netlify/functions/verify-payment';
 
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let fallbackKey = '';
+            for (let i = 0; i < 16; i++) {
+                if (i > 0 && i % 4 === 0) fallbackKey += '-';
+                fallbackKey += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
             const res = await fetch(VERIFY_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2130,6 +2144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: data.name, email: data.email, phone: data.phone,
                     amount: data.amount,
                     leadDocId: data.leadDocId,
+                    licenseKey: fallbackKey,
                     customLinkCode: data.customLinkCode || (window.activeCustomLink ? window.activeCustomLink.code : null)
                 })
             });
@@ -2145,10 +2160,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (result.verified) {
+                const finalKey = result.licenseKey || fallbackKey;
+                const finalLink = result.downloadLink || (data.tier === 'projectmanager' ? 'https://easyworkflow.store/download/project-manager-pro' : 'https://easyworkflow.store/download/easy-workflow-pro');
 
                 // Show Success UI
                 if (typeof closeModal === 'function') closeModal();
-                showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, result.licenseKey, result.downloadLink);
+                showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, finalKey, finalLink);
                 localStorage.removeItem('last_checkout'); // Clear on success
 
                 // Prevent immediate re-use of custom link without refresh

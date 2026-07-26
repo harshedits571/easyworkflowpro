@@ -226,7 +226,7 @@ exports.handler = async (event, context) => {
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
     try {
-        const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId } = JSON.parse(event.body);
+        const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId, licenseKey: clientLicenseKey } = JSON.parse(event.body);
 
         if (!paymentId || !method) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing payment information" }) };
@@ -351,10 +351,10 @@ exports.handler = async (event, context) => {
                 if (!admin.apps.length) {
                     if (isLocal) {
                         console.warn("Local testing: Firebase Admin not initialized. Mocking license generation.");
-                        generatedLicense = "TEST-" + generate16DigitKey().substring(5);
+                        generatedLicense = clientLicenseKey || ("TEST-" + generate16DigitKey().substring(5));
                     } else {
                         console.warn("Firebase Admin not initialized. Generating fallback license.");
-                        generatedLicense = generate16DigitKey();
+                        generatedLicense = clientLicenseKey || generate16DigitKey();
                     }
                 } else {
                     try {
@@ -367,8 +367,8 @@ exports.handler = async (event, context) => {
                             console.warn(`Payment ${paymentId} already processed. Returning existing key to prevent duplicates.`);
                             generatedLicense = paymentCheck.docs[0].data().licenseKey;
                         } else {
-                            // Generate a new key for every new payment (allow multiple purchases per email)
-                            generatedLicense = generate16DigitKey();
+                            // Generate or use passed key for every new payment
+                            generatedLicense = clientLicenseKey || generate16DigitKey();
                             const normalizedTier = tier.toLowerCase().replace(/\s+/g, '');
                             console.log(`Generating new secure license key for ${cleanEmail}: ${generatedLicense}`);
 
