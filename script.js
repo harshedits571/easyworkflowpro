@@ -1375,6 +1375,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ───────────────────────────── VERIFYING PAYMENT LOADING OVERLAY ─────────────────────────────
+    const verifyingOverlay = document.createElement('div');
+    verifyingOverlay.id = 'payment-verifying-overlay';
+    verifyingOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,9,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:10001;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
+
+    const verifyingBox = document.createElement('div');
+    verifyingBox.id = 'payment-verifying-box';
+    verifyingBox.style.cssText = 'background:#12121a;border:1px solid rgba(167,139,250,0.25);border-radius:28px;padding:40px 32px;max-width:440px;width:90%;text-align:center;box-shadow:0 30px 100px rgba(124,58,237,0.25);position:relative;';
+
+    verifyingBox.innerHTML = `
+        <style>
+            @keyframes pulseRing { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+            @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div style="position:relative;width:86px;height:86px;margin:0 auto 24px;">
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;border:4px solid rgba(167,139,250,0.15);border-top:4px solid #7c3aed;border-right:4px solid #22c55e;animation:spinRing 1s linear infinite;"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;color:#a78bfa;animation:pulseRing 2s ease-in-out infinite;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+        </div>
+        <h3 style="color:white;margin:0 0 8px 0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Verifying Payment</h3>
+        <p style="color:#a78bfa;font-size:14px;font-weight:600;margin:0 0 18px 0;letter-spacing:0.3px;">Generating Your Secure License Key...</p>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:14px 18px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <i class="fa-solid fa-lock" style="color:#22c55e;font-size:14px;"></i>
+            <span style="color:rgba(255,255,255,0.75);font-size:13px;font-weight:500;">Please do not close or refresh this page</span>
+        </div>
+    `;
+
+    verifyingOverlay.appendChild(verifyingBox);
+    document.body.appendChild(verifyingOverlay);
+
+    function showVerifyingScreen() {
+        if (typeof closeModal === 'function') closeModal();
+        verifyingOverlay.style.display = 'flex';
+        void verifyingOverlay.offsetWidth;
+        verifyingOverlay.style.opacity = '1';
+        document.body.style.overflow = 'hidden';
+        
+        window.onbeforeunload = function() {
+            return "Your payment is being verified. Please stay on this page to receive your license key.";
+        };
+    }
+
+    function hideVerifyingScreen() {
+        window.onbeforeunload = null;
+        verifyingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            verifyingOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300);
+    }
+
     // ───────────────────────────── SUCCESS SCREEN ─────────────────────────────
     const successOverlay = document.createElement('div');
     successOverlay.id = 'payment-success-overlay';
@@ -1610,14 +1662,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (licenseKey) {
             document.getElementById('success-license-row').style.display = 'flex';
             document.getElementById('success-license-key').textContent = licenseKey;
-            if (successText) {
-                successText.innerHTML = `
-                    <strong>🎉 Payment Verified & Download Access Unlocked!</strong><br>
-                    <span style="font-size:12px; color: #a78bfa; display:block; margin-top:6px; line-height:1.5;">
-                        ⚡ <em>Note: Server database maintenance is currently in progress. Your license key activation will sync automatically within 24 hours. You can download and access your files immediately below!</em>
-                    </span>
-                `;
-            }
+            if (successText) successText.textContent = "Your access has been granted. A copy of this license has also been sent to your email.";
         } else {
             document.getElementById('success-license-row').style.display = 'none';
             if (downloadLink) {
@@ -1863,7 +1908,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentLeadDocId = null;
 
         try {
-            if (window.firestore && !window.firebaseQuotaExceeded) {
+            if (window.firestore) {
                 console.log('[Firebase] Saving lead to Firestore...');
                 const amountText = window.activeCustomLink
                     ? (tierConfig.label + ` (Ref: ${window.activeCustomLink.code})`)
@@ -2121,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro', projectmanager: 'Project Manager Pro' };
 
         console.log(`[Success] Handling ${method} payment: ${paymentId}`);
-        showToast('Verifying payment... Please wait.', 'success');
+        showVerifyingScreen(); // Lock screen with beautiful verification loader
 
         // Note: Lead and Payment updates are securely handled by the backend (verify-payment) now.
 
@@ -2163,7 +2208,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const finalKey = result.licenseKey || fallbackKey;
                 const finalLink = result.downloadLink || (data.tier === 'projectmanager' ? 'https://easyworkflow.store/download/project-manager-pro' : 'https://easyworkflow.store/download/easy-workflow-pro');
 
-                // Show Success UI
+                // Hide Verifying Screen & Show Success UI
+                hideVerifyingScreen();
                 if (typeof closeModal === 'function') closeModal();
                 showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, finalKey, finalLink);
                 localStorage.removeItem('last_checkout'); // Clear on success
@@ -2175,9 +2221,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
                 }
             } else {
+                hideVerifyingScreen();
                 throw new Error((result.error || 'Verification failed') + (result.details ? ' - ' + result.details : ''));
             }
         } catch (err) {
+            hideVerifyingScreen();
             console.error('[Verify] Error:', err);
             showToast('Verification Error: ' + err.message, 'error');
         }

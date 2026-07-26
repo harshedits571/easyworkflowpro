@@ -62,6 +62,16 @@ let currentPaymentsLimit = 10;
 let currentLicensesLimit = 10;
 let analyticsChartInstance = null;
 
+function formatTierLabel(tier) {
+    if (!tier) return 'Easy Workflow Pro';
+    const t = tier.toString().toLowerCase().trim();
+    if (t === 'pro' || t === 'easy workflow pro' || t === 'easyworkflowpro') return 'Easy Workflow Pro';
+    if (t === 'basic' || t === 'easy workflow basic' || t === 'easyworkflowbasic') return 'Easy Workflow Basic';
+    if (t === 'autocaptions' || t === 'auto captions pro' || t === 'autocaptionspro') return 'Auto Captions Pro';
+    if (t === 'projectmanager' || t === 'project manager pro' || t === 'projectmanagerpro') return 'Project Manager Pro';
+    return tier;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // TOAST NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════
@@ -416,10 +426,25 @@ function renderLeads(filterStatus = 'all', filterTier = 'all', search = '') {
     document.getElementById('leads-count-badge').textContent = allLeads.length;
 }
 
-// Lead Filters / Search
-document.getElementById('leads-search').addEventListener('input', applyLeadFilters);
-document.getElementById('leads-filter').addEventListener('change', applyLeadFilters);
-document.getElementById('leads-tier-filter').addEventListener('change', applyLeadFilters);
+// Lead Filters / Search with Smart Auto-Expanding Search
+let leadsSearchDebounce = null;
+document.getElementById('leads-search')?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(leadsSearchDebounce);
+    leadsSearchDebounce = setTimeout(() => {
+        if (query.length > 0) {
+            db.collection('leads').orderBy('timestamp', 'desc').limit(500).get().then(snapshot => {
+                allLeads = [];
+                snapshot.forEach(doc => allLeads.push({ id: doc.id, ...doc.data() }));
+                applyLeadFilters();
+            }).catch(err => console.error(err));
+        } else {
+            listenToLeads();
+        }
+    }, 300);
+});
+document.getElementById('leads-filter')?.addEventListener('change', applyLeadFilters);
+document.getElementById('leads-tier-filter')?.addEventListener('change', applyLeadFilters);
 document.getElementById('leads-limit-select')?.addEventListener('change', (e) => {
     currentLeadsLimit = parseInt(e.target.value) || 10;
     listenToLeads();
@@ -561,7 +586,7 @@ window.saveLeadLicenseToDatabase = async function (leadId) {
         licenseKey = res;
     }
 
-    const tier = (lead.tier || 'Easy Workflow Pro').toLowerCase().replace(/\s+/g, '');
+    const tier = formatTierLabel(lead.tier);
 
     try {
         // 1. Save to /licenses/{licenseKey}
@@ -951,8 +976,21 @@ function renderPayments(search = '') {
     }).join('');
 }
 
-document.getElementById('payments-search').addEventListener('input', (e) => {
-    renderPayments(e.target.value);
+let paymentsSearchDebounce = null;
+document.getElementById('payments-search')?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(paymentsSearchDebounce);
+    paymentsSearchDebounce = setTimeout(() => {
+        if (query.length > 0) {
+            db.collection('payments').orderBy('timestamp', 'desc').limit(500).get().then(snapshot => {
+                allPayments = [];
+                snapshot.forEach(doc => allPayments.push({ id: doc.id, ...doc.data() }));
+                renderPayments(query);
+            }).catch(err => console.error(err));
+        } else {
+            listenToPayments();
+        }
+    }, 300);
 });
 document.getElementById('payments-limit-select')?.addEventListener('change', (e) => {
     currentPaymentsLimit = parseInt(e.target.value) || 10;
@@ -1365,7 +1403,7 @@ function renderLicenses(filterStatus = 'all', filterTier = 'all', search = '') {
             <tr>
                 <td><span style="font-family:monospace;font-weight:bold;color:#f59e0b;">${escapeHtml(license.licenseKey || '—')}</span></td>
                 <td>${escapeHtml(license.email || '—')}</td>
-                <td>${escapeHtml(license.tier || '—')}</td>
+                <td>${escapeHtml(formatTierLabel(license.tier))}</td>
                 <td>${machineDisplay}</td>
                 <td><span class="status-badge status-${statusClass}" style="background:${license.status === 'blocked' ? '#ef4444' : ''}">${statusLabel}</span></td>
                 <td>${date}</td>
@@ -1418,7 +1456,22 @@ window.logoutMachine = async function (licenseId, machineId) {
 }
 
 
-document.getElementById('licenses-search')?.addEventListener('input', applyLicenseFilters);
+let licensesSearchDebounce = null;
+document.getElementById('licenses-search')?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(licensesSearchDebounce);
+    licensesSearchDebounce = setTimeout(() => {
+        if (query.length > 0) {
+            db.collection('licenses').orderBy('createdAt', 'desc').limit(500).get().then(snapshot => {
+                allLicenses = [];
+                snapshot.forEach(doc => allLicenses.push({ id: doc.id, ...doc.data() }));
+                applyLicenseFilters();
+            }).catch(err => console.error(err));
+        } else {
+            listenToLicenses();
+        }
+    }, 300);
+});
 document.getElementById('licenses-status-filter')?.addEventListener('change', applyLicenseFilters);
 document.getElementById('licenses-tier-filter')?.addEventListener('change', applyLicenseFilters);
 document.getElementById('licenses-limit-select')?.addEventListener('change', (e) => {
