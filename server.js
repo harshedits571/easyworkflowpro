@@ -132,9 +132,10 @@ app.post('/verify-payment', async (req, res) => {
         let amountPaid = "N/A";
 
         if (method === 'cashfree') {
-            const baseUrl = IS_PRODUCTION
-                ? `https://api.cashfree.com/pg/payments/${paymentId}`
-                : `https://sandbox.cashfree.com/pg/payments/${paymentId}`;
+            const isProduction = CASHFREE_SECRET_KEY ? !CASHFREE_SECRET_KEY.includes('test') : (process.env.NODE_ENV === 'production');
+            const baseUrl = isProduction
+                ? `https://api.cashfree.com/pg/orders/${paymentId}`
+                : `https://sandbox.cashfree.com/pg/orders/${paymentId}`;
 
             const cfRes = await axios.get(baseUrl, {
                 headers: {
@@ -143,9 +144,9 @@ app.post('/verify-payment', async (req, res) => {
                     'x-api-version': '2023-08-01'
                 }
             });
-            if (cfRes.data && cfRes.data.payment_status === 'SUCCESS') {
+            if (cfRes.data && (cfRes.data.order_status === 'PAID' || cfRes.data.order_status === 'SUCCESS')) {
                 isVerified = true;
-                amountPaid = `${cfRes.data.payment_currency} ${cfRes.data.payment_amount}`;
+                amountPaid = `${cfRes.data.order_currency} ${cfRes.data.order_amount}`;
             }
         } else if (method === 'razorpay') {
             // Local Razorpay verification (dummy success if no secret, same as production)
