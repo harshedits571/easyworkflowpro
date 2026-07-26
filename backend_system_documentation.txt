@@ -1,0 +1,134 @@
+==========================================================================
+Project Manager: BACKEND & LICENSE SYSTEM DOCUMENTATION
+==========================================================================
+This document provides a detailed overview of the backend architecture, 
+database schema, and license verification logic for Project Manager Hub products.
+
+1. INFRASTRUCTURE OVERVIEW
+--------------------------------------------------------------------------
+- Web Host: Netlify (Frontend)
+- Backend Logic: Netlify Functions (Serverless Node.js)
+- Database: Google Firebase Firestore
+- Authentication: Firebase Auth (Google Provider)
+- Email System: Nodemailer via Gmail SMTP
+
+2. FIRESTORE COLLECTIONS & DATA SCHEMA
+--------------------------------------------------------------------------
+
+A. Collection: `leads`
+Purpose: Stores verified purchase/order information.
+- Document ID: Random ID
+- Fields:
+  - email: (string) Customer's email
+  - status: (string) 'verified' or 'pending'
+  - name: (string) Customer's name
+  - amount: (number) Total paid
+  - currency: (string) 'INR' or 'USD'
+  - tier: (string) Product tier (e.g., 'projectmanager', 'pro')
+  - orderId: (string) Payment gateway reference ID
+  - createdAt: (timestamp) Server timestamp
+
+B. Collection: `licenses`
+Purpose: Primary storage for active software licenses.
+- Document ID: [The License Key itself]
+- Fields:
+  - email: (string) Owner's email
+  - licenseKey: (string) 16-digit key (XXXX-XXXX-XXXX-XXXX)
+  - paymentId: (string) Associated lead/payment ID
+  - tier: (string) Product tier (e.g., 'projectmanager')
+  - status: (string) 'active' or 'blocked'
+  - machineId: (string) Hardware ID (Initially null, bound on first activation)
+  - createdAt: (timestamp) Server timestamp
+
+C. Collection: `license_by_email`
+Purpose: Fast mapping for lookup tools and recovery.
+- Document ID: [Customer Email]
+- Fields:
+  - licenseKey: (string) Latest generated key
+  - tier: (string) Product tier
+  - status: (string) Current status
+
+3. LICENSE GENERATION LOGIC (Netlify Function)
+--------------------------------------------------------------------------
+Location: `/functions/verify-payment.js`
+
+- Keys are generated only after 100% successful payment verification via 
+  Razorpay or Cashfree APIs.
+- The `generate16DigitKey()` function creates an uppercase alphanumeric string 
+  formatted with hyphens: XXXX-XXXX-XXXX-XXXX.
+- Once generated, the key is saved to both `licenses` and `license_by_email` 
+  collections simultaneously to ensure data integrity.
+- An automated HTML email is sent to the customer containing their unique key.
+
+4. FIREBASE SECURITY RULES (FULL SOURCE)
+--------------------------------------------------------------------------
+Location: `firestore.rules`
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(email) { return isSignedIn() && request.auth.token.email.lower() == email.lower(); }
+
+    // --- LEADS / ORDERS ---
+    match /leads/{leadId} {
+      allow read: if isOwner(resource.data.email);
+      allow create: if true; 
+      allow update: if false; // Only via Admin SDK
+    }
+
+    // --- LICENSES ---
+    match /licenses/{licenseId} {
+      allow list: if isOwner(resource.data.email);
+      allow get: if true; // Extensions need to get by ID to verify
+
+      // Secure Creation
+      allow create: if request.resource.data.serverAuthKey == 'SECURE_WEBHOOK_TK_99182x';
+      
+      // Allow extension to update machineId for hardware binding
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['machineId']);
+    }
+
+    // --- LICENSE BY EMAIL (Mapping for fast lookup) ---
+    match /license_by_email/{email} {
+      allow read: if isOwner(email);
+      allow write: if request.resource.data.serverAuthKey == 'SECURE_WEBHOOK_TK_99182x';
+    }
+
+    // --- COUPONS ---
+    match /coupons/{code} {
+      allow read: if true; 
+      allow write: if false; 
+    }
+  }
+}
+
+5. EXTENSION VERIFICATION FLOW (Handshake)
+--------------------------------------------------------------------------
+When a user opens the Adobe Extension (Manager Pro):
+
+1. UI Input: User enters their registered Email and License Key.
+2. Firestore Request:
+   Extension calls: db.collection('licenses').doc(EnteredKey).get()
+3. Validation Checks:
+   a. Check if Document Exists: If not, key is invalid.
+   b. Check Email: If `doc.data().email` != EnteredEmail, key is invalid.
+   c. Check Status: If `doc.data().status` != 'active', license is blocked.
+   d. Hardware Binding (DRM):
+      - If `doc.data().machineId` is null/empty: This is the first activation. 
+        Update the document with the user's current Hardware ID.
+      - If `doc.data().machineId` is NOT null: Compare it with the current 
+        Hardware ID. If it doesn't match, deny access (User is trying to 
+        use one license on too many PCs).
+
+6. IMPORTANT ENDPOINTS & CONFIG
+--------------------------------------------------------------------------
+- Firebase Project ID: easy-workflow-pro
+- Payment Verification URL: /.netlify/functions/verify-payment
+- Admin Panel: /admin/index.html (Requires Admin Authentication)
+
+==========================================================================
+DOCUMENT END
+==========================================================================

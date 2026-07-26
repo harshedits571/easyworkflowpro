@@ -42,10 +42,12 @@ function isPastDeadline() {
 // ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
 // TEST MODE FOR NETLIFY DEPLOYMENT
 // Force using the test key regardless of domain.
-var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
+var RZP_KEY_ID = 'rzp_test_SpeZLNxvrt4A09';
 
 /* WHEN READY FOR LIVE PRODUCTION, REPLACE ABOVE WITH THIS:
-var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
+var RZP_KEY_ID = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'rzp_test_SpeZLNxvrt4A09'
+    : 'rzp_live_SeElRgESDAvD5D';
 */
 var CF_APP_ID = '121259341f82a4cec1053b822723952121';
 var CF_MODE = 'production';
@@ -1619,9 +1621,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             document.getElementById('success-license-row').style.display = 'none';
             if (downloadLink) {
-                if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
+                 if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
             } else {
-                if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
+                 if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
             }
         }
 
@@ -2027,7 +2029,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // BACKEND URL: Auto-switch between local Node server and Netlify production
-            const BACKEND_URL = '/api/create-order';
+            const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/create-order'
+                : '/api/create-order';
 
             const orderRes = await fetch(BACKEND_URL, {
                 method: 'POST',
@@ -2121,7 +2125,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Verify with Backend (and trigger Auto-Email)
         try {
-            const VERIFY_URL = '/.netlify/functions/verify-payment';
+            const VERIFY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/verify-payment'
+                : '/.netlify/functions/verify-payment';
 
             const res = await fetch(VERIFY_URL, {
                 method: 'POST',
@@ -2148,7 +2154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof cleanUpCustomLink === 'function') cleanUpCustomLink();
                 if (window.history && window.history.replaceState) {
                     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+                    window.history.replaceState({path: cleanUrl}, '', cleanUrl);
                 }
             } else {
                 throw new Error((result.error || 'Verification failed') + (result.details ? ' - ' + result.details : ''));

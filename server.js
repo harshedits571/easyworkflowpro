@@ -16,13 +16,13 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 // Security: Server-authoritative Pricing Registry fallbacks
 const RZP_AMOUNTS = {
     basic: { INR: 100, USD: 2 },
-    pro: { INR: 1500, USD: 18 },
+    pro: { INR: 100, USD: 2 },
     autocaptions: { INR: 800, USD: 10 }
 };
 
 const RZP_AMOUNTS_DEADLINE = {
     basic: { INR: 100, USD: 2 },
-    pro: { INR: 2000, USD: 24 },
+    pro: { INR: 100, USD: 2 },
     autocaptions: { INR: 800, USD: 10 }
 };
 
@@ -64,7 +64,7 @@ app.post('/create-order', async (req, res) => {
             return res.status(500).json({ error: "API Keys missing from environment" });
         }
 
-        const { tier, currency, name, email, phone } = req.body;
+        const { tier, currency, name, email, phone, amount: clientAmount } = req.body;
 
         // NEW: Try to get dynamic pricing first
         let verifiedAmount;
@@ -76,10 +76,14 @@ app.post('/create-order', async (req, res) => {
             verifiedAmount = firestorePricing[priceKey];
         }
 
-        // Fallback to hardcoded registry
+        // Fallback to client amount or hardcoded registry if Firestore fails
         if (!verifiedAmount) {
-            const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
-            verifiedAmount = registry[tier]?.[currency || "INR"];
+            if (typeof clientAmount === 'number' && clientAmount > 0) {
+                verifiedAmount = clientAmount;
+            } else {
+                const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
+                verifiedAmount = registry[tier]?.[currency || "INR"];
+            }
         }
 
         if (!verifiedAmount) {

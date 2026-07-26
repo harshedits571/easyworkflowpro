@@ -56,6 +56,10 @@ let allCoupons = [];
 let unsubLeads = null;
 let unsubPayments = null;
 let unsubCoupons = null;
+let unsubLicenses = null;
+let currentLeadsLimit = 10;
+let currentPaymentsLimit = 10;
+let currentLicensesLimit = 10;
 let analyticsChartInstance = null;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -328,8 +332,10 @@ document.getElementById('downloads-form').addEventListener('submit', async (e) =
 // LEADS — Real-time Listener
 // ═══════════════════════════════════════════════════════════════════
 function listenToLeads() {
+    if (unsubLeads) unsubLeads();
     unsubLeads = db.collection('leads')
         .orderBy('timestamp', 'desc')
+        .limit(currentLeadsLimit)
         .onSnapshot(snapshot => {
             allLeads = [];
             snapshot.forEach(doc => {
@@ -414,6 +420,10 @@ function renderLeads(filterStatus = 'all', filterTier = 'all', search = '') {
 document.getElementById('leads-search').addEventListener('input', applyLeadFilters);
 document.getElementById('leads-filter').addEventListener('change', applyLeadFilters);
 document.getElementById('leads-tier-filter').addEventListener('change', applyLeadFilters);
+document.getElementById('leads-limit-select')?.addEventListener('change', (e) => {
+    currentLeadsLimit = parseInt(e.target.value) || 10;
+    listenToLeads();
+});
 
 function applyLeadFilters() {
     const search = document.getElementById('leads-search').value;
@@ -813,8 +823,10 @@ function parseAmountToInr(amountStr) {
 // PAYMENTS — Real-time Listener 
 // ═══════════════════════════════════════════════════════════════════
 function listenToPayments() {
+    if (unsubPayments) unsubPayments();
     unsubPayments = db.collection('payments')
         .orderBy('timestamp', 'desc')
+        .limit(currentPaymentsLimit)
         .onSnapshot(snapshot => {
             allPayments = [];
             snapshot.forEach(doc => {
@@ -871,6 +883,10 @@ function renderPayments(search = '') {
 
 document.getElementById('payments-search').addEventListener('input', (e) => {
     renderPayments(e.target.value);
+});
+document.getElementById('payments-limit-select')?.addEventListener('change', (e) => {
+    currentPaymentsLimit = parseInt(e.target.value) || 10;
+    listenToPayments();
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1219,8 +1235,10 @@ window.deleteCoupon = async function (id) {
 let allLicenses = [];
 
 function listenToLicenses() {
-    db.collection('licenses')
+    if (unsubLicenses) unsubLicenses();
+    unsubLicenses = db.collection('licenses')
         .orderBy('createdAt', 'desc')
+        .limit(currentLicensesLimit)
         .onSnapshot(snapshot => {
             allLicenses = [];
             snapshot.forEach(doc => {
@@ -1333,6 +1351,10 @@ window.logoutMachine = async function (licenseId, machineId) {
 document.getElementById('licenses-search')?.addEventListener('input', applyLicenseFilters);
 document.getElementById('licenses-status-filter')?.addEventListener('change', applyLicenseFilters);
 document.getElementById('licenses-tier-filter')?.addEventListener('change', applyLicenseFilters);
+document.getElementById('licenses-limit-select')?.addEventListener('change', (e) => {
+    currentLicensesLimit = parseInt(e.target.value) || 10;
+    listenToLicenses();
+});
 
 function applyLicenseFilters() {
     const search = document.getElementById('licenses-search').value;
@@ -1431,6 +1453,7 @@ window.listenToCustomLinks = function () {
     if (unsubCustomLinks) unsubCustomLinks();
     unsubCustomLinks = db.collection('custom_links')
         .orderBy('createdAt', 'desc')
+        .limit(50)
         .onSnapshot(snapshot => {
             allCustomLinks = [];
             snapshot.forEach(doc => {

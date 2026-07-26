@@ -4,14 +4,14 @@ const axios = require('axios');
 // These are FALLBACK values. The primary source is Firestore (set via Admin Dashboard).
 const RZP_AMOUNTS = {
   basic: { INR: 100, USD: 2 },
-  pro: { INR: 1500, USD: 18 },
+  pro: { INR: 100, USD: 2 },
   autocaptions: { INR: 800, USD: 10 }
 };
 
 // After-deadline amounts (fallback)
 const RZP_AMOUNTS_DEADLINE = {
   basic: { INR: 100, USD: 2 },
-  pro: { INR: 2000, USD: 24 },
+  pro: { INR: 100, USD: 2 },
   autocaptions: { INR: 800, USD: 10 }
 };
 
@@ -42,7 +42,6 @@ async function getFirestorePricing() {
       
       return pricing;
     }
-    return null;
     return null;
   } catch (err) {
     console.warn('[Firestore] Could not fetch pricing, using fallback:', err.message);
@@ -142,7 +141,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { tier, currency, name, email, phone, mode, promoCode, customLinkCode } = JSON.parse(event.body);
+    const { tier, currency, name, email, phone, mode, promoCode, customLinkCode, amount: clientAmount } = JSON.parse(event.body);
 
     const appId = process.env.CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
@@ -168,11 +167,17 @@ exports.handler = async (event, context) => {
       console.log(`[Pricing] Using Firestore price: ${priceKey} = ${verifiedAmount}`);
     }
 
-    // Fallback to hardcoded prices if Firestore didn't return a value
+    // Fallback logic if Firestore is unavailable (quota exceeded or network error):
+    // Use client-provided amount if present and positive, otherwise fallback to registry defaults.
     if (!verifiedAmount) {
-      const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
-      verifiedAmount = registry[tier]?.[currency || "INR"];
-      console.log(`[Pricing] Using fallback price: ${tier}/${currency} = ${verifiedAmount}`);
+      if (typeof clientAmount === 'number' && clientAmount > 0) {
+        verifiedAmount = clientAmount;
+        console.log(`[Pricing] Using client-provided price fallback: ${verifiedAmount}`);
+      } else {
+        const registry = isPastDeadline() ? RZP_AMOUNTS_DEADLINE : RZP_AMOUNTS;
+        verifiedAmount = registry[tier]?.[currency || "INR"];
+        console.log(`[Pricing] Using fallback price: ${tier}/${currency} = ${verifiedAmount}`);
+      }
     }
 
     // Apply Custom Link pricing (takes priority over promo codes)

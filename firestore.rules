@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🚨 ADMIN UID CHECK
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.uid == 'htqWVNfy8GYaCwvcMnerPKFjUFu2' // Replace with your actual UID
+      );
+    }
+
+    // Allow a user to read data if the document's email matches their logged-in Google email
+    function isOwner() {
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email == resource.data.email;
+    }
+
+    // 1. Leads & Payments
+    match /leads/{lead} {
+      allow create: if true; 
+      allow update: if isAdmin(); 
+      // Admin can read all. Normal user can only read their own leads.
+      allow read: if isAdmin() || isOwner(); 
+      allow delete: if isAdmin();
+    }
+    match /payments/{payment} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 2. 🔑 LICENSES
+    match /licenses/{licenseKey} {
+      allow get: if true;          // Extension needs this to verify
+      
+      // Allow the extension to update ONLY machine slots and lastUsed time
+      allow update: if isAdmin() || 
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['machineIds', 'machineId', 'lastUsed']));
+      
+      // Admin can list/delete all. Normal user can only list their own licenses.
+      allow list: if isAdmin() || isOwner();
+      allow delete, create: if isAdmin();
+    }
+    
+    // 3. Website Config & Coupons
+    match /license_by_email/{email} {
+      allow get: if true;
+      allow create: if true;
+      allow list, update, delete: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /coupons/{code} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /app_config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 5. Custom Links
+    match /custom_links/{linkCode} {
+      allow read: if true;
+      allow update: if isAdmin() ||
+                       (request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['currentRedemptions', 'totalSalesINR', 'totalSalesUSD']));
+      allow create, delete: if isAdmin();
+    }
+  }
+}
