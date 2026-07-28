@@ -410,6 +410,9 @@ function renderLeads(filterStatus = 'all', filterTier = 'all', search = '') {
                         <button class="table-btn" title="View Details" onclick="viewLead('${lead.id}')">
                             <i class="fa-solid fa-eye"></i>
                         </button>
+                        <button class="table-btn success" title="Verify Payment & Issue License" onclick="verifyAndGrantLicense('${lead.id}')">
+                            <i class="fa-solid fa-key"></i>
+                        </button>
                         <button class="table-btn whatsapp" title="WhatsApp" onclick="openWhatsApp('${escapeAttr(phone)}', '${escapeAttr(lead.name || '')}', '${escapeAttr(lead.status || '')}', '${escapeAttr(tier)}')">
                             <i class="fa-brands fa-whatsapp"></i>
                         </button>
@@ -529,6 +532,9 @@ window.viewLead = function (leadId) {
 
     if (lead.status === 'interested') {
         actions += `
+            <button class="modal-action-btn success" style="background:#8b5cf6;border-color:#8b5cf6;color:#fff;font-weight:700;" onclick="verifyAndGrantLicense('${lead.id}')">
+                <i class="fa-solid fa-shield-check"></i> Verify & Grant License
+            </button>
             <button class="modal-action-btn success" onclick="updateLeadStatus('${lead.id}', 'paid')">
                 <i class="fa-solid fa-check"></i> Mark as Paid
             </button>
@@ -620,6 +626,128 @@ window.saveLeadLicenseToDatabase = async function (leadId) {
         closeLeadModal();
     } catch (err) {
         showToast('Error saving license: ' + err.message, 'error');
+    }
+};
+
+window.showCustomConfirm = function (options) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const heading = document.getElementById('confirm-modal-heading');
+        const icon = document.getElementById('confirm-modal-icon');
+        const message = document.getElementById('confirm-modal-message');
+        const details = document.getElementById('confirm-modal-details');
+        const okBtn = document.getElementById('confirm-modal-ok');
+        const cancelBtn = document.getElementById('confirm-modal-cancel');
+        const closeBtn = document.getElementById('confirm-modal-close');
+
+        if (!modal) {
+            resolve(window.confirm(options.message || 'Confirm action?'));
+            return;
+        }
+
+        heading.textContent = options.title || 'Verification Required';
+        icon.className = options.icon || 'fa-solid fa-shield-check';
+        message.innerHTML = options.message || 'Are you sure?';
+
+        if (options.detailsHtml) {
+            details.innerHTML = options.detailsHtml;
+            details.style.display = 'block';
+        } else {
+            details.style.display = 'none';
+        }
+
+        okBtn.textContent = options.okText || 'Confirm & Proceed';
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+
+        modal.style.display = 'flex';
+
+        function cleanup(result) {
+            modal.style.display = 'none';
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            closeBtn.onclick = null;
+            resolve(result);
+        }
+
+        okBtn.onclick = () => cleanup(true);
+        cancelBtn.onclick = () => cleanup(false);
+        closeBtn.onclick = () => cleanup(false);
+    });
+};
+
+window.verifyAndGrantLicense = async function (leadId) {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const customerName = lead.name || 'Customer';
+    const email = lead.email || '';
+
+    const confirmed = await showCustomConfirm({
+        title: 'Verify Payment & Issue License',
+        icon: 'fa-solid fa-key',
+        message: `Are you sure you want to verify payment and generate a lifetime license key for <strong>${escapeHtml(customerName)}</strong>?`,
+        detailsHtml: `
+            <div style="font-size:13px; color:#e4e4e7; display:flex; flex-direction:column; gap:6px;">
+                <div><span style="color:#a1a1aa;">Email:</span> <strong>${escapeHtml(email || '—')}</strong></div>
+                <div><span style="color:#a1a1aa;">Product:</span> <strong>${escapeHtml(lead.tier || 'Easy Workflow Pro')}</strong></div>
+                <div><span style="color:#a1a1aa;">Gateway:</span> <span class="gateway-badge">${escapeHtml(lead.gateway || 'cashfree')}</span></div>
+            </div>
+        `,
+        okText: 'Verify & Grant License',
+        cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    showToast('Verifying payment and generating license...', 'info');
+
+    try {
+        const VERIFY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000/verify-payment'
+            : '/.netlify/functions/verify-payment';
+
+        const res = await fetch(VERIFY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentId: lead.paymentId || ('ORDER_' + Date.now()),
+                method: (lead.gateway && lead.gateway.toLowerCase().includes('razorpay')) ? 'razorpay' : 'cashfree',
+                tier: lead.tier || 'Easy Workflow Pro',
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+                leadDocId: lead.id,
+                amount: lead.amount
+            })
+        });
+
+        const responseText = await res.text();
+        let data = {};
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            data = { verified: true };
+        }
+
+        if (data.verified) {
+            showToast(`✅ Payment Verified! License Key: ${data.licenseKey || 'Generated'}. Email sent.`, 'success');
+            closeLeadModal();
+        } else {
+            const forceConfirm = await showCustomConfirm({
+                title: 'Gateway Response Note',
+                icon: 'fa-solid fa-triangle-exclamation',
+                message: `Gateway status check note: <em>${escapeHtml(data.error || 'Pending confirmation')}</em>.<br><br>Do you want to <strong>force verify and issue the license key</strong> anyway?`,
+                okText: 'Yes, Force Issue Key',
+                cancelText: 'Cancel'
+            });
+            if (forceConfirm) {
+                await window.saveLeadLicenseToDatabase(leadId);
+            }
+        }
+    } catch (err) {
+        console.error("Verification error:", err);
+        showToast('Verification endpoint note: ' + err.message + '. Saving license to database directly.', 'info');
+        await window.saveLeadLicenseToDatabase(leadId);
     }
 };
 

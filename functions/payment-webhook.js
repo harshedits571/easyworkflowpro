@@ -1,4 +1,4 @@
-const axios = require('axios');
+const verifyPayment = require('./verify-payment');
 
 exports.handler = async (event, context) => {
   // CORS Headers
@@ -12,76 +12,89 @@ exports.handler = async (event, context) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
   try {
-    const body = JSON.parse(event.body);
-    console.log("🔔 Webhook Received:", body);
+    const body = JSON.parse(event.body || '{}');
+    console.log("🔔 Webhook Received:", JSON.stringify(body));
 
-    // Identify Success (Works and checks for Cashfree & Razorpay)
-    const isSuccess = body.event_type === "PAYMENT_SUCCESS" || 
-                      body.event === "payment.captured" || 
-                      body.txStatus === "SUCCESS";
+    // Identify Success for Cashfree & Razorpay (handles all event strings like PAYMENT_SUCCESS, success payment, payment.captured, etc.)
+    const evt = (body.event_type || body.event || body.type || body.txStatus || '').toString().toLowerCase();
+    const isSuccess = evt.includes('success') || evt.includes('captured') || body.txStatus === "SUCCESS";
     
-    if (!isSuccess) return { statusCode: 200, headers, body: "Ignored (not success)" };
+    if (!isSuccess) {
+      console.log("[Webhook] Ignored non-success event:", body.event_type || body.event || body.type);
+      return { statusCode: 200, headers, body: "Ignored (not success)" };
+    }
+
+    // Determine Gateway Method
+    let method = 'cashfree';
+    if (evt.includes('razorpay') || body.event === 'payment.captured' || body.payload?.payment) {
+      method = 'razorpay';
+    }
+
+    // Extract Payment/Order ID
+    let paymentId = null;
+    if (method === 'razorpay') {
+      paymentId = body.payload?.payment?.entity?.id;
+    } else {
+      paymentId = body.data?.order?.order_id || body.data?.payment?.cf_payment_id || body.data?.order_id || body.orderId || body.order_id;
+    }
+
+    if (!paymentId) {
+      console.error("[Webhook Error] No paymentId or order_id found in payload");
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing paymentId/order_id in webhook" }) };
+    }
 
     // Get Customer Info
     const email = body.data?.customer_details?.customer_email || 
+                  body.data?.customer_details?.email || 
                   body.payload?.payment?.entity?.email || 
-                  body.customerEmail;
+                  body.customerEmail || null;
     
     const name = body.data?.customer_details?.customer_name || 
-                 body.payload?.payment?.entity?.notes?.name || "Customer";
+                 body.data?.customer_details?.name || 
+                 body.payload?.payment?.entity?.notes?.name || null;
 
-    if (!email) throw new Error("No customer email found in webhook data.");
+    const phone = body.data?.customer_details?.customer_phone || 
+                  body.data?.customer_details?.phone || 
+                  body.payload?.payment?.entity?.contact || null;
 
-    // --- DISABLED AS PER REQUEST (WILL ENABLE LATER) ---
-    /*
-    // 1. GENERATE UNIQUE GUMROAD CODE
-    const uniqueCode = "EW-PRO-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const tier = body.payload?.payment?.entity?.notes?.product || 
+                 body.payload?.payment?.entity?.notes?.tier || 
+                 body.data?.order?.order_tags?.tier || 
+                 "Easy Workflow Pro";
 
-    // 2. CREATE GUMROAD OFFER (100% OFF, 1 USE)
-    // Uses Netlify Environment Variables
-    await axios.post(
-      `https://api.gumroad.com/v2/products/${process.env.GUMROAD_PRODUCT_ID}/offers`,
-      {
-        name: `Licence for ${email}`,
-        code: uniqueCode,
-        amount_off: 10000, 
-        max_uses: 1 
-      },
-      { headers: { 'Authorization': `Bearer ${process.env.GUMROAD_TOKEN}` } }
-    );
+    const amount = body.data?.order?.order_amount || 
+                   body.data?.payment?.payment_amount || 
+                   (body.payload?.payment?.entity?.amount ? (body.payload?.payment?.entity?.amount / 100).toFixed(2) : null);
 
-    // 3. SEND THE EMAIL TO CUSTOMER (Using Resend)
-    await axios.post(
-      'https://api.resend.com/emails',
-      {
-        from: 'Easy Workflow <delivery@yourdomain.com>',
-        to: [email],
-        subject: '🎁 Your Easy Workflow Pro License Is Here!',
-        html: `
-          <h1>Hi ${name},</h1>
-          <p>Your payment was successful! Your lifetime license code for Gumroad is:</p>
-          <div style="background:#f4f4f4; padding:20px; text-align:center; border-radius:10px; border:2px dashed #7c3aed;">
-            <h2 style="font-size:32px; color:#7c3aed; margin:0;">${uniqueCode}</h2>
-          </div>
-          <p><b>How to get your files:</b></p>
-          <ol>
-            <li>Go to our <a href="https://gumroad.com/l/${process.env.GUMROAD_PRODUCT_ID}">Gumroad Product Page</a>.</li>
-            <li>Click "Buy This".</li>
-            <li>Enter your code above in the "Discount" field.</li>
-            <li>Price will become <b>₹0</b>. Complete the checkout to download!</li>
-          </ol>
-          <p>Happy creating!</p>
-        `
-      },
-      { headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
-    );
-    */
-    // ---------------------------------------------------
+    console.log(`[Webhook Processing] ${method} paymentId=${paymentId}, email=${email}, tier=${tier}`);
 
-    return { statusCode: 200, headers, body: "Automation Disabled Temporarily." };
+    // Delegate to verify-payment logic
+    const verifyEvent = {
+      httpMethod: 'POST',
+      headers: event.headers || {},
+      body: JSON.stringify({
+        paymentId,
+        method,
+        tier,
+        name,
+        email,
+        phone,
+        amount
+      })
+    };
+
+    const verifyResult = await verifyPayment.handler(verifyEvent, context);
+    console.log("[Webhook Verification Result]:", verifyResult.statusCode, verifyResult.body);
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ status: "processed", details: verifyResult.body })
+    };
 
   } catch (error) {
-    console.error("❌ Webhook Error:", error.message);
+    console.error("❌ Webhook Processing Error:", error.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
+

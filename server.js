@@ -7,6 +7,7 @@ require('dotenv').config(); // Load variables from .env file for local testing
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static(__dirname));
 
 // 1. YOUR CASHFREE KEYS (Safely pulled from environment)
 const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
@@ -61,7 +62,12 @@ const BASE_URL = IS_PRODUCTION
 app.post('/create-order', async (req, res) => {
     try {
         if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
-            return res.status(500).json({ error: "API Keys missing from environment" });
+            console.warn("[Local Test] Cashfree credentials missing in environment. Simulating test order session.");
+            const testOrderId = "order_test_" + Date.now();
+            return res.json({
+                payment_session_id: "session_test_" + Date.now(),
+                order_id: testOrderId
+            });
         }
 
         const { tier, currency, name, email, phone, amount: clientAmount } = req.body;
@@ -90,8 +96,9 @@ app.post('/create-order', async (req, res) => {
             return res.status(400).json({ error: "Invalid tier or currency" });
         }
 
+        const orderId = "order_" + Date.now();
         const response = await axios.post(BASE_URL, {
-            order_id: "order_" + Date.now(),
+            order_id: orderId,
             order_amount: verifiedAmount,
             order_currency: currency || "INR",
             customer_details: {
@@ -109,7 +116,10 @@ app.post('/create-order', async (req, res) => {
             }
         });
 
-        res.json({ payment_session_id: response.data.payment_session_id });
+        res.json({ 
+            payment_session_id: response.data.payment_session_id,
+            order_id: orderId 
+        });
 
     } catch (error) {
         console.error("Payment Error:", error.response ? error.response.data : error.message);

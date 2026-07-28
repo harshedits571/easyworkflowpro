@@ -180,6 +180,35 @@ exports.handler = async (event, context) => {
             `;
         }
 
+        // 1. Try Resend API (if process.env.RESEND_API_KEY is configured)
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (resendApiKey) {
+            try {
+                const axios = require('axios');
+                const resendFrom = process.env.RESEND_FROM_EMAIL || 'Easy Workflow <onboarding@resend.dev>';
+                await axios.post('https://api.resend.com/emails', {
+                    from: resendFrom,
+                    to: [email],
+                    subject: emailSubject,
+                    html: emailHtml
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${resendApiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log(`[Resend API Success] Manual license email sent to ${email}`);
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ success: true, message: "License email sent successfully via Resend." })
+                };
+            } catch (resendErr) {
+                console.warn("[Resend API Warning] Resend send failed, falling back to Nodemailer:", resendErr.response ? JSON.stringify(resendErr.response.data) : resendErr.message);
+            }
+        }
+
+        // 2. Nodemailer Fallback
         const mailOptions = {
             from: `"Easy Workflow Support" <${process.env.GMAIL_USER}>`,
             to: email,
@@ -192,7 +221,7 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ success: true, message: "License email sent successfully." })
+            body: JSON.stringify({ success: true, message: "License email sent successfully via Nodemailer." })
         };
 
     } catch (error) {

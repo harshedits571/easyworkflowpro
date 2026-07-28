@@ -2242,13 +2242,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cfId || rzpId) {
             console.log('[Redirect] Payment ID found in URL:', cfId || rzpId);
             const saved = localStorage.getItem('last_checkout');
+            let data = null;
             if (saved) {
-                const data = JSON.parse(saved);
-                // Ensure it's recent (within 1 hour)
-                if (Date.now() - data.ts < 3600000) {
-                    window.handlePaymentSuccess(cfId || rzpId, cfId ? 'cashfree' : 'razorpay', data);
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Date.now() - parsed.ts < 3600000) {
+                        data = parsed;
+                    }
+                } catch (e) {
+                    console.warn('[Redirect] Could not parse last_checkout:', e);
                 }
             }
+
+            // Fallback for mobile UPI app redirect when localStorage is missing
+            if (!data) {
+                console.log('[Redirect] localStorage data missing. Using backend recovery for payment:', cfId || rzpId);
+                data = {
+                    name: 'Creator',
+                    email: '',
+                    phone: '',
+                    tier: 'Easy Workflow Pro',
+                    leadDocId: null,
+                    amount: '—',
+                    customLinkCode: null
+                };
+            }
+
+            window.handlePaymentSuccess(cfId || rzpId, cfId ? 'cashfree' : 'razorpay', data);
         }
     }
     checkUrlForPayment();
