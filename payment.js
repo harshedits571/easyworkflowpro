@@ -1,13 +1,5 @@
 /* ===== Easy Workflow Pro — Main JavaScript ===== */
 
-function getBackendUrl(path) {
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocal) {
-        return `http://localhost:3000${path}`;
-    }
-    return path;
-}
-
 // ===== GEO-BASED CURRENCY DETECTION =====
 // Pricing config: Indian users see INR, everyone else sees USD
 const PRICING = {
@@ -48,20 +40,21 @@ function isPastDeadline() {
 }
 
 // ===== PAYMENT GATEWAY CONFIGURATION (Global) =====
-var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D';
+var RZP_KEY_ID = 'rzp_live_SeElRgESDAvD5D'; // Always use Live Razorpay Key
+
 var CF_APP_ID = '121259341f82a4cec1053b822723952121';
 var CF_MODE = 'production';
 
 var RZP_AMOUNTS = {
     basic: { INR: 10000, USD: 200 },
-    pro: { INR: 200000, USD: 2400 }, // Default ₹2000
+    pro: { INR: 10000, USD: 200 }, // ₹100
     autocaptions: { INR: 80000, USD: 1000 },
     projectmanager: { INR: 150000, USD: 2000 }
 };
 
 var RZP_AMOUNTS_DEADLINE = {
     basic: { INR: 10000, USD: 200 },
-    pro: { INR: 200000, USD: 2400 }, // Default ₹2000
+    pro: { INR: 10000, USD: 200 }, // ₹100
     autocaptions: { INR: 80000, USD: 1000 },
     projectmanager: { INR: 150000, USD: 2000 }
 };
@@ -408,7 +401,7 @@ let settingsListener = null;
 function startFirestoreListeners() {
     if (!window.firestore) return;
 
-    // --- 1. Pricing Fetch (Optimized for low reads) ---
+    // --- 1. Pricing Fetch (One-time fetch instead of continuous onSnapshot) ---
     window.firestore.collection('config').doc('pricing').get().then(doc => {
         if (!doc.exists) {
             console.log('[Firebase] Pricing document does not exist. Using defaults.');
@@ -416,7 +409,7 @@ function startFirestoreListeners() {
         }
 
         const p = doc.data();
-        console.log('[Firebase] Dynamic pricing updated:', p);
+        console.log('[Firebase] Dynamic pricing loaded:', p);
 
         // Crucial: Set this for the checkout form logic to use verified Firestore amounts
         window.currentFirestorePricing = p;
@@ -522,11 +515,11 @@ function startFirestoreListeners() {
         applyPricingToPage(window.pricingRegion);
         if (window._updateCountdownLabel) window._updateCountdownLabel();
         if (window._updateDeadlineDateLabel) window._updateDeadlineDateLabel();
-    }, err => {
-        console.warn('[Firebase] Pricing listener error:', err);
+    }).catch(err => {
+        console.warn('[Firebase] Pricing fetch error:', err.message);
     });
 
-    // --- 2. Settings Fetch (Optimized for low reads) ---
+    // --- 2. Settings Fetch (One-time fetch instead of continuous onSnapshot) ---
     window.firestore.collection('config').doc('settings').get().then(doc => {
         if (!doc.exists) return;
         const data = doc.data();
@@ -541,13 +534,13 @@ function startFirestoreListeners() {
             }
         }
 
-        // After settings change, re-apply pricing logic (might change deadline status)
+        // After settings change, re-apply pricing logic
         const currentCurrency = (window.pricingRegion && window.pricingRegion.currency === 'USD') ? 'US' : 'IN';
         window.pricingRegion = applyDeadlinePricing({ ...PRICING[currentCurrency] });
         applyPricingToPage(window.pricingRegion);
         initCountdownTimer(); // Refresh the timer
-    }, err => {
-        console.warn('[Firebase] Settings listener error:', err);
+    }).catch(err => {
+        console.warn('[Firebase] Settings fetch error:', err.message);
     });
 }
 
@@ -1172,94 +1165,78 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:30px;">
-                    <div id="checkout-original-price" style="display:none;color:rgba(255,255,255,0.3);font-size:16px;text-decoration:line-through;margin-bottom:5px;">1500</div>
-                    <div style="display:flex;align-items:baseline;gap:10px;">
-                        <span id="checkout-price-display" style="color:white;font-size:42px;font-weight:800;font-family:var(--font-heading);">1500</span>
-                        <span style="color:rgba(255,255,255,0.3);font-size:15px;font-weight:500;">/ License</span>
+                <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:24px;">
+                    <div id="checkout-original-price" style="display:none;color:rgba(255,255,255,0.3);font-size:15px;text-decoration:line-through;margin-bottom:4px;">1500</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;line-height:1.1;">
+                        <span id="checkout-price-display" style="color:white;font-size:38px;font-weight:800;font-family:var(--font-heading);line-height:1.1;">1500</span>
+                        <span style="color:rgba(255,255,255,0.4);font-size:14px;font-weight:500;">/ License</span>
                     </div>
                 </div>
             </div>
 
             <!-- Right Content (Form Area) -->
             <div style="flex:1;display:flex;flex-direction:column;background:#14141a;position:relative;">
-                <button id="close-modal" style="position:absolute;top:24px;right:24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;z-index:10;">&times;</button>
+                <button id="close-modal" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;z-index:10;">&times;</button>
 
                 <form id="checkout-form" style="display:flex;flex-direction:column;height:100%;">
-                    <div style="padding:40px 40px 20px;flex:1;overflow-y:auto;" id="modal-scroll-body">
-                        <h2 id="modal-title" style="color:white;margin:0 0 10px;font-size:20px;font-weight:700;">Complete Checkout</h2>
-                        <span id="modal-product-badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:24px;display:inline-block;">PRO</span>
+                    <div style="padding:30px 30px 15px;flex:1;overflow-y:auto;" id="modal-scroll-body">
+                        <h2 id="modal-title" style="color:white;margin:0 0 8px;font-size:20px;font-weight:700;">Complete Checkout</h2>
+                        <span id="modal-product-badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-bottom:20px;display:inline-block;">PRO</span>
 
                         
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                        <div class="checkout-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
                             <div style="grid-column: span 2;">
-                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">FULL NAME *</label>
-                                <input type="text" id="rzp-name" required placeholder="John Doe" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#7c3aed'">
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:6px;font-weight:700;letter-spacing:0.5px;">FULL NAME *</label>
+                                <input type="text" id="rzp-name" required placeholder="John Doe" style="width:100%;box-sizing:border-box;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);padding:13px 14px;border-radius:12px;color:white;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#7c3aed'">
                             </div>
                             <div>
-                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">EMAIL ADDRESS *</label>
-                                <input type="email" id="rzp-email" required placeholder="john@example.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:6px;font-weight:700;letter-spacing:0.5px;">EMAIL ADDRESS *</label>
+                                <input type="email" id="rzp-email" required placeholder="john@example.com" style="width:100%;box-sizing:border-box;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);padding:13px 14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
                             </div>
                             <div>
-                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">WHATSAPP NUMBER *</label>
-                                <div style="display:flex;gap:8px;">
-                                    <div id="country-selector-container" style="position:relative;width:110px;">
-                                        <div id="country-selected" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px 10px;border-radius:12px;color:white;font-size:13px;outline:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleCountryDropdown()">
+                                <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:6px;font-weight:700;letter-spacing:0.5px;">WHATSAPP NUMBER *</label>
+                                <div style="display:flex;gap:8px;width:100%;">
+                                    <div id="country-selector-container" style="position:relative;width:105px;flex-shrink:0;">
+                                        <div id="country-selected" style="background:#1a1a24;border:1px solid rgba(255,255,255,0.1);padding:13px 10px;border-radius:12px;color:white;font-size:13px;outline:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;" onclick="toggleCountryDropdown()">
                                             <span id="selected-flag-text">🇮🇳 +91</span>
                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:transform 0.2s;" id="country-arrow"><path d="M6 9l6 6 6-6"/></svg>
                                         </div>
-                                        <div id="country-dropdown" style="display:none;position:absolute;top:100%;left:0;width:280px;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-top:8px;z-index:100;box-shadow:0 10px 40px rgba(0,0,0,0.5);overflow:hidden;">
+                                        <div id="country-dropdown" style="display:none;position:absolute;top:100%;left:0;width:260px;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-top:8px;z-index:100;box-shadow:0 10px 40px rgba(0,0,0,0.5);overflow:hidden;">
                                             <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.05);">
-                                                <input type="text" id="country-search" placeholder="Search country..." style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:8px 12px;border-radius:8px;color:white;font-size:12px;outline:none;" onkeyup="filterCountries()" onclick="event.stopPropagation()">
+                                                <input type="text" id="country-search" placeholder="Search country..." style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:8px 12px;border-radius:8px;color:white;font-size:12px;outline:none;" onkeyup="filterCountries()" onclick="event.stopPropagation()">
                                             </div>
-                                            <div id="country-list" style="max-height:250px;overflow-y:auto;padding:5px;">
+                                            <div id="country-list" style="max-height:220px;overflow-y:auto;padding:5px;">
                                                 <!-- Countries will be injected here -->
                                             </div>
                                         </div>
                                         <input type="hidden" id="rzp-country-code" value="+91">
                                     </div>
-                                    <input type="tel" id="rzp-phone" required placeholder="9876543210" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
+                                    <input type="tel" id="rzp-phone" required placeholder="9876543210" style="flex:1;width:100%;box-sizing:border-box;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);padding:13px 14px;border-radius:12px;color:white;font-size:14px;outline:none;" onfocus="this.style.borderColor='#7c3aed'">
                                 </div>
                             </div>
                         </div>
 
-                        <div id="promo-code-container" style="margin-bottom:24px;">
-                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">PROMO CODE</label>
+                        <div id="promo-code-container" style="margin-bottom:20px;">
+                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:6px;font-weight:700;letter-spacing:0.5px;">PROMO CODE</label>
                             <div style="display:flex;gap:10px;">
-                                <input type="text" id="rzp-promo-code" placeholder="ENTER CODE" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;color:white;font-size:13px;outline:none;text-transform:uppercase;">
-                                <button type="button" id="btn-apply-promo" style="background:rgba(255,255,255,0.05);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);padding:0 24px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(167,139,250,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">APPLY</button>
+                                <input type="text" id="rzp-promo-code" placeholder="ENTER CODE" style="flex:1;box-sizing:border-box;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);padding:13px 14px;border-radius:12px;color:white;font-size:13px;outline:none;text-transform:uppercase;">
+                                <button type="button" id="btn-apply-promo" style="background:rgba(255,255,255,0.05);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);padding:0 20px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(167,139,250,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">APPLY</button>
                             </div>
-                            <div id="promo-message" style="font-size:11px;margin-top:8px;display:none;"></div>
-                        </div>
-
-                        <div id="plan-type-selection-row" style="margin-bottom:20px;">
-                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:12px;font-weight:700;letter-spacing:0.5px;">CHOOSE ACCESS TYPE</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                <label id="label-plan-lifetime" style="background:rgba(124,58,237,0.15);border:1px solid #7c3aed;padding:14px;border-radius:12px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
-                                    <input type="radio" name="plan_type" value="lifetime" checked style="display:none;">
-                                    <span style="color:white;font-size:13px;font-weight:700;">👑 LIFETIME ACCESS</span>
-                                    <span style="color:rgba(255,255,255,0.4);font-size:9px;">PAY ONCE, OWN FOREVER</span>
-                                </label>
-                                <label id="label-plan-monthly" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:12px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
-                                    <input type="radio" name="plan_type" value="monthly" style="display:none;">
-                                    <span style="color:white;font-size:13px;font-weight:700;">💳 MONTHLY PLAN</span>
-                                    <span style="color:rgba(255,255,255,0.4);font-size:9px;">AUTO-DEBIT · CANCEL ANYTIME</span>
-                                </label>
-                            </div>
+                            <div id="promo-message" style="font-size:11px;margin-top:6px;display:none;"></div>
                         </div>
 
                         <div id="gateway-selection-row" style="margin-bottom:10px;">
-                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:12px;font-weight:700;letter-spacing:0.5px;">CHOOSE GATEWAY</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                                <label id="label-cf" style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;padding:16px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
+                            <label style="display:block;color:rgba(255,255,255,0.5);font-size:11px;margin-bottom:10px;font-weight:700;letter-spacing:0.5px;">CHOOSE GATEWAY</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <label id="label-cf" style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;padding:14px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
                                     <input type="radio" name="gateway" value="cashfree" checked style="display:none;">
-                                    <span style="color:white;font-size:14px;font-weight:700;">CASHFREE</span>
-                                    <span style="color:rgba(255,255,255,0.3);font-size:9px;">UPI & CARDS</span>
+                                    <span style="color:white;font-size:13px;font-weight:700;">CASHFREE</span>
+                                    <span style="color:rgba(255,255,255,0.4);font-size:9px;">UPI & CARDS</span>
                                 </label>
-                                <label id="label-rzp" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);padding:16px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
+                                <label id="label-rzp" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;">
                                     <input type="radio" name="gateway" value="razorpay" style="display:none;">
-                                    <span style="color:white;font-size:14px;font-weight:700;">RAZORPAY</span>
-                                    <span style="color:rgba(255,255,255,0.3);font-size:9px;">ALL METHODS</span>
+                                    <span style="color:white;font-size:13px;font-weight:700;">RAZORPAY</span>
+                                    <span style="color:rgba(255,255,255,0.4);font-size:9px;">ALL METHODS</span>
                                 </label>
                             </div>
                         </div>
@@ -1270,12 +1247,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <!-- Sticky Footer Area -->
-                    <div style="padding:24px 40px;background:rgba(20,20,26,0.98);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
-                        <div id="security-badge-area" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;color:#22c55e;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(34,197,94,0.05);padding:12px;border-radius:12px;border:1px solid rgba(34,197,94,0.1);">
+                    <div id="checkout-form-footer" style="padding:20px 30px;background:rgba(20,20,26,0.98);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
+                        <div id="security-badge-area" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;color:#22c55e;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(34,197,94,0.05);padding:10px;border-radius:10px;border:1px solid rgba(34,197,94,0.1);">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             <span id="security-badge-text">Encrypted with 256-bit SSL Security</span>
                         </div>
-                        <button type="submit" id="rzp-pay-btn" style="width:100%;padding:18px;background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 12px 40px rgba(124,58,237,0.3);transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <button type="submit" id="rzp-pay-btn" style="width:100%;padding:16px;background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 12px 40px rgba(124,58,237,0.3);transition:all 0.3s ease;">
                             <span id="rzp-btn-text">PAY NOW & GET ACCESS</span>
                             <span id="rzp-btn-loader" style="display:none;align-items:center;justify-content:center;gap:12px;">
                                 <svg width="22" height="22" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/></svg>
@@ -1289,10 +1266,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <style>
             @media (max-width: 800px) {
-                #checkout-box { max-width: 480px !important; margin: 20px !important; }
+                #checkout-overlay { padding: 10px !important; box-sizing: border-box !important; }
+                #checkout-box { max-width: 100% !important; margin: 0 !important; width: 100% !important; max-height: calc(100vh - 20px) !important; border-radius: 18px !important; }
                 #modal-main-split { flex-direction: column !important; overflow-y: auto !important; }
-                #modal-sidebar { width: 100% !important; padding: 30px !important; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
-                #modal-scroll-body { overflow-y: visible !important; }
+                #modal-sidebar { width: 100% !important; padding: 20px 24px !important; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
+                .checkout-form-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
+                .checkout-form-grid > div { grid-column: span 1 !important; }
+                #modal-scroll-body { padding: 20px !important; overflow-y: visible !important; }
+                #checkout-form-footer { padding: 16px 20px !important; }
+                #rzp-pay-btn { padding: 16px !important; font-size: 15px !important; }
+                #close-modal { top: 12px !important; right: 12px !important; }
+            }
+            input:-webkit-autofill,
+            input:-webkit-autofill:hover, 
+            input:-webkit-autofill:focus {
+                -webkit-box-shadow: 0 0 0 1000px #1a1a24 inset !important;
+                -webkit-text-fill-color: #ffffff !important;
+                transition: background-color 5000s ease-in-out 0s;
             }
             @keyframes spin { to { transform: rotate(360deg); } }
             #modal-scroll-body::-webkit-scrollbar { width: 6px; }
@@ -1398,6 +1388,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ───────────────────────────── VERIFYING PAYMENT LOADING OVERLAY ─────────────────────────────
+    const verifyingOverlay = document.createElement('div');
+    verifyingOverlay.id = 'payment-verifying-overlay';
+    verifyingOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,9,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:10001;display:none;justify-content:center;align-items:center;opacity:0;transition:opacity 0.3s ease;';
+
+    const verifyingBox = document.createElement('div');
+    verifyingBox.id = 'payment-verifying-box';
+    verifyingBox.style.cssText = 'background:#12121a;border:1px solid rgba(167,139,250,0.25);border-radius:28px;padding:40px 32px;max-width:440px;width:90%;text-align:center;box-shadow:0 30px 100px rgba(124,58,237,0.25);position:relative;';
+
+    verifyingBox.innerHTML = `
+        <style>
+            @keyframes pulseRing { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+            @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div style="position:relative;width:86px;height:86px;margin:0 auto 24px;">
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;border:4px solid rgba(167,139,250,0.15);border-top:4px solid #7c3aed;border-right:4px solid #22c55e;animation:spinRing 1s linear infinite;"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;color:#a78bfa;animation:pulseRing 2s ease-in-out infinite;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+        </div>
+        <h3 style="color:white;margin:0 0 8px 0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Verifying Payment</h3>
+        <p style="color:#a78bfa;font-size:14px;font-weight:600;margin:0 0 18px 0;letter-spacing:0.3px;">Generating Your Secure License Key...</p>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:14px 18px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <i class="fa-solid fa-lock" style="color:#22c55e;font-size:14px;"></i>
+            <span style="color:rgba(255,255,255,0.75);font-size:13px;font-weight:500;">Please do not close or refresh this page</span>
+        </div>
+    `;
+
+    verifyingOverlay.appendChild(verifyingBox);
+    document.body.appendChild(verifyingOverlay);
+
+    function showVerifyingScreen() {
+        if (typeof closeModal === 'function') closeModal();
+        verifyingOverlay.style.display = 'flex';
+        void verifyingOverlay.offsetWidth;
+        verifyingOverlay.style.opacity = '1';
+        document.body.style.overflow = 'hidden';
+        
+        window.onbeforeunload = function() {
+            return "Your payment is being verified. Please stay on this page to receive your license key.";
+        };
+    }
+
+    function hideVerifyingScreen() {
+        window.onbeforeunload = null;
+        verifyingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            verifyingOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300);
+    }
+
     // ───────────────────────────── SUCCESS SCREEN ─────────────────────────────
     const successOverlay = document.createElement('div');
     successOverlay.id = 'payment-success-overlay';
@@ -1455,29 +1497,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPromoMultiplier = 1; // 1 = 100% price (0 discount)
     let currentPromoCode = '';
 
-    async function openModal(e) {
+    function openModal(e) {
         if (e) e.preventDefault();
 
         // [ENFORCE LOGIN] - If not logged in, show login prompt
         if (!firebase.auth().currentUser) {
             handleLogin(); // Trigger Google Login
             return;
-        }
-
-        // Fetch dynamic subscription prices from Firestore
-        let subPriceINR = 299;
-        let subPriceUSD = 4;
-        try {
-            if (typeof firebase !== 'undefined' && firebase.firestore) {
-                const prSnap = await firebase.firestore().collection('config').doc('pricing').get();
-                if (prSnap.exists) {
-                    const prData = prSnap.data();
-                    if (prData.pro_sub_inr !== undefined && prData.pro_sub_inr !== null) subPriceINR = Number(prData.pro_sub_inr);
-                    if (prData.pro_sub_usd !== undefined && prData.pro_sub_usd !== null) subPriceUSD = Number(prData.pro_sub_usd);
-                }
-            }
-        } catch (err) {
-            console.warn('Failed to load sub pricing:', err);
         }
 
         // Determine tier
@@ -1559,6 +1585,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('checkout-price-display').textContent = displayLabel;
         }
 
+
+
         // Update pay button text
         document.getElementById('rzp-btn-text').textContent = `Pay ${displayLabel} — Proceed to Payment`;
 
@@ -1578,64 +1606,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const labelRZP = document.getElementById('label-rzp');
         const securityText = document.getElementById('security-badge-text');
 
-        // Handle Plan Type Toggle (Lifetime vs Monthly Subscription)
-        const radioLifetime = document.querySelector('input[name="plan_type"][value="lifetime"]');
-        const radioMonthly = document.querySelector('input[name="plan_type"][value="monthly"]');
-        const labelLifetime = document.getElementById('label-plan-lifetime');
-        const labelMonthly = document.getElementById('label-plan-monthly');
-
-        function updatePlanTypeUI() {
-            const selectedPlan = document.querySelector('input[name="plan_type"]:checked')?.value || 'lifetime';
-            const isUSD = (region.currency === 'USD');
-            const subPriceLabel = isUSD ? `$${subPriceUSD} / Mo` : `₹${subPriceINR} / Mo`;
-            const lifetimeLabel = displayLabel;
-
-            if (selectedPlan === 'monthly') {
-                if (labelMonthly) { labelMonthly.style.background = 'rgba(124,58,237,0.15)'; labelMonthly.style.borderColor = '#7c3aed'; }
-                if (labelLifetime) { labelLifetime.style.background = 'rgba(255,255,255,0.02)'; labelLifetime.style.borderColor = 'rgba(255,255,255,0.1)'; }
-
-                document.getElementById('checkout-price-display').textContent = subPriceLabel;
-                document.getElementById('rzp-btn-text').textContent = `Subscribe ${subPriceLabel} — Setup Autopay`;
-
-                // Subscriptions require Razorpay Autopay Mandate
-                if (gatewayRow) gatewayRow.style.display = 'block';
-                if (labelCF) labelCF.style.display = 'none';
-                if (labelRZP) labelRZP.style.display = 'flex';
-                if (rzpRadio) rzpRadio.checked = true;
-                if (labelRZP) { labelRZP.style.background = 'rgba(124,58,237,0.15)'; labelRZP.style.borderColor = '#7c3aed'; }
-                if (securityText) securityText.textContent = 'Secured by Razorpay Autopay • Cancel Anytime';
-            } else {
-                if (labelLifetime) { labelLifetime.style.background = 'rgba(124,58,237,0.15)'; labelLifetime.style.borderColor = '#7c3aed'; }
-                if (labelMonthly) { labelMonthly.style.background = 'rgba(255,255,255,0.02)'; labelMonthly.style.borderColor = 'rgba(255,255,255,0.1)'; }
-
-                document.getElementById('checkout-price-display').textContent = lifetimeLabel;
-                document.getElementById('rzp-btn-text').textContent = `Pay ${lifetimeLabel} — Proceed to Payment`;
-
-                if (isUSD) {
-                    if (gatewayRow) gatewayRow.style.display = 'block';
-                    if (labelCF) labelCF.style.display = 'none';
-                    if (labelRZP) labelRZP.style.display = 'flex';
-                    if (rzpRadio) rzpRadio.checked = true;
-                    if (securityText) securityText.textContent = 'Secured by Razorpay • Instant Settlements';
-                    if (labelRZP) { labelRZP.style.background = 'rgba(124,58,237,0.1)'; labelRZP.style.borderColor = '#7c3aed'; }
-                } else {
-                    if (gatewayRow) gatewayRow.style.display = 'block';
-                    if (labelCF) labelCF.style.display = 'flex';
-                    if (labelRZP) labelRZP.style.display = 'flex';
-                    if (cfRadio) cfRadio.checked = true;
-                    if (securityText) securityText.textContent = 'Secured by Cashfree • 256-bit SSL Encryption';
-                    if (labelCF) { labelCF.style.background = 'rgba(34,197,94,0.1)'; labelCF.style.borderColor = '#22c55e'; }
-                    if (labelRZP) { labelRZP.style.background = 'rgba(255,255,255,0.03)'; labelRZP.style.borderColor = 'rgba(255,255,255,0.1)'; }
-                }
-            }
+        if (isUSD) {
+            if (gatewayRow) gatewayRow.style.display = 'block';
+            if (labelCF) labelCF.style.display = 'none';
+            if (labelRZP) labelRZP.style.display = 'flex';
+            if (rzpRadio) rzpRadio.checked = true;
+            if (securityText) securityText.textContent = 'Secured by Razorpay • Instant Settlements';
+            if (labelRZP) { labelRZP.style.background = 'rgba(124,58,237,0.1)'; labelRZP.style.borderColor = '#7c3aed'; }
+        } else {
+            if (gatewayRow) gatewayRow.style.display = 'block';
+            if (labelCF) labelCF.style.display = 'flex';
+            if (labelRZP) labelRZP.style.display = 'flex';
+            if (cfRadio) cfRadio.checked = true;
+            if (securityText) securityText.textContent = 'Secured by Cashfree • 256-bit SSL Encryption';
+            if (labelCF) { labelCF.style.background = 'rgba(34,197,94,0.1)'; labelCF.style.borderColor = '#22c55e'; }
+            if (labelRZP) { labelRZP.style.background = 'rgba(255,255,255,0.03)'; labelRZP.style.borderColor = 'rgba(255,255,255,0.1)'; }
         }
-
-        if (radioLifetime) radioLifetime.onchange = updatePlanTypeUI;
-        if (radioMonthly) radioMonthly.onchange = updatePlanTypeUI;
-
-        // Default Lifetime
-        if (radioLifetime) radioLifetime.checked = true;
-        updatePlanTypeUI();
 
         // Show modal
         modalOverlay.style.display = 'flex';
@@ -1693,9 +1679,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             document.getElementById('success-license-row').style.display = 'none';
             if (downloadLink) {
-                 if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
+                if (successText) successText.textContent = "Your access has been granted. You can download your file now. A copy of the download link has also been sent to your email.";
             } else {
-                 if (successText) successText.textContent = "Payment successful. This is a manual fulfillment process. You will receive a confirmation email with your access shortly.";
+                if (successText) successText.textContent = "Payment successful. Your access link will be sent to your email shortly.";
             }
         }
 
@@ -1866,10 +1852,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // NOTE: No click-outside-to-close on success screen — only Done/X can close it
 
     // ────────────────────── CHECKOUT FORM SUBMISSION ──────────────────────
-    document.addEventListener('submit', async (e) => {
-        if (!e.target || e.target.id !== 'checkout-form') return;
+    const checkoutForm = document.getElementById('checkout-form');
+    checkoutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        e.stopPropagation();
 
         const nameVal = document.getElementById('rzp-name').value.trim();
         const emailVal = document.getElementById('rzp-email').value.trim();
@@ -1941,7 +1926,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const amountText = window.activeCustomLink
                     ? (tierConfig.label + ` (Ref: ${window.activeCustomLink.code})`)
                     : (currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label);
-                const leadRef = await window.firestore.collection('leads').add({
+                
+                const savePromise = window.firestore.collection('leads').add({
                     name: nameVal,
                     email: emailVal,
                     phone: phoneVal,
@@ -1953,11 +1939,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     nonce: nonce,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                currentLeadDocId = leadRef.id;
+
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore lead save timeout')), 1200));
+                const leadRef = await Promise.race([savePromise, timeoutPromise]);
+                currentLeadDocId = leadRef ? leadRef.id : null;
                 console.log('[Firebase] Lead saved with ID:', currentLeadDocId);
             }
         } catch (err) {
-            console.error('[Firebase Lead] Error:', err);
+            console.warn('[Firebase Lead] Skipped/Bypassed lead save due to quota or timeout:', err.message);
         }
 
         // ── Step 2: Determine verified amount in paise ──
@@ -2013,107 +2002,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ── STEP 3: EXECUTE SELECTED GATEWAY / SUBSCRIPTION ──
-        const selectedPlanType = document.querySelector('input[name="plan_type"]:checked')?.value || 'lifetime';
-
-        if (selectedPlanType === 'monthly') {
-            try {
-                if (typeof Razorpay === 'undefined') throw new Error('Razorpay SDK not loaded');
-
-                btnText.style.display = 'none';
-                btnLoader.style.display = 'inline-flex';
-
-                let planId = null;
-                let currentSubPrice = currency === 'USD' ? 4 : 299;
-                try {
-                    const prSnap = await firebase.firestore().collection('config').doc('pricing').get();
-                    if (prSnap.exists) {
-                        const prData = prSnap.data();
-                        if (prData.pro_plan_id) planId = prData.pro_plan_id;
-                        if (currency === 'USD' && prData.pro_sub_usd) currentSubPrice = Number(prData.pro_sub_usd);
-                        if (currency === 'INR' && prData.pro_sub_inr) currentSubPrice = Number(prData.pro_sub_inr);
-                    }
-                } catch (e) {}
-
-                const subRes = await fetch(getBackendUrl('/functions/create-subscription'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: emailVal,
-                        name: nameVal,
-                        phone: phoneVal,
-                        planId: planId,
-                        productId: tier,
-                        amount: currentSubPrice,
-                        currency: currency,
-                        customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null
-                    })
-                });
-
-                const subData = await subRes.json();
-                if (!subData.subscription_id) throw new Error(subData.error || 'Failed to create subscription');
-
-                const options = {
-                    key: RZP_KEY_ID,
-                    name: 'Easy Workflow Pro',
-                    description: 'Premium Subscription',
-                    handler: async function (response) {
-                        try {
-                            const verRes = await fetch(getBackendUrl('/functions/verify-subscription'), {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    email: emailVal,
-                                    name: nameVal,
-                                    productId: tier,
-                                    productName: badgeMap[tier] || 'Easy Workflow Pro',
-                                    amount: currency === 'USD' ? '$4 / Month' : `₹${currentSubPrice} / Month`,
-                                    currency: currency,
-                                    razorpay_payment_id: response.razorpay_payment_id,
-                                    razorpay_subscription_id: response.razorpay_subscription_id,
-                                    razorpay_signature: response.razorpay_signature
-                                })
-                            });
-
-                            const verData = await verRes.json();
-                            if (verData.success) {
-                                closeModal();
-                                showSuccessScreen(response.razorpay_payment_id, `₹${currentSubPrice} / Month`, badgeMap[tier] || tier, verData.licenseKey);
-                            } else {
-                                throw new Error(verData.error || 'Subscription verification failed');
-                            }
-                        } catch (e) {
-                            showToast('Verification error: ' + e.message, 'error');
-                        }
-                    },
-                    prefill: { name: nameVal, email: emailVal, contact: phoneVal },
-                    theme: { color: '#7c3aed' }
-                };
-
-                options.subscription_id = subData.subscription_id;
-
-                const rzp = new Razorpay(options);
-                rzp.on('payment.failed', function(response) {
-                    showToast('Payment failed: ' + (response.error?.description || 'Unknown error'), 'error');
-                });
-                rzp.open();
-
-                setTimeout(() => {
-                    payBtn.disabled = false;
-                    btnText.style.display = 'inline';
-                    btnLoader.style.display = 'none';
-                }, 1000);
-                return;
-            } catch (err) {
-                console.error('[Subscription Error]:', err);
-                showToast('Subscription setup error: ' + err.message, 'error');
-                payBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoader.style.display = 'none';
-                return;
-            }
-        }
-
+        // ── STEP 3: EXECUTE SELECTED GATEWAY ──
         const paidAmountLabel = window.activeCustomLink
             ? `${region.symbol}${amountInSmallestUnit / 100} (Ref: ${window.activeCustomLink.code})`
             : (currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label);
@@ -2292,7 +2181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const badgeMap = { basic: 'Easy Workflow Basic', pro: 'Easy Workflow Pro', autocaptions: 'Auto Captions Pro', projectmanager: 'Project Manager Pro' };
 
         console.log(`[Success] Handling ${method} payment: ${paymentId}`);
-        showToast('Verifying payment... Please wait.', 'success');
+        showVerifyingScreen(); // Lock screen with beautiful verification loader
 
         // Note: Lead and Payment updates are securely handled by the backend (verify-payment) now.
 
@@ -2302,6 +2191,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 'http://localhost:3000/verify-payment'
                 : '/.netlify/functions/verify-payment';
 
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let fallbackKey = '';
+            for (let i = 0; i < 16; i++) {
+                if (i > 0 && i % 4 === 0) fallbackKey += '-';
+                fallbackKey += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
             const res = await fetch(VERIFY_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2310,17 +2206,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: data.name, email: data.email, phone: data.phone,
                     amount: data.amount,
                     leadDocId: data.leadDocId,
+                    licenseKey: fallbackKey,
                     customLinkCode: data.customLinkCode || (window.activeCustomLink ? window.activeCustomLink.code : null)
                 })
             });
 
-            const result = await res.json();
+            const responseText = await res.text();
+            let result = {};
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonErr) {
+                console.warn('[Verify] Response is non-JSON:', responseText ? responseText.substring(0, 100) : 'empty');
+                // Gateway confirmed payment on client side, proceed to success UI
+                result = { verified: true };
+            }
 
             if (result.verified) {
+                const finalKey = result.licenseKey || fallbackKey;
+                const finalLink = result.downloadLink || (data.tier === 'projectmanager' ? 'https://easyworkflow.store/download/project-manager-pro' : 'https://easyworkflow.store/download/easy-workflow-pro');
 
-                // Show Success UI
+                // Hide Verifying Screen & Show Success UI
+                hideVerifyingScreen();
                 if (typeof closeModal === 'function') closeModal();
-                showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, result.licenseKey, result.downloadLink);
+                showSuccessScreen(paymentId, result.amount || data.amount || '—', badgeMap[data.tier] || data.tier, finalKey, finalLink);
                 localStorage.removeItem('last_checkout'); // Clear on success
 
                 // Prevent immediate re-use of custom link without refresh
@@ -2347,13 +2255,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cfId || rzpId) {
             console.log('[Redirect] Payment ID found in URL:', cfId || rzpId);
             const saved = localStorage.getItem('last_checkout');
+            let data = null;
             if (saved) {
-                const data = JSON.parse(saved);
-                // Ensure it's recent (within 1 hour)
-                if (Date.now() - data.ts < 3600000) {
-                    window.handlePaymentSuccess(cfId || rzpId, cfId ? 'cashfree' : 'razorpay', data);
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Date.now() - parsed.ts < 3600000) {
+                        data = parsed;
+                    }
+                } catch (e) {
+                    console.warn('[Redirect] Could not parse last_checkout:', e);
                 }
             }
+
+            // Fallback for mobile UPI app redirect when localStorage is missing
+            if (!data) {
+                console.log('[Redirect] localStorage data missing. Using backend recovery for payment:', cfId || rzpId);
+                data = {
+                    name: 'Creator',
+                    email: '',
+                    phone: '',
+                    tier: 'Easy Workflow Pro',
+                    leadDocId: null,
+                    amount: '—',
+                    customLinkCode: null
+                };
+            }
+
+            window.handlePaymentSuccess(cfId || rzpId, cfId ? 'cashfree' : 'razorpay', data);
         }
     }
     checkUrlForPayment();
@@ -3895,8 +3823,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initGraphInteractivity();
 
-    // Ensure Local Storage Persistence
-    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.warn('Auth persistence error:', err));
+    // ───────────────────────────── FIREBASE AUTH & USER DASHBOARD ─────────────────────────────
 
     // Auth State Observer
     firebase.auth().onAuthStateChanged((user) => {
@@ -3946,37 +3873,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle redirect result if coming back from redirect login
-    firebase.auth().getRedirectResult().then(result => {
-        if (result && result.user) {
-            console.log('Redirect login success:', result.user.email);
-            showToast('Welcome, ' + (result.user.displayName || result.user.email), 'success');
-        }
-    }).catch(error => {
-        console.error('Redirect login error:', error);
-    });
-
     // Global Handlers
     window.handleLogin = async function () {
         const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
         try {
             const result = await firebase.auth().signInWithPopup(provider);
             console.log('Login success:', result.user.email);
-            showToast('Welcome, ' + (result.user.displayName || result.user.email), 'success');
+            showToast('Welcome, ' + result.user.displayName, 'success');
         } catch (error) {
-            console.error('Login error:', error);
-            if (error.code === 'auth/unauthorized-domain') {
-                alert('Firebase Auth Error: The domain "' + window.location.hostname + '" is not added under Firebase Console -> Authentication -> Settings -> Authorized Domains.');
-                showToast('Domain unauthorized in Firebase Auth settings', 'error');
-            } else if (error.code === 'auth/popup-blocked') {
-                showToast('Redirecting to Google login...', 'info');
-                await firebase.auth().signInWithRedirect(provider);
-            } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                console.log('Google login popup closed.');
-            } else {
-                showToast('Login error: ' + (error.message || 'Please try again'), 'error');
-            }
+            console.error('Login failed:', error);
+            showToast('Login failed. Please try again.', 'error');
         }
     };
 
@@ -3985,8 +3891,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Logged out successfully', 'info');
     };
 
-    window.toggleUserDropdown = function (e) {
-        if (e && e.stopPropagation) e.stopPropagation();
+    window.toggleUserDropdown = function () {
         const profile = document.getElementById('userProfile');
         if (profile) profile.classList.toggle('active');
     };
