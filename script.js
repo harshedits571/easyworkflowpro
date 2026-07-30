@@ -1898,7 +1898,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const gatewayInput = document.querySelector('input[name="gateway"]:checked') || document.querySelector('input[name="gateway"][type="hidden"]');
-        const gateway = gatewayInput ? gatewayInput.value : 'cashfree';
+        let gateway = gatewayInput ? gatewayInput.value : 'cashfree';
 
         const payBtn = document.getElementById('rzp-pay-btn');
         const btnText = document.getElementById('rzp-btn-text');
@@ -1994,7 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
             amountInSmallestUnit = Math.round(amountInSmallestUnit * currentPromoMultiplier);
         }
 
-        if (!amountInSmallestUnit) {
+        if (amountInSmallestUnit === undefined || amountInSmallestUnit === null || Number.isNaN(amountInSmallestUnit)) {
             showToast('Pricing error. Please refresh the page and try again.', 'error');
             payBtn.disabled = false;
             btnText.style.display = 'inline';
@@ -2006,6 +2006,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const paidAmountLabel = window.activeCustomLink
             ? `${region.symbol}${amountInSmallestUnit / 100} (Ref: ${window.activeCustomLink.code})`
             : (currentPromoCode ? (tierConfig.label + ` (Used: ${currentPromoCode})`) : tierConfig.label);
+
+        if (amountInSmallestUnit === 0) {
+            gateway = 'cashfree'; // Force backend flow for 0-amount free checkouts
+        }
 
         if (gateway === 'razorpay') {
             // Block Pakistan early to prevent native Razorpay alert
@@ -2112,9 +2116,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 throw new Error(errData.details || errData.error || 'Payment Server Offline');
             }
-            const { payment_session_id, order_id } = await orderRes.json();
+            const { payment_session_id, order_id, isFree, free_signature } = await orderRes.json();
 
             if (!payment_session_id || !order_id) throw new Error('Missing Session ID or Order ID');
+
+            if (isFree) {
+                console.log("[Checkout] Processing 0-amount free order natively...");
+                payBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+
+                const dataOverride = {
+                    name: nameVal,
+                    email: emailVal,
+                    phone: phoneVal,
+                    tier: tier,
+                    leadDocId: currentLeadDocId,
+                    amount: paidAmountLabel,
+                    customLinkCode: window.activeCustomLink ? window.activeCustomLink.code : null,
+                    free_signature: free_signature
+                };
+                window.handlePaymentSuccess(order_id, 'Free', dataOverride);
+                return;
+            }
 
             // --- SAVE TO LOCALSTORAGE FOR REDIRECT RECOVERY ---
             const checkoutData = {
@@ -2203,7 +2227,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     amount: data.amount,
                     leadDocId: data.leadDocId,
                     licenseKey: fallbackKey,
-                    customLinkCode: data.customLinkCode || (window.activeCustomLink ? window.activeCustomLink.code : null)
+                    customLinkCode: data.customLinkCode || (window.activeCustomLink ? window.activeCustomLink.code : null),
+                    signature: data.free_signature // ONLY used for 'Free' method
                 })
             });
 
@@ -2213,8 +2238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 result = JSON.parse(responseText);
             } catch (jsonErr) {
                 console.warn('[Verify] Response is non-JSON:', responseText ? responseText.substring(0, 100) : 'empty');
-                // Gateway confirmed payment on client side, proceed to success UI
-                result = { verified: true };
+                result = { verified: false, error: 'Invalid response from verification server.' };
             }
 
             if (result.verified) {

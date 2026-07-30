@@ -1,4 +1,5 @@
 const axios = require('axios');
+const crypto = require('crypto');
 
 // Security: Server-authoritative Pricing Registry
 // These are FALLBACK values. The primary source is Firestore (set via Admin Dashboard).
@@ -221,11 +222,31 @@ exports.handler = async (event, context) => {
         }
     }
 
-    if (!verifiedAmount) {
+    if (verifiedAmount === undefined || verifiedAmount === null || Number.isNaN(verifiedAmount)) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: "Invalid tier or currency selected." })
+      };
+    }
+
+    if (verifiedAmount === 0) {
+      console.log(`[Pricing] Amount is 0. Bypassing payment gateway for free order.`);
+      const freeOrderId = "FREE_" + Date.now();
+      // Generate a secure signature to prevent frontend tampering
+      const hmac = crypto.createHmac('sha256', process.env.CASHFREE_SECRET_KEY || 'default_secret');
+      hmac.update(freeOrderId + "|" + (email || ''));
+      const freeSignature = hmac.digest('hex');
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          isFree: true,
+          order_id: freeOrderId,
+          payment_session_id: freeOrderId,
+          free_signature: freeSignature
+        })
       };
     }
 

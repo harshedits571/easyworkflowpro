@@ -159,8 +159,21 @@ app.post('/verify-payment', async (req, res) => {
                 amountPaid = `${cfRes.data.order_currency} ${cfRes.data.order_amount}`;
             }
         } else if (method === 'razorpay') {
-            // Local Razorpay verification (dummy success if no secret, same as production)
-            isVerified = true;
+            const rzpKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SeElRgESDAvD5D';
+            const rzpKeySecret = process.env.RAZORPAY_KEY_SECRET || 'aCfcchvGcS6GzLdvkw3Hi05I';
+            try {
+                const auth = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString('base64');
+                const rzpRes = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+                    headers: { 'Authorization': `Basic ${auth}` }
+                });
+                if (rzpRes.data && (rzpRes.data.status === 'captured' || rzpRes.data.status === 'authorized')) {
+                    isVerified = true;
+                    amountPaid = `${rzpRes.data.currency} ${(rzpRes.data.amount / 100).toFixed(2)}`;
+                }
+            } catch (err) {
+                console.error("[Local Razorpay Verify Error]:", err.message);
+                isVerified = false;
+            }
         }
 
         if (isVerified) {

@@ -396,7 +396,7 @@ function renderLeads(filterStatus = 'all', filterTier = 'all', search = '') {
             <tr>
                 <td>
                     <div class="customer-cell">
-                        <span class="customer-name">${escapeHtml(lead.name || 'Unknown')}</span>
+                        <span class="customer-name">${escapeHtml((lead.name && lead.name !== 'Unknown') ? lead.name : (lead.email ? lead.email.split('@')[0] : 'Unknown'))}</span>
                         <span class="customer-email">${escapeHtml(lead.email || '—')}</span>
                     </div>
                 </td>
@@ -726,7 +726,7 @@ window.verifyAndGrantLicense = async function (leadId) {
         try {
             data = JSON.parse(responseText);
         } catch (e) {
-            data = { verified: true };
+            data = { verified: false, error: 'Server returned non-JSON response' };
         }
 
         if (data.verified) {
@@ -929,12 +929,14 @@ window.updateLeadStatus = async function (leadId, newStatus) {
         // 2. If marking as paid/verified, ensure it shows up in the Payments section
         if (newStatus === 'paid' || newStatus === 'verified') {
             // Check if payment already exists to avoid duplicates
-            const paymentSnap = await db.collection('payments').where('email', '==', leadData.email).limit(1).get();
+            const paymentId = leadData.paymentId || 'MANUAL-' + leadRef.id;
+            const pmtRef = db.collection('payments').doc(paymentId);
+            const pmtCheck = await pmtRef.get();
 
-            if (paymentSnap.empty) {
-                await db.collection('payments').add({
-                    paymentId: leadData.paymentId || 'MANUAL-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-                    name: leadData.name || 'Unknown',
+            if (!pmtCheck.exists) {
+                await pmtRef.set({
+                    paymentId: paymentId,
+                    name: (leadData.name && leadData.name !== 'Unknown') ? leadData.name : (leadData.email ? leadData.email.split('@')[0] : 'Unknown'),
                     email: leadData.email || '—',
                     amount: leadData.amount || '₹0',
                     tier: leadData.tier || '—',
@@ -1090,7 +1092,7 @@ function renderPayments(search = '') {
                 <td style="font-family:monospace;font-size:12px;color:var(--accent-cyan);">${escapeHtml(p.paymentId || '—')}</td>
                 <td>
                     <div class="customer-cell">
-                        <span class="customer-name">${escapeHtml(p.name || 'Unknown')}</span>
+                        <span class="customer-name">${escapeHtml((p.name && p.name !== 'Unknown') ? p.name : (p.email ? p.email.split('@')[0] : 'Unknown'))}</span>
                         <span class="customer-email">${escapeHtml(p.email || '—')}</span>
                     </div>
                 </td>
@@ -1287,7 +1289,7 @@ function updateRecentActivity() {
             <div class="activity-item">
                 <span class="activity-dot ${statusClass}"></span>
                 <div class="activity-info">
-                    <span class="activity-name">${escapeHtml(lead.name || 'Unknown')}</span>
+                    <span class="activity-name">${escapeHtml((lead.name && lead.name !== 'Unknown') ? lead.name : (lead.email ? lead.email.split('@')[0] : 'Unknown'))}</span>
                     <span class="activity-detail">${action} — ${escapeHtml(lead.tier || 'N/A')}</span>
                 </div>
                 <span class="activity-time">${date}</span>

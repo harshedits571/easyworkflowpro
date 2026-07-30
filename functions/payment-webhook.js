@@ -79,7 +79,8 @@ exports.handler = async (event, context) => {
         name,
         email,
         phone,
-        amount
+        amount,
+        isWebhook: true
       })
     };
 

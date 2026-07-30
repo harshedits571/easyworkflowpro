@@ -45,25 +45,32 @@ async function sendCustomerEmail(toEmail, customerName, tier, licenseKey = null,
         return;
     }
 
-    const isProjectManager = tier.toLowerCase().replace(/\s+/g, '').includes('projectmanager');
-    const isBasic = tier.toLowerCase().replace(/\s+/g, '').includes('basic');
-    let subject = isPending ? `⏳ Action Required: Your ${tier.toUpperCase()} Payment` : `🎉 Your ${tier.toUpperCase()} Access is Here!`;
+    const cleanTier = (tier || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isProjectManager = cleanTier.includes('projectmanager');
+    const isPro = cleanTier.includes('pro') && !isProjectManager;
+    const isBasic = cleanTier.includes('basic');
+    const isAutoCaptions = cleanTier.includes('caption');
+
+    let subject = isPending ? `Payment Status Update: ${tier}` : `Your ${tier} Order Confirmation & License Key`;
     let bodyHtml = '';
 
-    let downloadLink = isProjectManager ? "https://easyworkflow.store/download/project-manager-pro" : "https://easyworkflow.store/download/basic";
+    let downloadLink = "https://easyworkflow.store/download";
+    if (isProjectManager) downloadLink = "https://easyworkflow.store/download/project-manager-pro";
+    else if (isPro) downloadLink = "https://easyworkflow.store/download/pro";
+    else if (isBasic) downloadLink = "https://easyworkflow.store/download/basic";
+    else if (isAutoCaptions) downloadLink = "https://easyworkflow.store/download/autocaptions";
     
     // Fetch dynamic download link from Admin Panel config
-    if ((isProjectManager || isBasic) && admin.apps.length) {
+    if (admin.apps.length) {
         try {
             const db = admin.firestore();
             const dlSnap = await db.collection('config').doc('downloads').get();
             if (dlSnap.exists) {
                 const links = dlSnap.data();
-                if (isProjectManager && links.projectmanager) {
-                    downloadLink = links.projectmanager;
-                } else if (isBasic && links.basic) {
-                    downloadLink = links.basic;
-                }
+                if (isProjectManager && links.projectmanager) downloadLink = links.projectmanager;
+                else if (isPro && links.pro) downloadLink = links.pro;
+                else if (isBasic && links.basic) downloadLink = links.basic;
+                else if (isAutoCaptions && links.autocaptions) downloadLink = links.autocaptions;
             }
         } catch (e) {
             console.warn("Failed to fetch dynamic download link for email:", e.message);
@@ -137,6 +144,46 @@ async function sendCustomerEmail(toEmail, customerName, tier, licenseKey = null,
                 </div>
             </div>
         `;
+    } else if (isPro) {
+        // --- EASY WORKFLOW PRO SUCCESS TEMPLATE ---
+        subject = `Your Easy Workflow Pro License Key & Download Link`;
+        textBody = `Hey ${customerName || 'Creator'},\n\nThank you for your purchase! Your payment has been verified.\n\nYour Unique License Key:\n${licenseKey}\n\nDownload Link:\n${downloadLink}\n\nThank you,\nSoftware Hub Team`;
+        bodyHtml = `
+            <div style="font-family: 'Inter', Arial, sans-serif; background-color: #050505; padding: 40px 20px; color: #ffffff;">
+                <div style="max-width: 600px; margin: 0 auto; background: #0f0f13; border: 1px solid #1f1f27; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                    <div style="background: linear-gradient(135deg, #a855f7, #7c3aed); padding: 40px 30px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">Easy Workflow Pro</h1>
+                        <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">Order Confirmation & License Key</p>
+                    </div>
+                    <div style="padding: 40px 30px;">
+                        <p style="font-size: 18px; margin-top: 0;">Hey ${customerName || 'Creator'},</p>
+                        <p style="color: #a1a1aa; line-height: 1.6; font-size: 16px;">Thank you for your purchase! Your payment has been verified, and your lifetime license is ready for activation.</p>
+                        <div style="background: #000000; border: 1px dashed #3f3f46; border-radius: 12px; padding: 25px; margin: 30px 0; text-align: center;">
+                            <p style="margin: 0 0 10px; font-size: 12px; color: #a855f7; text-transform: uppercase; font-weight: bold; letter-spacing: 2px;">Your Unique License Key</p>
+                            <div style="font-family: 'Courier New', monospace; font-size: 26px; color: #ffffff; letter-spacing: 4px; font-weight: bold;">
+                                ${licenseKey}
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <a href="${downloadLink}" style="background: #ffffff; color: #000000; padding: 18px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">Download Extension (.zxp)</a>
+                            <p style="font-size: 12px; color: #71717a; margin-top: 15px;">Windows & macOS Compatible</p>
+                        </div>
+                        <div style="border-top: 1px solid #1f1f27; padding-top: 30px;">
+                            <h3 style="font-size: 16px; margin-bottom: 15px; color: #a855f7;">How to install:</h3>
+                            <ol style="color: #a1a1aa; font-size: 14px; line-height: 1.8; padding-left: 20px;">
+                                <li>Download the <strong>.zxp</strong> file using the button above.</li>
+                                <li>Install using <strong>ZXP Installer</strong> or <strong>Anastasiy’s Storage</strong>.</li>
+                                <li>Open After Effects and go to <strong>Window > Extensions > Easy Workflow Pro</strong>.</li>
+                                <li>Enter your email and the license key provided above.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div style="background: #09090b; padding: 25px; text-align: center; border-top: 1px solid #1f1f27;">
+                        <p style="margin: 0; font-size: 12px; color: #52525b;">Need help? Reply to this email or visit our <a href="https://easyworkflow.store/support" style="color: #a855f7; text-decoration: none;">Support Center</a>.</p>
+                    </div>
+                </div>
+            </div>
+        `;
     } else if (isBasic) {
         // --- BASIC SUCCESS TEMPLATE ---
         subject = `Your Easy Workflow Basic Download & Order Confirmation`;
@@ -171,15 +218,15 @@ async function sendCustomerEmail(toEmail, customerName, tier, licenseKey = null,
             </div>
         `;
     } else {
-        // --- DEFAULT SUCCESS TEMPLATE (EASY WORKFLOW / AUTO CAPTIONS) ---
-        subject = `Your ${tier} Order Confirmation & License Access`;
+        // --- DEFAULT AUTOMATED SUCCESS TEMPLATE ---
+        subject = `Your ${tier} Order Confirmation & License Key`;
         textBody = `Hey ${customerName || 'Creator'},\n\nWe have received your payment for ${tier}.\n\nLicense Key:\n${licenseKey || 'N/A'}\n\nDownload Link:\n${downloadLink || 'https://easyworkflow.store/dashboard.html'}\n\nThank you,\nSoftware Hub Team`;
         bodyHtml = `
             <div style="font-family: 'Inter', Arial, sans-serif; background-color: #050505; padding: 40px 20px; color: #ffffff;">
                 <div style="max-width: 600px; margin: 0 auto; background: #0f0f13; border: 1px solid #1f1f27; border-radius: 16px; overflow: hidden;">
                     <div style="background: linear-gradient(135deg, #a855f7, #7c3aed); padding: 40px 30px; text-align: center;">
                         <h1 style="margin: 0; font-size: 24px;">${tier}</h1>
-                        <p style="margin: 8px 0 0; opacity: 0.9;">Order Confirmation</p>
+                        <p style="margin: 8px 0 0; opacity: 0.9;">Order Confirmation & License Key</p>
                     </div>
                     <div style="padding: 40px 30px;">
                         <p style="font-size: 18px; margin-top: 0;">Hey ${customerName || 'Creator'},</p>
@@ -260,7 +307,7 @@ exports.handler = async (event, context) => {
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
     try {
-        const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId, licenseKey: clientLicenseKey } = JSON.parse(event.body);
+        const { paymentId, method, tier, name, email, phone, customLinkCode, amount: clientAmount, leadDocId, licenseKey: clientLicenseKey, isWebhook } = JSON.parse(event.body);
 
         if (!paymentId || !method) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing payment information" }) };
@@ -363,8 +410,11 @@ exports.handler = async (event, context) => {
                     } else if (rzpStatus === 'captured') {
                         isVerified = true;
                         amountPaid = `${rzpRes.data.currency} ${(rzpRes.data.amount / 100).toFixed(2)}`;
-                    } else if (rzpStatus === 'created' || rzpStatus === 'failed') {
+                    } else if (rzpStatus === 'created') {
                         isPending = true;
+                    } else {
+                        isVerified = false;
+                        isPending = false;
                     }
 
                     // Extract customer details from Razorpay if missing in request body
@@ -375,16 +425,57 @@ exports.handler = async (event, context) => {
                 }
             } catch (err) {
                 console.warn("[Razorpay Verify Error]:", err.response ? err.response.data : err.message);
-                // If payment ID is valid format (starts with pay_), mark verified so customer gets license
-                if (paymentId && paymentId.startsWith('pay_')) {
-                    isVerified = true;
-                    amountPaid = "INR 100.00";
-                }
+                isVerified = false;
+                isPending = false;
+            }
+        }
+        else if (method === 'Free') {
+            const secretKey = process.env.CASHFREE_SECRET_KEY || 'default_secret';
+            const { signature } = JSON.parse(event.body);
+            const hmac = crypto.createHmac('sha256', secretKey);
+            hmac.update(paymentId + "|" + (email || ''));
+            const expectedSig = hmac.digest('hex');
+            
+            if (signature === expectedSig) {
+                isVerified = true;
+                amountPaid = "₹0.00 (100% Discount)";
+                console.log(`[Free Order] Valid secure signature for ${paymentId}`);
+            } else {
+                isVerified = false;
+                isPending = false;
+                console.warn(`[Free Order Security] Invalid signature detected for ${paymentId}!`);
             }
         }
 
         // 2. IF VERIFIED -> Process License and Email
         if (isVerified) {
+            // Guard: If background webhook is received for a payment from ANOTHER website (no lead on easyworkflow.store), ignore it!
+            if (isWebhook && admin.apps.length) {
+                try {
+                    const db = admin.firestore();
+                    let matchedLead = false;
+                    if (leadDocId) {
+                        const docSnap = await db.collection('leads').doc(leadDocId).get();
+                        if (docSnap.exists) matchedLead = true;
+                    }
+                    if (!matchedLead && (email || phone)) {
+                        const cleanEmail = email ? email.toLowerCase().trim() : '';
+                        const leadsSnap = await db.collection('leads').where('email', '==', cleanEmail).limit(1).get();
+                        if (!leadsSnap.empty) matchedLead = true;
+                    }
+                    if (!matchedLead) {
+                        console.log(`[Ignored External Webhook] Payment ${paymentId} (${email}) belongs to another website/app. Ignored on easyworkflow.store.`);
+                        return {
+                            statusCode: 200,
+                            headers,
+                            body: JSON.stringify({ message: "Ignored external webhook (no matching lead on easyworkflow.store)" })
+                        };
+                    }
+                } catch (leadCheckErr) {
+                    console.warn("[Webhook Guard Warning]:", leadCheckErr.message);
+                }
+            }
+
             console.log(`[Verified] Payment ${paymentId} for ${tier} by ${name} (${email})`);
             let generatedLicense = null;
             
@@ -476,20 +567,26 @@ exports.handler = async (event, context) => {
                 try {
                     const db = admin.firestore();
 
-                    // 1. Create secure payment record
-                    await db.collection('payments').add({
-                        paymentId: paymentId,
-                        gateway: method,
-                        tier: tier,
-                        name: name || 'Unknown',
-                        email: email || 'Unknown',
-                        phone: phone || '',
-                        amount: clientAmount || '—',
-                        verified: true,
-                        timestamp: admin.firestore.FieldValue.serverTimestamp()
-                    });
+                    // 1. Create secure payment record (prevent duplicate payment records for same paymentId)
+                    const pmtRef = db.collection('payments').doc(paymentId);
+                    const pmtCheck = await pmtRef.get();
+                    if (!pmtCheck.exists) {
+                        await pmtRef.set({
+                            paymentId: paymentId,
+                            gateway: method,
+                            tier: tier,
+                            name: name || 'Unknown',
+                            email: email || 'Unknown',
+                            phone: phone || '',
+                            amount: clientAmount || amountPaid || '—',
+                            verified: true,
+                            timestamp: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        console.log(`[Payment Record] Payment ${paymentId} record already exists in database. Skipping duplicate insert.`);
+                    }
 
-                    // 2. Update lead status or match by email/phone
+                    // 2. Update ONLY the target lead status (or match single lead by email)
                     let targetLeadDocId = leadDocId;
                     const cleanEmail = email ? email.toLowerCase().trim() : '';
 
@@ -499,7 +596,7 @@ exports.handler = async (event, context) => {
                                 .where('email', '==', cleanEmail)
                                 .get();
                             if (!leadsSnap.empty) {
-                                // Pick doc that is still interested or most recent
+                                // Pick ONLY the single most recent lead doc that is still interested
                                 const docToUpdate = leadsSnap.docs.find(d => d.data().status === 'interested') || leadsSnap.docs[0];
                                 targetLeadDocId = docToUpdate.id;
                             }
